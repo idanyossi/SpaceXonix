@@ -45,7 +45,13 @@ namespace SpaceXonix.Player
             if (boardManager != null)
             {
                 candidate = boardManager.ClampToBoard(candidate);
-                boardManager.TrackPlayerWorldPosition(new Vector3(previousPosition.x, previousPosition.y, transform.position.z), candidate);
+                var result = boardManager.TrackPlayerWorldPosition(new Vector3(previousPosition.x, previousPosition.y, transform.position.z), candidate);
+                if (result == BoardMoveResult.TrailFailed)
+                {
+                    movementModel.SetPosition(new Vector2(transform.position.x, transform.position.y));
+                    boardManager.ResetPlayerTracking(transform.position);
+                    return false;
+                }
                 movementModel.SetPosition(new Vector2(candidate.x, candidate.y));
             }
             transform.position = candidate;

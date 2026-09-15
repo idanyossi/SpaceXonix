@@ -98,6 +98,11 @@ namespace SpaceXonix.Board
 
         public bool IsInBounds(GridCoordinate cell) => Model != null && Model.IsInBounds(cell);
 
+        public bool IsLegalPlayerStep(GridCoordinate cell)
+        {
+            return IsInBounds(cell) && Model.GetCell(cell) != BoardCellState.Trail;
+        }
+
         public BoardMoveResult TrackPlayerWorldPosition(Vector3 previousWorldPosition, Vector3 currentWorldPosition)
         {
             var clamped = ClampToBoard(currentWorldPosition);
@@ -115,6 +120,7 @@ namespace SpaceXonix.Board
                 if (deltaX != 0) playerCell = new GridCoordinate(playerCell.X + Math.Sign(deltaX), playerCell.Y);
                 else playerCell = new GridCoordinate(playerCell.X, playerCell.Y + Math.Sign(deltaY));
                 result = Model.MoveTo(playerCell, enemySnapshot);
+                if (result == BoardMoveResult.TrailFailed) break;
                 if (!Model.IsExposed && Model.GetCell(playerCell) == BoardCellState.Captured)
                 {
                     lastSafeCell = playerCell;

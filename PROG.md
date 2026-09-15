@@ -48,8 +48,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 73
-- Passed: 73
+- EditMode discovered: 75
+- Passed: 75
 - Failed: 0
 - Coverage includes input/movement, board/trail/capture/destruction, the complete death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -73,6 +73,14 @@
 - Lasers: both axes cycle through Cooldown, Warning, Firing, and Cooldown. Warning presentation was visible and non-damaging; firing damaged once; large-delta coverage passed; territory, enemies, Volatile behavior, and trails remained isolated. Repeated cycles did not grow the GameObject count.
 - Continuous Play Mode session: completed two captures, encountered a non-damaging warning and damaging beam, respawned and moved, completed another capture, detonated a Volatile against captured territory/enemies, continued capturing, died from an enemy trail hit, respawned again, and continued moving. Console remained free of SpaceXonix errors.
 - Minor issue: current placeholder enemy visuals are visible but not strongly distinguishable from one another. This does not block mechanics or Phase 8 and belongs to later asset/polish work.
+
+## Respawn Movement Stress Verification
+
+- Intermittent root cause: a multi-cell player movement update could continue iterating after `BoardModel.MoveTo` reported `TrailFailed`. GameManager synchronously cleared the failed trail and entered `Respawning`, but the remaining cells in the same tracking loop could immediately start a second trail. The tracking method then returned `TrailStarted` with the player exposed during respawn, leaving stale board state that could interfere with movement after control returned.
+- Fix: BoardManager stops cell traversal immediately on `TrailFailed`; PlayerController aborts that failed movement tick and restores its movement-model/board tracking synchronization; authoritative respawn completion clears any residual unfinished trail before resolving the safe cell and direction. Direction validation now uses BoardManager's gameplay legal-step rule rather than bounds alone.
+- Pre-fix Play Mode reproduction: one multi-cell self-intersection changed lives from 3 to 2 and state to `Respawning`, but returned `TrailStarted` with one active trail cell and `IsPlayerExposed == true`.
+- Post-fix Play Mode stress: the targeted reproduction plus 20 varied death/respawn cycles covered all edges, corners, exposed/safe states, repeated deaths, and EnemyContact, TrailHit, Laser, and VolatileExplosion reasons. All 21 respawns returned to `Playing` with enabled input/movement, a legal next cell, a successful movement tick, and synchronized logical/world positions. Zero stuck, illegal-direction, stale-exposure, or position-mismatch cases occurred.
+- Final continuous session: capture, enemy death, respawn/move, capture, enemy-trail death, respawn/move, Volatile territory destruction, continued movement, laser warning/firing avoidance, and continued play all passed in one `Game.unity` run.
 
 ## Repository Cleanup
 

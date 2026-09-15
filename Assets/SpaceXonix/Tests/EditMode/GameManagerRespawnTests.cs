@@ -114,6 +114,59 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void MultiCellSelfIntersection_StopsTrackingBeforeASecondTrailCanStart()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Board.Model.MoveTo(new GridCoordinate(1, 3));
+                fixture.Board.Model.MoveTo(new GridCoordinate(2, 3));
+                var from = fixture.Board.GetWorldPosition(new GridCoordinate(3, 3));
+                var target = fixture.Board.GetWorldPosition(new GridCoordinate(1, 3));
+                fixture.Board.ResetPlayerTracking(from);
+
+                var result = fixture.Board.TrackPlayerWorldPosition(from, target);
+
+                Assert.That(result, Is.EqualTo(BoardMoveResult.TrailFailed));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+            }
+        }
+
+        [Test]
+        public void RepeatedRespawns_ClearStaleStateAndAlwaysProduceAMovementStep()
+        {
+            using (var fixture = new Fixture(startingLives: 21))
+            {
+                for (var index = 0; index < 20; index++)
+                {
+                    var safeCell = index % 4 == 0 ? new GridCoordinate(0, 0) :
+                        index % 4 == 1 ? new GridCoordinate(fixture.Board.Columns - 1, 0) :
+                        index % 4 == 2 ? new GridCoordinate(fixture.Board.Columns - 1, fixture.Board.Rows - 1) :
+                        new GridCoordinate(0, fixture.Board.Rows - 1);
+                    fixture.Player.RespawnAt(fixture.Board.GetWorldPosition(safeCell), CardinalDirection.Left);
+                    fixture.Board.ResetPlayerTracking(fixture.Board.GetWorldPosition(safeCell));
+
+                    Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact), Is.True, $"failure {index}");
+                    Assert.That(fixture.CompleteRespawn(), Is.True, $"respawn {index}");
+                    Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty, $"trail {index}");
+                    Assert.That(fixture.Board.IsLegalPlayerStep(NextCell(fixture.Board.PlayerCell, fixture.Player.CurrentDirection)), Is.True, $"direction {index}");
+                    Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True, $"movement {index}");
+                    Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position), $"sync {index}");
+                }
+
+                Assert.That(fixture.Game.Lives, Is.EqualTo(1));
+            }
+        }
+
+        private static GridCoordinate NextCell(GridCoordinate cell, CardinalDirection direction)
+        {
+            var offset = direction.ToVector2();
+            return new GridCoordinate(cell.X + (int)offset.x, cell.Y + (int)offset.y);
+        }
+
+        [Test]
         public void NormalDeath_DoesNotEraseCapturedTerritory()
         {
             using (var fixture = new Fixture())
@@ -205,8 +258,7 @@ namespace SpaceXonix.Tests.EditMode
                 Set(Game, "playerController", Player);
                 Set(Game, "boardManager", Board);
                 Set(Game, "startingLives", startingLives);
-                Player.ConnectInput(Input);
-                Player.ConnectBoard(Board);
+                Invoke(Game, "Awake");
                 root.SetActive(true);
                 Invoke(Game, "Start");
             }
