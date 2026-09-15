@@ -1,0 +1,12 @@
+{
+  "name": "SpaceXonix.EditModeTests",
+  "references": [
+    "SpaceXonix.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

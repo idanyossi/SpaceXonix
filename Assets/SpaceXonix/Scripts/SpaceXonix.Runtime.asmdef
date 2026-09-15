@@ -1,0 +1,7 @@
+{
+  "name": "SpaceXonix.Runtime",
+  "rootNamespace": "SpaceXonix",
+  "references": [
+    "Unity.InputSystem"
+  ]
+}
