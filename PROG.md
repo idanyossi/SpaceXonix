@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 5 complete; Phase 6 not started
-- Last verified commit before Phase 5: `172df88` (`feat: add lives and respawn system`)
+- Current phase: Phase 6 complete; Phase 7 not started
+- Last verified feature commit: `84391c1` (`feat: add volatile alien and territory destruction`)
 
 ## Phase Progress
 
@@ -16,8 +16,8 @@
 2. **COMPLETE** — Foundation, input, and cardinal player movement (`148beb9`)
 3. **COMPLETE** — Board, trail, deterministic territory capture, and occupancy (`668a177`)
 4. **COMPLETE** — Lives, authoritative failure pipeline, and last-safe-cell respawn (`172df88`)
-5. **COMPLETE** — Pooled Basic, Linear, and Unstable standard enemy framework
-6. **NOT STARTED** — Volatile Alien + Explosions + Territory Destruction
+5. **COMPLETE** — Pooled Basic, Linear, and Unstable standard enemy framework (`aa9fd91`)
+6. **COMPLETE** — Pooled Volatile Alien, protected detonation, enemy/player blast effects, and territory destruction (`84391c1`)
 7. **NOT STARTED** — Laser Hazards
 8. **NOT STARTED** — Scoring + Large-Capture Multipliers
 9. **NOT STARTED** — Power Meter + Power Shot
@@ -42,19 +42,25 @@
 - `GameManager.ReportPlayerFailure(...)` is the sole life-loss entry point; respawn uses the last safe cell.
 - Player and enemy movement remains cardinal/grid-compatible; standard enemies are pooled.
 - Enemy registration, occupancy, movement pause/resume, and pooled reset are centralized through `EnemyManager` and `EnemyController`.
+- Volatile collision/explosion orchestration stays in `EnemyManager`; territory removal stays authoritative in `BoardManager`/`BoardModel` and never directly changes an active trail.
 
 ## Current Test State
 
-- EditMode discovered: 47
-- Passed: 47
+- EditMode discovered: 55
+- Passed: 55
 - Failed: 0
-- Coverage includes input/movement, board/trail/capture, lives/failure, enemy reflection/axis/speed behavior, manager registration, occupancy, and pooled Basic/Linear/Unstable reuse/reset.
+- Coverage includes input/movement, board/trail/capture/destruction, lives/failure, all standard enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, blast victims, and authoritative player damage.
+
+## Repository Cleanup
+
+- Removed unused Unity template Readme/tutorial content, SampleScene, default template Input Actions, local `.vscode` settings, and generated `.slnx` metadata.
+- Removed unused AI Assistant/Inference/Navigation, Version Control, Multiplayer Center, and Visual Scripting packages.
+- Retained Unity MCP, URP and its referenced profiles/renderers, Input System, Test Framework, uGUI, Timeline, and Rider/Visual Studio integrations.
+- The Console is clean; the former Unity AI Assistant `NoSubscription` noise is resolved.
 
 ## Known Issues / Tooling Noise
 
-- Five Unity AI Assistant `NoSubscription` exceptions are accepted external/package baseline noise.
 - MCP may not reliably observe completion of the scaled 1.25-second respawn coroutine; authoritative state transitions and duplicate-failure rejection are verified.
-- Unity scene YAML may produce harmless trailing-whitespace warnings until a later scene save/cleanup.
 
 ## Important Files
 
@@ -71,6 +77,6 @@
 
 ## Next Recommended Action
 
-**Phase 6 — Volatile Alien + Explosions + Territory Destruction**
+**Phase 7 — Laser Hazards**
 
 Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.
