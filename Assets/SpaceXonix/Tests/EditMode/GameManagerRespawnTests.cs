@@ -5,6 +5,7 @@ using SpaceXonix.Board;
 using SpaceXonix.Core;
 using SpaceXonix.Input;
 using SpaceXonix.Player;
+using SpaceXonix.Enemies;
 using UnityEngine;
 
 namespace SpaceXonix.Tests.EditMode
@@ -75,6 +76,40 @@ namespace SpaceXonix.Tests.EditMode
 
                 Assert.That(fixture.Board.GetSafeRespawnCell(), Is.EqualTo(new GridCoordinate(0, 1)));
                 Assert.That(fixture.Board.Model.GetCell(fixture.Board.GetSafeRespawnCell()), Is.EqualTo(BoardCellState.Captured));
+            }
+        }
+
+        [Test]
+        public void EnemyMovingIntoActiveTrail_ReportsFailureBeforeVelocityReflection()
+        {
+            using (var fixture = new Fixture())
+            {
+                var definition = ScriptableObject.CreateInstance<EnemyDefinition>();
+                var enemyObject = new GameObject("TrailHitEnemy");
+                var enemy = enemyObject.AddComponent<BasicBouncer>();
+                try
+                {
+                    definition.moveSpeed = 1.2f;
+                    fixture.Board.Model.MoveTo(new GridCoordinate(1, 3));
+                    enemy.Activate(
+                        definition,
+                        fixture.Board,
+                        fixture.Game,
+                        fixture.Board.GetWorldPosition(new GridCoordinate(2, 3)),
+                        Vector2.left);
+
+                    enemy.AdvanceMovement(.2f);
+
+                    Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+                    Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+                    Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                    Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(enemyObject);
+                    UnityEngine.Object.DestroyImmediate(definition);
+                }
             }
         }
 

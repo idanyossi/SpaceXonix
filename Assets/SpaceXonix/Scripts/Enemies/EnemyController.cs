@@ -32,11 +32,17 @@ namespace SpaceXonix.Enemies
         }
         protected virtual void Update()
         {
+            AdvanceMovement(Time.deltaTime);
+        }
+
+        public void AdvanceMovement(float deltaTime)
+        {
             if (!IsActiveEnemy || movement == null || board == null) return;
             var previousCell = LogicalCell;
             var before = movement.Position;
-            movement.Advance(Time.deltaTime, IsUncapturedWorld);
-            if (movement.Position == before && IsTrailContact(before + movement.Velocity * Time.deltaTime) && game != null && game.CurrentState == GameplayState.Playing)
+            var intendedPosition = before + movement.Velocity * deltaTime;
+            movement.Advance(deltaTime, IsUncapturedWorld);
+            if (movement.Position == before && IsTrailContact(intendedPosition) && game != null && game.CurrentState == GameplayState.Playing)
                 game.ReportPlayerFailure(PlayerFailureReason.TrailHit);
             transform.position = new Vector3(movement.Position.x, movement.Position.y, transform.position.z);
             if (LogicalCell != previousCell) LogicalCellChanged?.Invoke(this);
