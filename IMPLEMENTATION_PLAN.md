@@ -230,6 +230,10 @@ The capture rule is then deterministic:
    component to Captured, clear trail state, recompute percentage, and publish a
    result containing captured-cell count and percentage.
 
+If no component is eligible, still commit the completed trail to Captured so it
+becomes safe territory and the player cannot remain exposed. This is not a
+region capture; only the newly safe playable trail cells contribute to progress.
+
 This is the confirmed generalization of the GDD's smaller-valid-region rule.
 Board bounds must begin as captured border cells, ensuring the first trail can
 form a closed topology.

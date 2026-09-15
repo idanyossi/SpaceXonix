@@ -1,5 +1,6 @@
 using SpaceXonix.Input;
 using SpaceXonix.Player;
+using SpaceXonix.Board;
 using UnityEngine;
 
 namespace SpaceXonix.Core
@@ -8,6 +9,7 @@ namespace SpaceXonix.Core
     {
         [SerializeField] private InputRouter inputRouter;
         [SerializeField] private PlayerController playerController;
+        [SerializeField] private BoardManager boardManager;
 
         public static GameManager Instance { get; private set; }
         public GameplayState CurrentState { get; private set; } = GameplayState.Playing;
@@ -23,14 +25,15 @@ namespace SpaceXonix.Core
 
             Instance = this;
 
-            if (inputRouter == null || playerController == null)
+            if (inputRouter == null || playerController == null || boardManager == null)
             {
-                Debug.LogError("GameManager requires an InputRouter and PlayerController reference.", this);
+                Debug.LogError("GameManager requires InputRouter, PlayerController, and BoardManager references.", this);
                 enabled = false;
                 return;
             }
 
             playerController.ConnectInput(inputRouter);
+            playerController.ConnectBoard(boardManager);
         }
 
         private void OnDestroy()

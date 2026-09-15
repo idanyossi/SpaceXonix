@@ -1,4 +1,5 @@
 using SpaceXonix.Input;
+using SpaceXonix.Board;
 using UnityEngine;
 
 namespace SpaceXonix.Player
@@ -10,6 +11,7 @@ namespace SpaceXonix.Player
 
         private PlayerMovementModel movementModel;
         private InputRouter connectedInputRouter;
+        private BoardManager boardManager;
         private bool movementEnabled = true;
 
         public CardinalDirection CurrentDirection => movementModel != null ? movementModel.Direction : initialDirection;
@@ -29,8 +31,16 @@ namespace SpaceXonix.Player
                 return;
             }
 
+            var previousPosition = movementModel.Position;
             var position = movementModel.Advance(Time.deltaTime);
-            transform.position = new Vector3(position.x, position.y, transform.position.z);
+            var candidate = new Vector3(position.x, position.y, transform.position.z);
+            if (boardManager != null)
+            {
+                candidate = boardManager.ClampToBoard(candidate);
+                boardManager.TrackPlayerWorldPosition(new Vector3(previousPosition.x, previousPosition.y, transform.position.z), candidate);
+                movementModel.SetPosition(new Vector2(candidate.x, candidate.y));
+            }
+            transform.position = candidate;
         }
 
         public void SetDirection(CardinalDirection direction)
@@ -68,6 +78,16 @@ namespace SpaceXonix.Player
             connectedInputRouter = inputRouter;
             connectedInputRouter.DirectionChanged += SetDirection;
             SetDirection(inputRouter.CurrentDirection);
+        }
+
+        public void ConnectBoard(BoardManager board)
+        {
+            boardManager = board;
+            var spawn = boardManager.GetDefaultSpawnPosition();
+            spawn.z = transform.position.z;
+            transform.position = spawn;
+            movementModel?.SetPosition(new Vector2(spawn.x, spawn.y));
+            boardManager.ResetPlayerTracking(spawn);
         }
 
         private void OnDestroy()

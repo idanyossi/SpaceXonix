@@ -25,5 +25,10 @@ namespace SpaceXonix.Player
             Position += Direction.ToVector2() * (MoveSpeed * deltaTime);
             return Position;
         }
+
+        public void SetPosition(Vector2 position)
+        {
+            Position = position;
+        }
     }
 }
