@@ -1,6 +1,8 @@
 using SpaceXonix.Input;
 using SpaceXonix.Player;
 using SpaceXonix.Board;
+using System;
+using System.Collections;
 using UnityEngine;
 
 namespace SpaceXonix.Core
@@ -10,9 +12,20 @@ namespace SpaceXonix.Core
         [SerializeField] private InputRouter inputRouter;
         [SerializeField] private PlayerController playerController;
         [SerializeField] private BoardManager boardManager;
+        [SerializeField, Min(1)] private int startingLives = 3;
+        [SerializeField, Min(0f)] private float respawnDelay = 1.25f;
 
         public static GameManager Instance { get; private set; }
-        public GameplayState CurrentState { get; private set; } = GameplayState.Playing;
+        private LifeStateModel lifeState;
+        private Coroutine respawnCoroutine;
+
+        public GameplayState CurrentState => lifeState != null ? lifeState.State : GameplayState.Playing;
+        public int Lives => lifeState != null ? lifeState.Lives : startingLives;
+        public event Action<int> LivesChanged;
+        public event Action<PlayerFailureReason> PlayerFailed;
+        public event Action RespawnStarted;
+        public event Action PlayerRespawned;
+        public event Action GameOver;
 
         private void Awake()
         {
@@ -34,10 +47,13 @@ namespace SpaceXonix.Core
 
             playerController.ConnectInput(inputRouter);
             playerController.ConnectBoard(boardManager);
+            boardManager.TrailStateChanged += OnTrailStateChanged;
         }
 
         private void OnDestroy()
         {
+            if (boardManager != null) boardManager.TrailStateChanged -= OnTrailStateChanged;
+            if (respawnCoroutine != null) StopCoroutine(respawnCoroutine);
             if (Instance == this)
             {
                 Instance = null;
@@ -46,12 +62,54 @@ namespace SpaceXonix.Core
 
         private void Start()
         {
-            SetState(GameplayState.Playing);
+            lifeState = new LifeStateModel(startingLives);
+            LivesChanged?.Invoke(Lives);
+            ApplyState(GameplayState.Playing);
         }
 
         public void SetState(GameplayState state)
         {
-            CurrentState = state;
+            lifeState?.SetState(state);
+            ApplyState(state);
+        }
+
+        public bool ReportPlayerFailure(PlayerFailureReason reason)
+        {
+            if (lifeState == null || !lifeState.TryFail()) return false;
+
+            boardManager.CancelActiveTrail();
+            LivesChanged?.Invoke(Lives);
+            PlayerFailed?.Invoke(reason);
+            if (CurrentState == GameplayState.GameOver)
+            {
+                ApplyState(GameplayState.GameOver);
+                GameOver?.Invoke();
+                return true;
+            }
+
+            ApplyState(GameplayState.Respawning);
+            RespawnStarted?.Invoke();
+            respawnCoroutine = StartCoroutine(RespawnAfterDelay());
+            return true;
+        }
+
+        private IEnumerator RespawnAfterDelay()
+        {
+            yield return new WaitForSeconds(respawnDelay);
+            respawnCoroutine = null;
+            if (lifeState == null || !lifeState.CompleteRespawn()) yield break;
+            playerController.RespawnAt(boardManager.GetSafeRespawnPosition());
+            ApplyState(GameplayState.Playing);
+            PlayerRespawned?.Invoke();
+        }
+
+        private void OnTrailStateChanged(BoardMoveResult result)
+        {
+            if (result == BoardMoveResult.TrailFailed) ReportPlayerFailure(PlayerFailureReason.TrailSelfIntersection);
+        }
+
+        private void ApplyState(GameplayState state)
+        {
             var isPlaying = state == GameplayState.Playing;
             inputRouter.SetGameplayInputEnabled(isPlaying);
             playerController.SetMovementEnabled(isPlaying);

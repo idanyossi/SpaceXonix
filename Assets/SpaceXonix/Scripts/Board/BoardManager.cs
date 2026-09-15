@@ -13,7 +13,9 @@ namespace SpaceXonix.Board
 
         private readonly List<GridCoordinate> enemySnapshot = new List<GridCoordinate>();
         private GridCoordinate playerCell;
+        private GridCoordinate lastSafeCell;
         private bool hasPlayerCell;
+        private bool hasLastSafeCell;
 
         public BoardModel Model { get; private set; }
         public int Columns => columns;
@@ -64,6 +66,19 @@ namespace SpaceXonix.Board
 
         public Vector3 GetDefaultSpawnPosition() => GetWorldPosition(new GridCoordinate(0, 1));
 
+        public void CancelActiveTrail()
+        {
+            if (!Model.IsExposed) return;
+            Model.CancelTrail();
+            boardRenderer?.Refresh(Model);
+        }
+
+        public Vector3 GetSafeRespawnPosition()
+        {
+            if (hasLastSafeCell && IsSafeRespawnCell(lastSafeCell)) return GetWorldPosition(lastSafeCell);
+            return GetDefaultSpawnPosition();
+        }
+
         public BoardMoveResult TrackPlayerWorldPosition(Vector3 previousWorldPosition, Vector3 currentWorldPosition)
         {
             var clamped = ClampToBoard(currentWorldPosition);
@@ -81,6 +96,11 @@ namespace SpaceXonix.Board
                 if (deltaX != 0) playerCell = new GridCoordinate(playerCell.X + Math.Sign(deltaX), playerCell.Y);
                 else playerCell = new GridCoordinate(playerCell.X, playerCell.Y + Math.Sign(deltaY));
                 result = Model.MoveTo(playerCell, enemySnapshot);
+                if (!Model.IsExposed && Model.GetCell(playerCell) == BoardCellState.Captured)
+                {
+                    lastSafeCell = playerCell;
+                    hasLastSafeCell = true;
+                }
             }
             return result;
         }
@@ -88,8 +108,15 @@ namespace SpaceXonix.Board
         public void ResetPlayerTracking(Vector3 playerWorldPosition)
         {
             playerCell = WorldToGrid(ClampToBoard(playerWorldPosition)); hasPlayerCell = true;
+            if (IsSafeRespawnCell(playerCell))
+            {
+                lastSafeCell = playerCell;
+                hasLastSafeCell = true;
+            }
         }
 
         public int RemoveCapturedWithinRadius(GridCoordinate center, float radius) => Model.RemoveCapturedWithinRadius(center, radius);
+
+        private bool IsSafeRespawnCell(GridCoordinate cell) => Model.IsInBounds(cell) && Model.GetCell(cell) == BoardCellState.Captured;
     }
 }

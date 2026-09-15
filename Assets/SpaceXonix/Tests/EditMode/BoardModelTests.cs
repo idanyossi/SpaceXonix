@@ -48,6 +48,23 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void CancelTrail_CleansAnOddlyShapedRouteWithoutChangingCapturedProgress()
+        {
+            var board = new BoardModel(8, 8);
+            board.MoveTo(new GridCoordinate(1, 3));
+            board.MoveTo(new GridCoordinate(2, 3));
+            board.MoveTo(new GridCoordinate(2, 4));
+            board.MoveTo(new GridCoordinate(3, 4));
+            board.MoveTo(new GridCoordinate(3, 5));
+            board.CancelTrail();
+            Assert.That(board.IsExposed, Is.False);
+            Assert.That(board.CapturedPlayableCells, Is.Zero);
+            Assert.That(board.CapturedPercentage, Is.Zero);
+            Assert.That(board.GetCell(new GridCoordinate(3, 5)), Is.EqualTo(BoardCellState.Uncaptured));
+            Assert.That(board.GetCell(new GridCoordinate(0, 3)), Is.EqualTo(BoardCellState.Captured));
+        }
+
+        [Test]
         public void Reconnection_CapturesSmallestEligibleRegionAndTrail()
         {
             var board = CompleteHorizontalCut(new BoardModel(8, 8));

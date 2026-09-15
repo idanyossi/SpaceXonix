@@ -90,6 +90,17 @@ namespace SpaceXonix.Player
             boardManager.ResetPlayerTracking(spawn);
         }
 
+        public void RespawnAt(Vector3 worldPosition)
+        {
+            if (boardManager == null) return;
+            var position = boardManager.ClampToBoard(worldPosition);
+            position.z = transform.position.z;
+            transform.position = position;
+            movementModel?.SetPosition(new Vector2(position.x, position.y));
+            movementModel?.SetDirection(CardinalDirection.Right);
+            boardManager.ResetPlayerTracking(position);
+        }
+
         private void OnDestroy()
         {
             if (connectedInputRouter != null)
