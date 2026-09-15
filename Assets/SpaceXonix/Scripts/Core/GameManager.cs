@@ -21,6 +21,7 @@ namespace SpaceXonix.Core
 
         public GameplayState CurrentState => lifeState != null ? lifeState.State : GameplayState.Playing;
         public int Lives => lifeState != null ? lifeState.Lives : startingLives;
+        public PlayerController PlayerController => playerController;
         public event Action<int> LivesChanged;
         public event Action<PlayerFailureReason> PlayerFailed;
         public event Action RespawnStarted;

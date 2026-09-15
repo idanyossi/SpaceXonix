@@ -225,6 +225,50 @@ Transform:
   m_Children: []
   m_Father: {fileID: 618364318}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &296692060
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 296692062}
+  - component: {fileID: 296692061}
+  m_Layer: 0
+  m_Name: PoolService
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &296692061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 296692060}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c652ea7f852d944961bcbc64077f9d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Pooling.PoolService
+--- !u!4 &296692062
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 296692060}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &448994547
 GameObject:
   m_ObjectHideFlags: 0
@@ -252,7 +296,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 23bda4d996c46ab43a0054a55768a963, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Input.InputRouter
 --- !u!4 &448994549
 Transform:
@@ -438,7 +482,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
   m_UsePipelineSettings: 1
   m_AdditionalLightsShadowResolutionTier: 2
@@ -564,11 +608,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c404b4becec77f04aa51006d2e4229f6, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Core.GameManager
   inputRouter: {fileID: 448994548}
   playerController: {fileID: 1987019904147353759}
   boardManager: {fileID: 618364317}
+  startingLives: 3
+  respawnDelay: 1.25
 --- !u!4 &1599803367
 Transform:
   m_ObjectHideFlags: 0
@@ -576,6 +622,70 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1599803365}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2088577234
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2088577236}
+  - component: {fileID: 2088577235}
+  m_Layer: 0
+  m_Name: EnemyManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2088577235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2088577234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fa48afaadc0e994d91de5750c847af8, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Enemies.EnemyManager
+  boardManager: {fileID: 618364317}
+  gameManager: {fileID: 1599803366}
+  playerController: {fileID: 1987019904147353759}
+  poolService: {fileID: 296692061}
+  initialSpawns:
+  - prefab: {fileID: 6461552448834079123, guid: 0cb255ada51aba94c9ba572e412bef09, type: 3}
+    definition: {fileID: 11400000, guid: c9142e5760c99b44893e01c6c842faa2, type: 2}
+    column: 15
+    row: 20
+    direction: {x: 1, y: 0}
+  - prefab: {fileID: 2198234542537271096, guid: 226502bdaf4b2b7439fac18918897532, type: 3}
+    definition: {fileID: 11400000, guid: aafc7ce75a8a6974bbce5d115e0cc72d, type: 2}
+    column: 30
+    row: 45
+    direction: {x: 0, y: 1}
+  - prefab: {fileID: 7951906493875139093, guid: bdb6b5feb9a93724282df9f1ab806e53, type: 3}
+    definition: {fileID: 11400000, guid: 6a5c03cfcac169f4e9aab476e9295209, type: 2}
+    column: 40
+    row: 70
+    direction: {x: 1, y: 1}
+--- !u!4 &2088577236
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2088577234}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -662,3 +772,5 @@ SceneRoots:
   - {fileID: 448994549}
   - {fileID: 1987019904147353758}
   - {fileID: 618364318}
+  - {fileID: 296692062}
+  - {fileID: 2088577236}
