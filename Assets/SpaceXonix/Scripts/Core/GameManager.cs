@@ -97,11 +97,18 @@ namespace SpaceXonix.Core
         private IEnumerator RespawnAfterDelay()
         {
             yield return new WaitForSeconds(respawnDelay);
+            CompleteRespawn();
+        }
+
+        private bool CompleteRespawn()
+        {
             respawnCoroutine = null;
-            if (lifeState == null || !lifeState.CompleteRespawn()) yield break;
+            if (lifeState == null || !lifeState.CompleteRespawn()) return false;
             playerController.RespawnAt(boardManager.GetSafeRespawnPosition());
+            inputRouter.ResetDirection(playerController.CurrentDirection);
             ApplyState(GameplayState.Playing);
             PlayerRespawned?.Invoke();
+            return true;
         }
 
         private void OnTrailStateChanged(BoardMoveResult result)

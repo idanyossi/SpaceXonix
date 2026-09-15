@@ -48,10 +48,18 @@
 
 ## Current Test State
 
-- EditMode discovered: 65
-- Passed: 65
+- EditMode discovered: 70
+- Passed: 70
 - Failed: 0
-- Coverage includes input/movement, board/trail/capture/destruction, lives/failure, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
+- Coverage includes input/movement, board/trail/capture/destruction, the complete death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
+
+## Respawn Reliability Fix
+
+- Root cause: `ProjectSettings.runInBackground` was disabled. When the Unity Game view lost focus, scaled game time and frame progression stopped, leaving the live `WaitForSeconds(1.25)` coroutine pending and the player apparently trapped in `Respawning` even though the GameManager remained enabled and `Time.timeScale` was 1.
+- Fix: background progression is enabled while the respawn continues to use the configured scaled 1.25-second delay. Respawn completion is isolated as a deterministic state transition for direct lifecycle testing.
+- Player reset now keeps the PlayerController and InputRouter direction state synchronized to the configured initial direction (`Right` in `Game.unity`) while restoring transform/logical position, board tracking, input, and movement.
+- Play Mode QA in the real `Game.unity` verified complete laser, enemy-contact, and Volatile-explosion death cycles. Each lost exactly one life, cleared an active trail where applicable, returned to the recorded safe cell, restored control, returned to `Playing`, and allowed a later death to complete normally.
+- Unity Console: 0 SpaceXonix errors after verification.
 
 ## Repository Cleanup
 
@@ -62,7 +70,7 @@
 
 ## Known Issues / Tooling Noise
 
-- MCP may not reliably observe completion of the scaled 1.25-second respawn coroutine; authoritative state transitions and duplicate-failure rejection are verified.
+- Unity MCP's editor-state resource can briefly continue reporting `is_changing` after Play Mode has begun. Runtime event instrumentation and advancing frame/time values conclusively verified respawn completion despite that stale status field.
 
 ## Important Files
 

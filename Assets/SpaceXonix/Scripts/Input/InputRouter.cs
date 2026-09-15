@@ -42,6 +42,12 @@ namespace SpaceXonix.Input
             GameplayInputEnabled = enabled;
         }
 
+        public void ResetDirection(CardinalDirection direction)
+        {
+            CurrentDirection = direction;
+            DirectionChanged?.Invoke(direction);
+        }
+
         public bool TrySelectDirection(CardinalDirection direction)
         {
             if (!GameplayInputEnabled)

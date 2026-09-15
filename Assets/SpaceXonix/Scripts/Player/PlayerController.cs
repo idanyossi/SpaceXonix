@@ -17,6 +17,7 @@ namespace SpaceXonix.Player
         public CardinalDirection CurrentDirection => movementModel != null ? movementModel.Direction : initialDirection;
         public CardinalDirection FacingDirection => CurrentDirection;
         public float MoveSpeed => moveSpeed;
+        public bool MovementEnabled => movementEnabled;
         public Vector2 LogicalPosition => movementModel != null ? movementModel.Position : new Vector2(transform.position.x, transform.position.y);
 
         private void Awake()
@@ -97,7 +98,7 @@ namespace SpaceXonix.Player
             position.z = transform.position.z;
             transform.position = position;
             movementModel?.SetPosition(new Vector2(position.x, position.y));
-            movementModel?.SetDirection(CardinalDirection.Right);
+            movementModel?.SetDirection(initialDirection);
             boardManager.ResetPlayerTracking(position);
         }
 
