@@ -15,6 +15,7 @@ namespace SpaceXonix.Player
         private bool movementEnabled = true;
 
         public CardinalDirection CurrentDirection => movementModel != null ? movementModel.Direction : initialDirection;
+        public CardinalDirection InitialDirection => initialDirection;
         public CardinalDirection FacingDirection => CurrentDirection;
         public float MoveSpeed => moveSpeed;
         public bool MovementEnabled => movementEnabled;
@@ -27,13 +28,19 @@ namespace SpaceXonix.Player
 
         private void Update()
         {
+            AdvanceMovement(Time.deltaTime);
+        }
+
+        public bool AdvanceMovement(float deltaTime)
+        {
             if (!movementEnabled)
             {
-                return;
+                return false;
             }
 
+            var transformBefore = transform.position;
             var previousPosition = movementModel.Position;
-            var position = movementModel.Advance(Time.deltaTime);
+            var position = movementModel.Advance(deltaTime);
             var candidate = new Vector3(position.x, position.y, transform.position.z);
             if (boardManager != null)
             {
@@ -42,6 +49,7 @@ namespace SpaceXonix.Player
                 movementModel.SetPosition(new Vector2(candidate.x, candidate.y));
             }
             transform.position = candidate;
+            return transform.position != transformBefore;
         }
 
         public void SetDirection(CardinalDirection direction)
@@ -91,14 +99,14 @@ namespace SpaceXonix.Player
             boardManager.ResetPlayerTracking(spawn);
         }
 
-        public void RespawnAt(Vector3 worldPosition)
+        public void RespawnAt(Vector3 worldPosition, CardinalDirection direction)
         {
             if (boardManager == null) return;
             var position = boardManager.ClampToBoard(worldPosition);
             position.z = transform.position.z;
             transform.position = position;
             movementModel?.SetPosition(new Vector2(position.x, position.y));
-            movementModel?.SetDirection(initialDirection);
+            movementModel?.SetDirection(direction);
             boardManager.ResetPlayerTracking(position);
         }
 

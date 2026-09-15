@@ -104,11 +104,38 @@ namespace SpaceXonix.Core
         {
             respawnCoroutine = null;
             if (lifeState == null || !lifeState.CompleteRespawn()) return false;
-            playerController.RespawnAt(boardManager.GetSafeRespawnPosition());
+            var respawnCell = boardManager.GetSafeRespawnCell();
+            var respawnDirection = ResolveRespawnDirection(respawnCell, playerController.InitialDirection);
+            playerController.RespawnAt(boardManager.GetWorldPosition(respawnCell), respawnDirection);
             inputRouter.ResetDirection(playerController.CurrentDirection);
             ApplyState(GameplayState.Playing);
             PlayerRespawned?.Invoke();
             return true;
+        }
+
+        private CardinalDirection ResolveRespawnDirection(GridCoordinate cell, CardinalDirection preferred)
+        {
+            if (CanMoveFrom(cell, preferred)) return preferred;
+
+            var directions = new[]
+            {
+                CardinalDirection.Up,
+                CardinalDirection.Down,
+                CardinalDirection.Left,
+                CardinalDirection.Right
+            };
+            foreach (var direction in directions)
+            {
+                if (CanMoveFrom(cell, direction)) return direction;
+            }
+
+            return preferred;
+        }
+
+        private bool CanMoveFrom(GridCoordinate cell, CardinalDirection direction)
+        {
+            var offset = direction.ToVector2();
+            return boardManager.IsInBounds(new GridCoordinate(cell.X + (int)offset.x, cell.Y + (int)offset.y));
         }
 
         private void OnTrailStateChanged(BoardMoveResult result)

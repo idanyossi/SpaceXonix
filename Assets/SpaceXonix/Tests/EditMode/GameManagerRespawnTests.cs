@@ -36,6 +36,45 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Input.CurrentDirection, Is.EqualTo(CardinalDirection.Right));
                 Assert.That(fixture.Input.GameplayInputEnabled, Is.True);
                 Assert.That(fixture.Player.MovementEnabled, Is.True);
+
+                var respawnPosition = fixture.Player.transform.position;
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+                Assert.That(fixture.Player.transform.position, Is.Not.EqualTo(respawnPosition));
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(fixture.Board.WorldToGrid(fixture.Player.transform.position)));
+            }
+        }
+
+        [Test]
+        public void RespawnOnRightEdge_SelectsInBoundsDirectionAndMovesOnNextStep()
+        {
+            using (var fixture = new Fixture())
+            {
+                var safeCell = new GridCoordinate(fixture.Board.Columns - 1, 5);
+                fixture.Board.ResetPlayerTracking(fixture.Board.GetWorldPosition(safeCell));
+                fixture.Game.ReportPlayerFailure(PlayerFailureReason.Laser);
+                fixture.CompleteRespawn();
+                var respawnPosition = fixture.Player.transform.position;
+
+                Assert.That(fixture.Board.WorldToGrid(respawnPosition), Is.EqualTo(safeCell));
+                Assert.That(fixture.Player.CurrentDirection, Is.Not.EqualTo(CardinalDirection.Right));
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+                Assert.That(fixture.Player.transform.position, Is.Not.EqualTo(respawnPosition));
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(fixture.Board.WorldToGrid(fixture.Player.transform.position)));
+            }
+        }
+
+        [Test]
+        public void InvalidLastSafeCell_UsesDeterministicSafeFallback()
+        {
+            using (var fixture = new Fixture())
+            {
+                Fixture.Set(fixture.Board, "lastSafeCell", new GridCoordinate(2, 2));
+                Fixture.Set(fixture.Board, "hasLastSafeCell", true);
+
+                Assert.That(fixture.Board.GetSafeRespawnCell(), Is.EqualTo(new GridCoordinate(0, 1)));
+                Assert.That(fixture.Board.Model.GetCell(fixture.Board.GetSafeRespawnCell()), Is.EqualTo(BoardCellState.Captured));
             }
         }
 
@@ -125,6 +164,7 @@ namespace SpaceXonix.Tests.EditMode
                 Board.Initialize();
                 Input = root.AddComponent<InputRouter>();
                 Player = playerObject.AddComponent<PlayerController>();
+                Invoke(Player, "Awake");
                 Game = root.AddComponent<GameManager>();
                 Set(Game, "inputRouter", Input);
                 Set(Game, "playerController", Player);
@@ -147,7 +187,7 @@ namespace SpaceXonix.Tests.EditMode
                 UnityEngine.Object.DestroyImmediate(playerObject);
             }
 
-            private static void Set(object target, string name, object value)
+            public static void Set(object target, string name, object value)
             {
                 target.GetType().GetField(name, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(target, value);
             }

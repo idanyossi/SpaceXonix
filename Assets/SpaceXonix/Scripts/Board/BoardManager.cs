@@ -22,6 +22,7 @@ namespace SpaceXonix.Board
         public int Rows => rows;
         public float CellWorldSize => cellWorldSize;
         public bool IsPlayerExposed => Model != null && Model.IsExposed;
+        public GridCoordinate PlayerCell => playerCell;
         public float CapturedPercentage => Model != null ? Model.CapturedPercentage : 0f;
         public event Action<BoardMoveResult> TrailStateChanged;
         public event Action<BoardCaptureResult> CaptureCompleted;
@@ -74,11 +75,28 @@ namespace SpaceXonix.Board
             boardRenderer?.Refresh(Model);
         }
 
-        public Vector3 GetSafeRespawnPosition()
+        public GridCoordinate GetSafeRespawnCell()
         {
-            if (hasLastSafeCell && IsSafeRespawnCell(lastSafeCell)) return GetWorldPosition(lastSafeCell);
-            return GetDefaultSpawnPosition();
+            if (hasLastSafeCell && IsSafeRespawnCell(lastSafeCell)) return lastSafeCell;
+
+            var fallback = new GridCoordinate(0, 1);
+            if (IsSafeRespawnCell(fallback)) return fallback;
+
+            for (var y = 0; y < rows; y++)
+            {
+                for (var x = 0; x < columns; x++)
+                {
+                    var cell = new GridCoordinate(x, y);
+                    if (IsSafeRespawnCell(cell)) return cell;
+                }
+            }
+
+            return fallback;
         }
+
+        public Vector3 GetSafeRespawnPosition() => GetWorldPosition(GetSafeRespawnCell());
+
+        public bool IsInBounds(GridCoordinate cell) => Model != null && Model.IsInBounds(cell);
 
         public BoardMoveResult TrackPlayerWorldPosition(Vector3 previousWorldPosition, Vector3 currentWorldPosition)
         {

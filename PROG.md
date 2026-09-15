@@ -48,17 +48,18 @@
 
 ## Current Test State
 
-- EditMode discovered: 70
-- Passed: 70
+- EditMode discovered: 72
+- Passed: 72
 - Failed: 0
 - Coverage includes input/movement, board/trail/capture/destruction, the complete death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
 ## Respawn Reliability Fix
 
-- Root cause: `ProjectSettings.runInBackground` was disabled. When the Unity Game view lost focus, scaled game time and frame progression stopped, leaving the live `WaitForSeconds(1.25)` coroutine pending and the player apparently trapped in `Respawning` even though the GameManager remained enabled and `Time.timeScale` was 1.
-- Fix: background progression is enabled while the respawn continues to use the configured scaled 1.25-second delay. Respawn completion is isolated as a deterministic state transition for direct lifecycle testing.
-- Player reset now keeps the PlayerController and InputRouter direction state synchronized to the configured initial direction (`Right` in `Game.unity`) while restoring transform/logical position, board tracking, input, and movement.
-- Play Mode QA in the real `Game.unity` verified complete laser, enemy-contact, and Volatile-explosion death cycles. Each lost exactly one life, cleared an active trail where applicable, returned to the recorded safe cell, restored control, returned to `Playing`, and allowed a later death to complete normally.
+- True root cause: respawn always restored the configured `Right` direction without checking the destination. At a latest-safe cell on the right edge, every movement update advanced outside the board and was clamped back to the same position. State and input reported enabled, but the Transform could not visibly move. The earlier `runInBackground` diagnosis explained MCP timing while unfocused but was not the gameplay movement defect; that setting has been restored to its original value.
+- Fix: GameManager resolves the safe respawn cell once and selects the configured direction when it stays in bounds, otherwise a deterministic in-bounds cardinal direction. PlayerController has one respawn reset path that synchronizes Transform, logical position, direction, and BoardManager tracking before controls are restored.
+- Safe-cell fallback now validates the stored cell, uses the known safe `(0,1)` spawn when valid, and otherwise deterministically finds the first captured board cell.
+- Regression coverage now advances the real PlayerController after respawn, verifies world/logical/grid synchronization, reproduces the right-edge blocked-direction case, and verifies invalid-last-safe-cell fallback.
+- Play Mode QA in the real `Game.unity` verified a laser death at right-edge safe cell `(53,48)` respawned with `Up` and visibly moved to `(53,95)`. The player then completed another 2.97% capture, suffered an enemy-contact death, respawned at `(42,0)`, and visibly moved to `(53,0)`. Trail cleanup, territory persistence, repeated death, input, and movement restoration all remained valid.
 - Unity Console: 0 SpaceXonix errors after verification.
 
 ## Repository Cleanup
