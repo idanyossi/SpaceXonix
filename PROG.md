@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 6 complete; Phase 7 not started
-- Last verified feature commit: `84391c1` (`feat: add volatile alien and territory destruction`)
+- Current phase: Phase 7 complete; Phase 8 not started
+- Latest completed feature: laser hazards
 
 ## Phase Progress
 
@@ -18,7 +18,7 @@
 4. **COMPLETE** — Lives, authoritative failure pipeline, and last-safe-cell respawn (`172df88`)
 5. **COMPLETE** — Pooled Basic, Linear, and Unstable standard enemy framework (`aa9fd91`)
 6. **COMPLETE** — Pooled Volatile Alien, protected detonation, enemy/player blast effects, and territory destruction (`84391c1`)
-7. **NOT STARTED** — Laser Hazards
+7. **COMPLETE** — Pooled horizontal/vertical Laser Hazards with warning, firing, and cooldown states
 8. **NOT STARTED** — Scoring + Large-Capture Multipliers
 9. **NOT STARTED** — Power Meter + Power Shot
 10. **NOT STARTED** — Shield + Freeze + Arena Tilt
@@ -43,13 +43,15 @@
 - Player and enemy movement remains cardinal/grid-compatible; standard enemies are pooled.
 - Enemy registration, occupancy, movement pause/resume, and pooled reset are centralized through `EnemyManager` and `EnemyController`.
 - Volatile collision/explosion orchestration stays in `EnemyManager`; territory removal stays authoritative in `BoardManager`/`BoardModel` and never directly changes an active trail.
+- `LaserManager` advances independent axis-aligned emitters; `LaserEmitter` routes firing contact through the authoritative `GameManager` failure pipeline.
+- Laser warning and beam presentations are pooled, and lasers intentionally do not affect enemies, Volatile behavior, territory, or unfinished trails.
 
 ## Current Test State
 
-- EditMode discovered: 55
-- Passed: 55
+- EditMode discovered: 65
+- Passed: 65
 - Failed: 0
-- Coverage includes input/movement, board/trail/capture/destruction, lives/failure, all standard enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, blast victims, and authoritative player damage.
+- Coverage includes input/movement, board/trail/capture/destruction, lives/failure, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
 ## Repository Cleanup
 
@@ -71,12 +73,13 @@
 - `Assets/SpaceXonix/Scripts/Board` — board, trail, and capture authority
 - `Assets/SpaceXonix/Scripts/Core` — gameplay state, lives, and failure routing
 - `Assets/SpaceXonix/Scripts/Enemies` — standard enemy framework and configurations
+- `Assets/SpaceXonix/Scripts/Hazards` — laser cycle, emitter, manager, and presentation behavior
 - `Assets/SpaceXonix/Scripts/Pooling` — reusable runtime object service
 - `Assets/SpaceXonix/Tests/EditMode` — deterministic regression suite
 - `Assets/SpaceXonix/Scenes/Game.unity` — representative gameplay scene
 
 ## Next Recommended Action
 
-**Phase 7 — Laser Hazards**
+**Phase 8 — Scoring + Large-Capture Multipliers**
 
 Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.
