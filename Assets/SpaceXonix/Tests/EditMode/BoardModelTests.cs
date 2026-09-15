@@ -142,6 +142,20 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void TerritoryRemoval_UpdatesPercentagePreservesPerimeterAndAllowsLaterCapture()
+        {
+            var board = CompleteHorizontalCut(new BoardModel(8, 8));
+            var before = board.CapturedPercentage;
+            var removed = board.RemoveCapturedWithinRadius(new GridCoordinate(2, 1), 1f);
+            Assert.That(removed, Is.GreaterThan(0));
+            Assert.That(board.CapturedPercentage, Is.LessThan(before));
+            Assert.That(board.GetCell(new GridCoordinate(0, 1)), Is.EqualTo(BoardCellState.Captured));
+            for (var y = 4; y < 7; y++) board.MoveTo(new GridCoordinate(3, y));
+            Assert.That(board.MoveTo(new GridCoordinate(3, 7)), Is.EqualTo(BoardMoveResult.Reconnected));
+            Assert.That(board.IsExposed, Is.False);
+        }
+
+        [Test]
         public void PercentageChanged_IsNotInflatedByStructuralBoundary()
         {
             var board = new BoardModel(8, 8);

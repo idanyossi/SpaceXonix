@@ -26,6 +26,7 @@ namespace SpaceXonix.Board
         public event Action<BoardMoveResult> TrailStateChanged;
         public event Action<BoardCaptureResult> CaptureCompleted;
         public event Action<float> CapturedPercentageChanged;
+        public event Action<int> TerritoryDestroyed;
 
         private void Awake() => Initialize();
 
@@ -115,7 +116,14 @@ namespace SpaceXonix.Board
             }
         }
 
-        public int RemoveCapturedWithinRadius(GridCoordinate center, float radius) => Model.RemoveCapturedWithinRadius(center, radius);
+        public int RemoveCapturedWithinRadius(GridCoordinate center, float radius)
+        {
+            var removed = Model.RemoveCapturedWithinRadius(center, radius);
+            if (removed <= 0) return 0;
+            boardRenderer?.Refresh(Model);
+            TerritoryDestroyed?.Invoke(removed);
+            return removed;
+        }
 
         private bool IsSafeRespawnCell(GridCoordinate cell) => Model.IsInBounds(cell) && Model.GetCell(cell) == BoardCellState.Captured;
     }

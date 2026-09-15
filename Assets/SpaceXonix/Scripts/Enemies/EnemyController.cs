@@ -13,6 +13,7 @@ namespace SpaceXonix.Enemies
         public GridCoordinate LogicalCell => board.WorldToGrid(transform.position);
         public Vector2 Velocity => movement != null ? movement.Velocity : Vector2.zero;
         public bool MovementEnabled => movement != null && movement.MovementEnabled;
+        public EnemyDefinition Definition => definition;
         public bool IsActiveEnemy { get; private set; }
         public event Action<EnemyController> LogicalCellChanged;
         public virtual void Activate(EnemyDefinition data, BoardManager boardManager, GameManager gameManager, Vector3 position, Vector2 direction)

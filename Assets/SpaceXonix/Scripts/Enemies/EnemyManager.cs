@@ -4,6 +4,7 @@ using SpaceXonix.Core;
 using SpaceXonix.Player;
 using SpaceXonix.Pooling;
 using UnityEngine;
+using System;
 namespace SpaceXonix.Enemies
 {
     public sealed class EnemyManager : MonoBehaviour
@@ -17,6 +18,8 @@ namespace SpaceXonix.Enemies
         private readonly List<GridCoordinate> occupancy = new List<GridCoordinate>();
         private readonly Dictionary<EnemyController, GameObject> prefabByInstance = new Dictionary<EnemyController, GameObject>();
         public IReadOnlyList<EnemyController> ActiveEnemies => activeEnemies;
+        public event Action<VolatileEnemy> DetonationStarted;
+        public event Action<Vector3, int, int> ExplosionOccurred;
         private void Awake()
         {
         }
@@ -26,7 +29,50 @@ namespace SpaceXonix.Enemies
         }
         private void Update()
         {
+            SimulateVolatileInteractions(Time.deltaTime);
             RefreshOccupancy();
+        }
+        public void SimulateVolatileInteractions(float deltaTime)
+        {
+            for (var i = activeEnemies.Count - 1; i >= 0; i--)
+                if (activeEnemies[i] is VolatileEnemy volatileEnemy) volatileEnemy.AdvanceSpawnProtection(deltaTime);
+
+            for (var i = 0; i < activeEnemies.Count; i++)
+            {
+                if (!(activeEnemies[i] is VolatileEnemy volatileEnemy) || !volatileEnemy.IsArmed) continue;
+                for (var j = 0; j < activeEnemies.Count; j++)
+                {
+                    if (!volatileEnemy.CanDetonateWith(activeEnemies[j])) continue;
+                    ResolveVolatileExplosion(volatileEnemy);
+                    return;
+                }
+            }
+        }
+        public bool ResolveVolatileExplosion(VolatileEnemy source)
+        {
+            if (source == null || !activeEnemies.Contains(source) || !source.BeginDetonation()) return false;
+            DetonationStarted?.Invoke(source);
+            var position = source.transform.position;
+            var definition = source.Definition;
+            var destroyedEnemies = 0;
+            for (var i = activeEnemies.Count - 1; i >= 0; i--)
+            {
+                var enemy = activeEnemies[i];
+                if (enemy == source || enemy is VolatileEnemy) continue;
+                if (Vector2.Distance(position, enemy.transform.position) > definition.volatileBlastRadius) continue;
+                Despawn(enemy);
+                destroyedEnemies++;
+            }
+            if (gameManager != null && playerController != null && gameManager.CurrentState == GameplayState.Playing &&
+                Vector2.Distance(position, playerController.transform.position) <= definition.volatileBlastRadius)
+                gameManager.ReportPlayerFailure(PlayerFailureReason.VolatileExplosion);
+            var radius = definition.volatileBlastRadius;
+            Debug.DrawLine(position - Vector3.right * radius, position + Vector3.right * radius, Color.yellow, 1f);
+            Debug.DrawLine(position - Vector3.up * radius, position + Vector3.up * radius, Color.yellow, 1f);
+            var destroyedTerritory = boardManager.RemoveCapturedWithinRadius(source.LogicalCell, definition.volatileTerritoryRadiusCells);
+            Despawn(source);
+            ExplosionOccurred?.Invoke(position, destroyedEnemies, destroyedTerritory);
+            return true;
         }
         public void Register(EnemyController enemy)
         {

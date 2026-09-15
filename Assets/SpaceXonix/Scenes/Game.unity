@@ -679,6 +679,11 @@ MonoBehaviour:
     column: 40
     row: 70
     direction: {x: 1, y: 1}
+  - prefab: {fileID: 46801405078460151, guid: c1e2afd0e3bcb6441ad3ca4ddf186b81, type: 3}
+    definition: {fileID: 11400000, guid: cae550ba16f44e147be39f0589e4b282, type: 2}
+    column: 22
+    row: 62
+    direction: {x: -1, y: 1}
 --- !u!4 &2088577236
 Transform:
   m_ObjectHideFlags: 0
