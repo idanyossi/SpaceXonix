@@ -2,6 +2,8 @@
 
 This repository contains SpaceXonix, a Unity 6.3 LTS game.
 
+Repository link : https://github.com/idanyossi/SpaceXonix
+
 Before making changes:
 1. Read the Game Design Document completely.
 2. Inspect the existing Unity project and existing implementation.
