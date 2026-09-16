@@ -117,6 +117,42 @@ namespace SpaceXonix.Board
             return false;
         }
 
+        public bool HasValidPlayerBoardState()
+        {
+            if (Model == null || !hasPlayerCell || !Model.IsInBounds(playerCell)) return false;
+            var trail = Model.ActiveTrail;
+            var state = Model.GetCell(playerCell);
+            if (!Model.IsExposed)
+                return trail.Count == 0 && state == BoardCellState.Captured;
+
+            if (trail.Count == 0 || state != BoardCellState.Trail || Model.ToCoordinate(trail[trail.Count - 1]) != playerCell)
+                return false;
+
+            var first = Model.ToCoordinate(trail[0]);
+            var connectsToSafe = false;
+            for (var i = 0; i < CardinalOffsets.Length; i++)
+            {
+                var offset = CardinalOffsets[i];
+                var neighbour = new GridCoordinate(first.X + offset.X, first.Y + offset.Y);
+                if (IsSafeRespawnCell(neighbour))
+                {
+                    connectsToSafe = true;
+                    break;
+                }
+            }
+            if (!connectsToSafe) return false;
+
+            for (var i = 0; i < trail.Count; i++)
+            {
+                var cell = Model.ToCoordinate(trail[i]);
+                if (Model.GetCell(cell) != BoardCellState.Trail) return false;
+                if (i == 0) continue;
+                var previous = Model.ToCoordinate(trail[i - 1]);
+                if (Mathf.Abs(cell.X - previous.X) + Mathf.Abs(cell.Y - previous.Y) != 1) return false;
+            }
+            return true;
+        }
+
         public Vector3 GetSafeRespawnPosition() => GetWorldPosition(GetSafeRespawnCell());
 
         public bool IsInBounds(GridCoordinate cell) => Model != null && Model.IsInBounds(cell);

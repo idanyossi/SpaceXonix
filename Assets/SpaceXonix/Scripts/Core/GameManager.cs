@@ -86,6 +86,7 @@ namespace SpaceXonix.Core
 
         private void LateUpdate()
         {
+            EnsureValidPlayingPlayerState();
             if (!failureInProgress || failureGateReleaseFrame < 0 || Time.frameCount <= failureGateReleaseFrame) return;
             failureInProgress = false;
             failureGateReleaseFrame = -1;
@@ -161,10 +162,7 @@ namespace SpaceXonix.Core
                 respawnCoroutine = null;
             }
             boardManager.CancelActiveTrail();
-            var respawnCell = boardManager.GetSafeRespawnCell();
-            if (!boardManager.IsValidRespawnCell(respawnCell)) return false;
-            var respawnDirection = ResolveRespawnDirection(respawnCell, playerController.InitialDirection);
-            if (!playerController.RestoreSafeManualState(respawnCell, respawnDirection)) return false;
+            if (!RestorePlayerToCurrentSafeState()) return false;
             if (!lifeState.CompleteRespawn())
             {
                 ApplyState(GameplayState.Respawning);
@@ -175,6 +173,37 @@ namespace SpaceXonix.Core
             failureGateReleaseFrame = Time.frameCount;
             PlayerRespawned?.Invoke();
             return true;
+        }
+
+        private bool RestorePlayerToCurrentSafeState()
+        {
+            boardManager.CancelActiveTrail();
+            var respawnCell = boardManager.GetSafeRespawnCell();
+            if (!boardManager.IsValidRespawnCell(respawnCell)) return false;
+            var respawnDirection = ResolveRespawnDirection(respawnCell, playerController.InitialDirection);
+            if (!playerController.RestoreSafeManualState(respawnCell, respawnDirection)) return false;
+            return boardManager.Model.ActiveTrail.Count == 0 && !boardManager.IsPlayerExposed &&
+                boardManager.Model.GetCell(boardManager.PlayerCell) == BoardCellState.Captured &&
+                playerController.ControlState == PlayerControlState.SafeIdle && playerController.HasValidPlayingState();
+        }
+
+        private void EnsureValidPlayingPlayerState()
+        {
+            if (lifeState == null || lifeState.State != GameplayState.Playing || playerController.HasValidPlayingState()) return;
+
+            failureInProgress = true;
+            playerLifecycleGeneration++;
+            invulnerabilityRemaining = 0f;
+            lifeState.SetState(GameplayState.Respawning);
+            ApplyState(GameplayState.Respawning);
+            boardManager.CancelActiveTrail();
+            playerController.PrepareForRespawn();
+            if (!RestorePlayerToCurrentSafeState() || !lifeState.CompleteRespawn()) return;
+
+            invulnerabilityRemaining = postRespawnInvulnerabilityDuration;
+            ApplyState(GameplayState.Playing);
+            failureGateReleaseFrame = Time.frameCount;
+            PlayerRespawned?.Invoke();
         }
 
         private CardinalDirection ResolveRespawnDirection(GridCoordinate cell, CardinalDirection preferred)

@@ -533,6 +533,61 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void PlayingOnUncapturedCellWithoutTrail_IsRepairedToSynchronizedSafeIdle()
+        {
+            using (var fixture = new Fixture())
+            {
+                var invalidCell = new GridCoordinate(2, 2);
+                var invalidPosition = fixture.Board.GetWorldPosition(invalidCell);
+                fixture.Board.ResetPlayerTracking(invalidPosition);
+                fixture.Player.transform.position = invalidPosition;
+                var movement = (PlayerMovementModel)Fixture.Get(fixture.Player, "movementModel");
+                movement.SetPosition(invalidPosition);
+                var livesBefore = fixture.Game.Lives;
+                var generationBefore = fixture.Game.PlayerLifecycleGeneration;
+
+                Assert.That(fixture.Board.Model.GetCell(invalidCell), Is.EqualTo(BoardCellState.Uncaptured));
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+
+                fixture.EnsureValidPlayingPlayerState();
+
+                Assert.That(fixture.Game.Lives, Is.EqualTo(livesBefore));
+                Assert.That(fixture.Game.PlayerLifecycleGeneration, Is.EqualTo(generationBefore + 1));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Board.Model.GetCell(fixture.Board.PlayerCell), Is.EqualTo(BoardCellState.Captured));
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.SafeIdle));
+                Assert.That(fixture.Player.HasValidPlayingState(), Is.True);
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(fixture.Board.WorldToGrid(fixture.Player.transform.position)));
+            }
+        }
+
+        [Test]
+        public void RespawnCompletion_RejectsInvalidatedCellAndRestoresFullSafeInvariant()
+        {
+            using (var fixture = new Fixture())
+            {
+                for (var x = 1; x < fixture.Board.Columns - 1; x++)
+                    fixture.Board.Model.MoveTo(new GridCoordinate(x, 4));
+                fixture.Board.Model.MoveTo(new GridCoordinate(fixture.Board.Columns - 1, 4));
+                var staleCell = new GridCoordinate(2, 2);
+                fixture.Board.ResetPlayerTracking(fixture.Board.GetWorldPosition(staleCell));
+                fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact);
+                fixture.Board.RemoveCapturedWithinRadius(staleCell, 0f);
+
+                Assert.That(fixture.CompleteRespawn(), Is.True);
+                Assert.That(fixture.Board.PlayerCell, Is.Not.EqualTo(staleCell));
+                Assert.That(fixture.Player.HasValidPlayingState(), Is.True);
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.SafeIdle));
+            }
+        }
+
+        [Test]
         public void EnemyMovingIntoActiveTrail_ReportsFailureBeforeVelocityReflection()
         {
             using (var fixture = new Fixture())
@@ -1115,6 +1170,11 @@ namespace SpaceXonix.Tests.EditMode
                 Set(Game, "failureGateReleaseFrame", Time.frameCount - 1);
                 Invoke(Game, "LateUpdate");
                 return !Game.IsFailureInProgress;
+            }
+
+            public void EnsureValidPlayingPlayerState()
+            {
+                Invoke(Game, "EnsureValidPlayingPlayerState");
             }
 
             public void Dispose()

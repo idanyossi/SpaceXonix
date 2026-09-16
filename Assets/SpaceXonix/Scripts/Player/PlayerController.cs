@@ -179,6 +179,16 @@ namespace SpaceXonix.Player
             return true;
         }
 
+        public bool HasValidPlayingState()
+        {
+            if (boardManager == null || movementModel == null || !boardManager.HasValidPlayerBoardState()) return false;
+            var worldCell = boardManager.WorldToGrid(boardManager.ClampToBoard(transform.position));
+            if (worldCell != boardManager.PlayerCell || movementModel.Position != (Vector2)transform.position) return false;
+            return boardManager.IsPlayerExposed
+                ? controlState == PlayerControlState.ExposedMoving
+                : controlState == PlayerControlState.SafeIdle || controlState == PlayerControlState.SafeMoving;
+        }
+
         public void PrepareForRespawn()
         {
             RequireFreshDirectionInput();

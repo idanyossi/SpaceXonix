@@ -49,8 +49,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 125
-- Passed: 125
+- EditMode discovered: 127
+- Passed: 127
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -208,6 +208,14 @@
 - Volatile explosion ordering is terminal with respect to player damage: enemy removal, territory effects, source despawn, occupancy refresh, and explosion notification complete first. The final operation is the token-validated player failure report, so accepted blast damage has no remaining callback work capable of changing player state or its future respawn destination.
 - The five simultaneous combinations—enemy + enemy, enemy + laser, enemy + Volatile, laser + Volatile, and TrailHit + enemy—now run through the complete shared lifecycle regression: one life, one respawn, valid safe restoration, and successful movement afterward. Completion-frame callbacks remain rejected and invulnerability remains owned by GameManager.
 - `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 125 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
+
+## Valid Player Board-State Invariant
+
+- `BoardManager` now validates the complete authoritative player state: safe means a captured current cell with no exposure/trail; exposed means a contiguous active trail anchored beside captured terrain and ending at the current player cell.
+- Respawn completion now uses one shared safe restoration method and cannot return to `Playing` until the BoardManager cell, movement-model position, Transform, empty trail, non-exposed state, and `SafeIdle` control state all agree. Historical safe cells continue to be revalidated against the current board.
+- `GameManager` checks the invariant at the end of each gameplay frame. An impossible `Playing` state creates an immediate lifecycle barrier, invalidates old traversal callbacks, and repairs the player through the same authoritative safe restoration path without deducting a life.
+- Regression coverage explicitly corrupts the player into uncaptured territory without a trail and verifies deterministic synchronized recovery, and invalidates a selected respawn cell before completion to verify current-board fallback.
+- `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 127 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
 
 ## Repository Cleanup
 
