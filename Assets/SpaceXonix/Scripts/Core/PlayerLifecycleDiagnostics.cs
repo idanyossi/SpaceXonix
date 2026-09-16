@@ -55,7 +55,8 @@ namespace SpaceXonix.Core
             if (history.Count == Capacity) history.Dequeue();
             history.Enqueue(entry);
 
-            var invalidReason = FindInvalidReason(boardCell, logicalCell, transformCell, cellType, operationGeneration);
+            var invalidReason = FindInvalidReason(reason, boardCell, logicalCell, transformCell, cellType,
+                operationGeneration);
             if (invalidReason == null || dumped) return;
             dumped = true;
             var dump = new StringBuilder(4096);
@@ -121,7 +122,7 @@ namespace SpaceXonix.Core
                 $"Down:{keyboard.downArrowKey.isPressed},Right:{keyboard.rightArrowKey.isPressed}";
         }
 
-        private string FindInvalidReason(GridCoordinate boardCell, GridCoordinate logicalCell,
+        private string FindInvalidReason(string reason, GridCoordinate boardCell, GridCoordinate logicalCell,
             GridCoordinate transformCell, string cellType, int operationGeneration)
         {
             if (operationGeneration >= 0 && operationGeneration != game.PlayerLifecycleGeneration)
@@ -129,7 +130,9 @@ namespace SpaceXonix.Core
             if (game.CurrentState == GameplayState.Respawning && player.MovementEnabled)
                 return "Respawning with movement enabled";
             if (game.CurrentState != GameplayState.Playing) return null;
-            if (logicalCell != boardCell || transformCell != boardCell || player.LogicalPosition != (Vector2)player.transform.position)
+            if (ShouldCheckPositionConsistency(reason) &&
+                (logicalCell != boardCell || transformCell != boardCell ||
+                    player.LogicalPosition != (Vector2)player.transform.position))
                 return "logical, BoardManager, and Transform positions disagree";
             if (board.IsPlayerExposed && board.Model.ActiveTrail.Count == 0)
                 return "exposed with no active trail";
@@ -138,6 +141,14 @@ namespace SpaceXonix.Core
             if (player.ControlState == PlayerControlState.SafeIdle && cellType != BoardCellState.Captured.ToString())
                 return "SafeIdle on a non-captured cell";
             return null;
+        }
+
+        private static bool ShouldCheckPositionConsistency(string reason)
+        {
+            return reason.StartsWith("LogicalStepCommitted") || reason.StartsWith("LogicalStepAborted") ||
+                reason == "CaptureCompleted" || reason == "RespawnCompleted" ||
+                reason == "RuntimeInvariantRepairCompleted" || reason == "SafeDirectionReleased" ||
+                reason == "FailureAccepted" || reason == "GameStarted";
         }
     }
 }

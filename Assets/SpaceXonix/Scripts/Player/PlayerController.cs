@@ -59,7 +59,7 @@ namespace SpaceXonix.Player
             ConsumePendingDirection();
             if (!EnsureCurrentDirectionIsLegal())
             {
-                lifecycle?.TracePlayerLifecycle("LogicalStepRejected:NoLegalDirection", operationGeneration: lifecycleGeneration);
+                lifecycle?.TracePlayerLifecycle("LogicalStepAborted:NoLegalDirection", operationGeneration: lifecycleGeneration);
                 return false;
             }
 
@@ -75,23 +75,23 @@ namespace SpaceXonix.Player
                 var attemptedCell = boardManager.WorldToGrid(candidate);
                 var attemptedLogicalStep = attemptedCell != stepOrigin;
                 if (attemptedLogicalStep)
-                    lifecycle?.TracePlayerLifecycle($"LogicalStepAttempt:{stepOrigin}->{attemptedCell}", operationGeneration: lifecycleGeneration);
+                    lifecycle?.TracePlayerLifecycle($"LogicalStepStarted:{stepOrigin}->{attemptedCell}", operationGeneration: lifecycleGeneration);
                 candidate = boardManager.ClampToBoard(candidate);
                 var result = boardManager.TrackPlayerWorldPosition(new Vector3(previousPosition.x, previousPosition.y, transform.position.z), candidate);
                 if (lifecycle != null && lifecycle.PlayerLifecycleGeneration != lifecycleGeneration)
                 {
-                    lifecycle.TracePlayerLifecycle($"LogicalStepRejected:LifecycleChanged:{result}", force: true);
+                    lifecycle.TracePlayerLifecycle($"LogicalStepAborted:LifecycleChanged:{result}", force: true);
                     return false;
                 }
                 if (controlState == PlayerControlState.Respawning || controlState == PlayerControlState.GameOver)
                 {
-                    lifecycle?.TracePlayerLifecycle($"LogicalStepRejected:ControlState:{controlState}", operationGeneration: lifecycleGeneration);
+                    lifecycle?.TracePlayerLifecycle($"LogicalStepAborted:ControlState:{controlState}", operationGeneration: lifecycleGeneration);
                     return false;
                 }
                 if (result == BoardMoveResult.TrailFailed)
                 {
                     movementModel.SetPosition(new Vector2(transform.position.x, transform.position.y));
-                    lifecycle?.TracePlayerLifecycle("LogicalStepRejected:TrailFailure", operationGeneration: lifecycleGeneration);
+                    lifecycle?.TracePlayerLifecycle("LogicalStepAborted:TrailFailure", operationGeneration: lifecycleGeneration);
                     return false;
                 }
                 if (result == BoardMoveResult.SafeMove || result == BoardMoveResult.Reconnected)
@@ -107,7 +107,7 @@ namespace SpaceXonix.Player
                 transitionReason = result == BoardMoveResult.Reconnected ? "CaptureCompleted" : $"Movement:{result}";
                 if (attemptedLogicalStep)
                 {
-                    var outcome = boardManager.PlayerCell != stepOrigin ? "Accepted" : "Rejected";
+                    var outcome = boardManager.PlayerCell != stepOrigin ? "Committed" : "Aborted";
                     logicalStepOutcome = $"LogicalStep{outcome}:{result}:{boardManager.PlayerCell}";
                 }
             }
