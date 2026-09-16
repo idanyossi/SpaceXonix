@@ -26,9 +26,11 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
                 Assert.That(fixture.Board.IsPlayerExposed, Is.False);
                 Assert.That(fixture.Board.CapturedPercentage, Is.Zero);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.SafeIdle));
 
                 Assert.That(fixture.Input.TrySelectDirection(CardinalDirection.Right), Is.True);
                 Assert.That(fixture.Player.PendingDirection, Is.EqualTo(CardinalDirection.Right));
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.SafeMoving));
                 Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
             }
         }
@@ -43,11 +45,13 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Player.AdvanceMovement(.04f), Is.True);
                 Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 2)));
                 Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.False);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.SafeMoving));
                 Assert.That(fixture.Player.AdvanceMovement(.04f), Is.True);
                 Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 3)));
 
                 fixture.Input.ReleaseDirection();
                 Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.SafeIdle));
                 var stoppedPosition = fixture.Player.transform.position;
 
                 Assert.That(fixture.Player.AdvanceMovement(.2f), Is.False);
@@ -114,12 +118,14 @@ namespace SpaceXonix.Tests.EditMode
                 fixture.Input.TrySelectDirection(CardinalDirection.Right);
                 Assert.That(fixture.Player.AdvanceMovement(.04f), Is.True);
                 Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.ExposedMoving));
                 fixture.Input.ReleaseDirection();
                 var exposedPosition = fixture.Player.transform.position;
 
                 Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
                 Assert.That(fixture.Player.transform.position.x, Is.GreaterThan(exposedPosition.x));
                 Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.False);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.ExposedMoving));
             }
         }
 
@@ -163,6 +169,7 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 2)));
                 Assert.That(fixture.Board.GetSafeRespawnCell(), Is.EqualTo(fixture.Board.PlayerCell));
                 Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.SafeIdle));
                 var capturePosition = fixture.Player.transform.position;
 
                 Assert.That(fixture.Player.AdvanceMovement(.2f), Is.False);
@@ -347,6 +354,7 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
                 Assert.That(fixture.Input.GameplayInputEnabled, Is.False);
                 Assert.That(fixture.Player.MovementEnabled, Is.False);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.Respawning));
 
                 Assert.That(fixture.CompleteRespawn(), Is.True);
                 Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
@@ -357,6 +365,7 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Input.GameplayInputEnabled, Is.True);
                 Assert.That(fixture.Player.MovementEnabled, Is.True);
                 Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.SafeIdle));
 
                 var respawnPosition = fixture.Player.transform.position;
                 Assert.That(fixture.Player.AdvanceMovement(.02f), Is.False);
@@ -991,6 +1000,7 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.GameOver));
                 Assert.That(fixture.Input.GameplayInputEnabled, Is.False);
                 Assert.That(fixture.Player.MovementEnabled, Is.False);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.GameOver));
                 Assert.That(fixture.CompleteRespawn(), Is.False);
                 Assert.That(fixture.Player.transform.position, Is.EqualTo(positionBefore));
                 Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact), Is.False);

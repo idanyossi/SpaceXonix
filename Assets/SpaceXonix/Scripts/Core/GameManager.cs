@@ -52,7 +52,7 @@ namespace SpaceXonix.Core
             playerController.ConnectInput(inputRouter);
             playerController.ConnectBoard(boardManager);
             inputRouter.SetGameplayInputEnabled(false);
-            playerController.SetMovementEnabled(false);
+            playerController.SetGameplayState(GameplayState.Respawning);
             boardManager.TrailStateChanged += OnTrailStateChanged;
         }
 
@@ -178,7 +178,7 @@ namespace SpaceXonix.Core
         {
             var isPlaying = state == GameplayState.Playing;
             inputRouter.SetGameplayInputEnabled(isPlaying);
-            playerController.SetMovementEnabled(isPlaying);
+            playerController.SetGameplayState(state);
         }
     }
 }

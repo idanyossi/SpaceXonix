@@ -39,7 +39,8 @@
 - The safe structural perimeter is excluded from captured-playable-area percentage.
 - Capture uses iterative deterministic flood fill and selects the smallest valid alien-free region.
 - `BoardManager` receives logical active-enemy occupancy without depending on concrete enemy subclasses.
-- `GameManager.ReportPlayerFailure(...)` is the sole life-loss entry point; respawn uses the last safe cell.
+- `GameManager.ReportPlayerFailure(...)` is the sole atomic life-loss entry point; respawn revalidates a current safe cell before restoration.
+- `PlayerController` owns one explicit control state (`SafeIdle`, `SafeMoving`, `ExposedMoving`, `Respawning`, or `GameOver`) and one authoritative cardinal movement direction/logical position.
 - Player and enemy movement remains cardinal/grid-compatible; standard enemies are pooled.
 - Enemy registration, occupancy, movement pause/resume, and pooled reset are centralized through `EnemyManager` and `EnemyController`.
 - Volatile collision/explosion orchestration stays in `EnemyManager`; territory removal stays authoritative in `BoardManager`/`BoardModel` and never directly changes an active trail.
@@ -51,7 +52,7 @@
 - EditMode discovered: 119
 - Passed: 119
 - Failed: 0
-- Coverage includes input/movement, board/trail/capture/destruction, the complete death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
+- Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
 ## Respawn Reliability Fix
 
@@ -167,6 +168,14 @@
 - Failure preparation now clears pending movement and resets controller/InputRouter direction state immediately. `GameManager` revalidates the current respawn cell, requires successful restoration, enables safe/manual controls, and only then completes the state transition to `Playing`; duplicate failures and completion-frame callbacks remain behind the existing atomic gate.
 - The shared player and enemy traversal aborts remain in place for every accepted failure source; enemy, laser, Volatile, trail-hit, and self-intersection callbacks continue to route exclusively through `ReportPlayerFailure`.
 - Unity compilation completed with 0 SpaceXonix Console errors. Automated tests and Play Mode QA were not run per request; the previously verified baseline remains 119/119. Prompt 9 remains not started.
+
+## Unified AirXonix Player Control State
+
+- Replaced the independent movement-enabled and awaiting-input flags with one explicit `PlayerControlState`. Safe input transitions between `SafeIdle` and `SafeMoving`; leaving safe terrain enters `ExposedMoving`; accepted failure and final death enter `Respawning` or `GameOver` synchronously through GameManager.
+- Safe terrain now advances only from a held legal direction and stops on release. Exposed movement keeps its single non-zero direction after release, accepts perpendicular turns, and ignores 180-degree input without cancelling motion. Reconnection clears the persistent capture direction immediately and requires ordinary safe-terrain input before movement continues.
+- The existing atomic failure gate and single restoration operation remain authoritative. Failure disables player/input state before callbacks, traversal aborts on the accepted failure, and restoration revalidates a current safe cell before synchronizing BoardManager, movement model, Transform, trail/exposure, direction, and InputRouter; `Playing` is applied only after restoration succeeds.
+- Regression assertions now verify every control-state transition in addition to existing rapid reversal, self-intersection, TrailHit, simultaneous hazard, stale-safe-cell, capture, and post-respawn movement coverage.
+- `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 119 passed, 0 failed, 0 skipped. Unity Console after the run: 0 errors. `git diff --check`: passed. Prompt 9 remains not started.
 
 ## Repository Cleanup
 

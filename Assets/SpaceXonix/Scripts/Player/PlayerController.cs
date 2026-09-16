@@ -1,9 +1,19 @@
 using SpaceXonix.Input;
 using SpaceXonix.Board;
+using SpaceXonix.Core;
 using UnityEngine;
 
 namespace SpaceXonix.Player
 {
+    public enum PlayerControlState
+    {
+        SafeIdle,
+        SafeMoving,
+        ExposedMoving,
+        Respawning,
+        GameOver
+    }
+
     public sealed class PlayerController : MonoBehaviour
     {
         [SerializeField, Min(0f)] private float moveSpeed = 5f;
@@ -12,17 +22,19 @@ namespace SpaceXonix.Player
         private PlayerMovementModel movementModel;
         private InputRouter connectedInputRouter;
         private BoardManager boardManager;
-        private bool movementEnabled;
-        private bool awaitingDirectionInput = true;
+        private PlayerControlState controlState = PlayerControlState.Respawning;
         private CardinalDirection? pendingDirection;
 
         public CardinalDirection CurrentDirection => movementModel != null ? movementModel.Direction : initialDirection;
         public CardinalDirection InitialDirection => initialDirection;
         public CardinalDirection FacingDirection => CurrentDirection;
         public float MoveSpeed => moveSpeed;
-        public bool MovementEnabled => movementEnabled;
-        public bool IsAwaitingDirectionInput => awaitingDirectionInput;
+        public bool MovementEnabled => controlState == PlayerControlState.SafeIdle ||
+            controlState == PlayerControlState.SafeMoving || controlState == PlayerControlState.ExposedMoving;
+        public bool IsAwaitingDirectionInput => controlState != PlayerControlState.SafeMoving &&
+            controlState != PlayerControlState.ExposedMoving;
         public CardinalDirection? PendingDirection => pendingDirection;
+        public PlayerControlState ControlState => controlState;
         public Vector2 LogicalPosition => movementModel != null ? movementModel.Position : new Vector2(transform.position.x, transform.position.y);
 
         private void Awake()
@@ -37,7 +49,7 @@ namespace SpaceXonix.Player
 
         public bool AdvanceMovement(float deltaTime)
         {
-            if (!movementEnabled || awaitingDirectionInput)
+            if (controlState != PlayerControlState.SafeMoving && controlState != PlayerControlState.ExposedMoving)
             {
                 return false;
             }
@@ -53,17 +65,17 @@ namespace SpaceXonix.Player
             {
                 candidate = boardManager.ClampToBoard(candidate);
                 var result = boardManager.TrackPlayerWorldPosition(new Vector3(previousPosition.x, previousPosition.y, transform.position.z), candidate);
-                if (!movementEnabled) return false;
-                if (result == BoardMoveResult.TrailFailed)
-                {
-                    return false;
-                }
+                if (controlState == PlayerControlState.Respawning || controlState == PlayerControlState.GameOver) return false;
+                if (result == BoardMoveResult.TrailFailed) return false;
                 if (result == BoardMoveResult.SafeMove || result == BoardMoveResult.Reconnected)
                 {
                     candidate = boardManager.GetWorldPosition(boardManager.PlayerCell);
                     candidate.z = transform.position.z;
-                    ContinueHeldSafeMovementOrStop();
+                    if (result == BoardMoveResult.Reconnected) StopAfterCapture();
+                    else ContinueHeldSafeMovementOrStop();
                 }
+                else if (result == BoardMoveResult.TrailStarted || result == BoardMoveResult.TrailExtended)
+                    controlState = PlayerControlState.ExposedMoving;
                 movementModel.SetPosition(new Vector2(candidate.x, candidate.y));
             }
             transform.position = candidate;
@@ -72,11 +84,15 @@ namespace SpaceXonix.Player
 
         private void RequestDirection(CardinalDirection direction)
         {
+            if (controlState == PlayerControlState.Respawning || controlState == PlayerControlState.GameOver) return;
             var effectiveDirection = pendingDirection ?? CurrentDirection;
-            if (boardManager != null && boardManager.IsPlayerExposed && IsOpposite(effectiveDirection, direction)) return;
+            if (controlState == PlayerControlState.ExposedMoving && IsOpposite(effectiveDirection, direction)) return;
             if (!IsDirectionLegal(direction)) return;
             pendingDirection = direction;
-            awaitingDirectionInput = false;
+            controlState = controlState == PlayerControlState.ExposedMoving ||
+                (boardManager != null && boardManager.IsPlayerExposed)
+                ? PlayerControlState.ExposedMoving
+                : PlayerControlState.SafeMoving;
         }
 
         private static bool IsOpposite(CardinalDirection current, CardinalDirection requested)
@@ -86,7 +102,15 @@ namespace SpaceXonix.Player
 
         public void SetMovementEnabled(bool enabled)
         {
-            movementEnabled = enabled;
+            SetGameplayState(enabled ? GameplayState.Playing : GameplayState.Respawning);
+        }
+
+        public void SetGameplayState(GameplayState state)
+        {
+            pendingDirection = null;
+            if (state == GameplayState.Playing) controlState = PlayerControlState.SafeIdle;
+            else if (state == GameplayState.GameOver) controlState = PlayerControlState.GameOver;
+            else controlState = PlayerControlState.Respawning;
         }
 
         public void SetMoveSpeed(float speed)
@@ -120,13 +144,14 @@ namespace SpaceXonix.Player
             movementModel?.SetPosition(new Vector2(spawn.x, spawn.y));
             boardManager.ResetPlayerTracking(spawn);
             pendingDirection = null;
-            awaitingDirectionInput = true;
+            controlState = PlayerControlState.SafeIdle;
         }
 
         public void RespawnAt(Vector3 worldPosition, CardinalDirection direction)
         {
             if (boardManager == null) return;
-            RestoreSafeManualState(boardManager.WorldToGrid(boardManager.ClampToBoard(worldPosition)), direction);
+            if (RestoreSafeManualState(boardManager.WorldToGrid(boardManager.ClampToBoard(worldPosition)), direction))
+                controlState = PlayerControlState.SafeIdle;
         }
 
         public bool RestoreSafeManualState(GridCoordinate cell, CardinalDirection direction)
@@ -155,7 +180,8 @@ namespace SpaceXonix.Player
         private void RequireFreshDirectionInput()
         {
             pendingDirection = null;
-            awaitingDirectionInput = true;
+            if (controlState != PlayerControlState.Respawning && controlState != PlayerControlState.GameOver)
+                controlState = PlayerControlState.SafeIdle;
         }
 
         private void ContinueHeldSafeMovementOrStop()
@@ -164,16 +190,24 @@ namespace SpaceXonix.Player
                 IsDirectionLegal(connectedInputRouter.CurrentDirection))
             {
                 pendingDirection = connectedInputRouter.CurrentDirection;
-                awaitingDirectionInput = false;
+                controlState = PlayerControlState.SafeMoving;
                 return;
             }
 
             RequireFreshDirectionInput();
         }
 
+        private void StopAfterCapture()
+        {
+            controlState = PlayerControlState.SafeIdle;
+            pendingDirection = null;
+            connectedInputRouter?.ResetDirection(CurrentDirection);
+        }
+
         private void StopSafeMovement()
         {
-            if (boardManager != null && boardManager.IsPlayerExposed) return;
+            if (controlState == PlayerControlState.ExposedMoving || controlState == PlayerControlState.Respawning ||
+                controlState == PlayerControlState.GameOver) return;
             if (boardManager != null)
             {
                 var position = boardManager.GetWorldPosition(boardManager.PlayerCell);
