@@ -48,8 +48,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 75
-- Passed: 75
+- EditMode discovered: 83
+- Passed: 83
 - Failed: 0
 - Coverage includes input/movement, board/trail/capture/destruction, the complete death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -67,12 +67,21 @@
 - Classification: **PASS WITH MINOR ISSUES**. Core gameplay is stable enough to proceed to Phase 8.
 - Startup/serialization: `Game.unity` validates with no missing scripts or broken prefabs. It contains one GameManager, InputRouter, PlayerController, BoardManager, PoolService, EnemyManager, LaserManager, one camera, four configured enemy types, and two cardinal laser emitters. The 54 x 96 board, three lives, and 1.25-second respawn delay initialize correctly.
 - Movement/capture: all four corners and edges accept an in-bounds direction; controller, Transform, and BoardManager coordinates remain synchronized. Multiple captures, enemy-aware occupancy, percentage updates, self-intersection failure, trail cleanup, and continued captures after respawn/territory destruction were verified in Play Mode.
-- Confirmed defect: an enemy that attempted to enter an active trail reflected its velocity before `EnemyController` checked the contact point. The subsequent check used the reflected velocity, so the trail hit could be missed. The controller now records the intended position before advancing/reflection and reports `TrailHit` from that position. A regression test covers the real enemy-to-trail-to-GameManager path.
+- Earlier partial repair: checking the intended endpoint before velocity reflection fixed one blocked-entry case, but did not verify or cover an accepted move crossing an intermediate trail cell. The later trail-hit reliability repair below supersedes the earlier claim that this path was fully verified.
 - Lives/respawn/Game Over: Basic, Linear, and Unstable contact each removed exactly one life; duplicate failures during Respawning and Game Over were rejected; final life reached zero without another respawn. Laser and enemy-trail deaths both completed safe-cell respawn and real post-respawn movement.
 - Volatile: protection/arming, one-shot detonation, nearby enemy removal, distant/player-outside safety, pooling, captured-territory removal, perimeter preservation, percentage reduction, and consistent occupancy passed. New capture remained possible afterward.
 - Lasers: both axes cycle through Cooldown, Warning, Firing, and Cooldown. Warning presentation was visible and non-damaging; firing damaged once; large-delta coverage passed; territory, enemies, Volatile behavior, and trails remained isolated. Repeated cycles did not grow the GameObject count.
 - Continuous Play Mode session: completed two captures, encountered a non-damaging warning and damaging beam, respawned and moved, completed another capture, detonated a Volatile against captured territory/enemies, continued capturing, died from an enemy trail hit, respawned again, and continued moving. Console remained free of SpaceXonix errors.
 - Minor issue: current placeholder enemy visuals are visible but not strongly distinguishable from one another. This does not block mechanics or Phase 8 and belongs to later asset/polish work.
+
+## Enemy Trail-Hit Reliability Repair
+
+- Actual root cause: `EnemyController` checked trail contact only when `EnemyMovementModel.Advance` rejected the move and left the enemy stationary, and it checked only the intended endpoint. An accepted move from cell A to cell D never examined intermediate cells B/C, so a visually and logically crossed active trail could silently pass without reaching `GameManager.ReportPlayerFailure`.
+- Shared fix: `BoardManager.GetTraversedCells` now deterministically enumerates every logical cell crossed by an enemy movement segment. The shared `EnemyController` checks that sequence against authoritative `BoardModel` trail state before movement/reflection, then routes the first contact through `ReportPlayerFailure(PlayerFailureReason.TrailHit)`. Basic, Linear, Unstable, and normal Volatile movement inherit the same behavior; lasers remain separate.
+- Regression coverage includes single-cell entry, intermediate multi-cell crossing, adjacent-path rejection, duplicate failure protection, Basic/Linear/Unstable shared behavior, controller reuse, and an actual PoolService release/reacquire cycle.
+- Real `Game.unity` Play Mode proof ran 10 deliberate intersections across Basic, Linear, and Unstable enemies; short, long, horizontal, vertical, multi-cell, and edge-adjacent trails were covered. Every recorded traversal contained a trail cell, reported `TrailHit`, accepted exactly one failure, changed lives by exactly one (20→19 through 11→10), cleared the trail, entered `Respawning`, completed respawn, and allowed immediate movement afterward.
+- Continuous `Game.unity` proof captured territory (0%→0.1022913%), then completed two successive trail deaths: Basic 3→2 and Linear 2→1. Both cleared the trail, entered Respawning, returned to Playing, and moved afterward.
+- Final EditMode suite: 83 passed, 0 failed. Unity Console: 0 SpaceXonix errors.
 
 ## Respawn Movement Stress Verification
 

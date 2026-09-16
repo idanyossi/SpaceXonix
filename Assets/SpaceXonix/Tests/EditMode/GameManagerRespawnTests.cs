@@ -6,6 +6,7 @@ using SpaceXonix.Core;
 using SpaceXonix.Input;
 using SpaceXonix.Player;
 using SpaceXonix.Enemies;
+using SpaceXonix.Pooling;
 using UnityEngine;
 
 namespace SpaceXonix.Tests.EditMode
@@ -110,6 +111,139 @@ namespace SpaceXonix.Tests.EditMode
                     UnityEngine.Object.DestroyImmediate(enemyObject);
                     UnityEngine.Object.DestroyImmediate(definition);
                 }
+            }
+        }
+
+        [Test]
+        public void EnemyCrossingIntermediateTrailCell_ReportsTrailHit()
+        {
+            using (var fixture = new Fixture())
+            using (var enemy = new EnemyFixture<BasicBouncer>(fixture, new GridCoordinate(4, 3), Vector2.left, 3.6f))
+            {
+                fixture.Board.Model.MoveTo(new GridCoordinate(3, 3));
+
+                enemy.Controller.AdvanceMovement(.15f);
+
+                Assert.That(enemy.Controller.LastTraversedCells, Is.EqualTo(new[]
+                {
+                    new GridCoordinate(4, 3), new GridCoordinate(3, 3),
+                    new GridCoordinate(2, 3), new GridCoordinate(1, 3)
+                }));
+                Assert.That(enemy.Controller.LastTrailHitAccepted, Is.True);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+            }
+        }
+
+        [Test]
+        public void EnemyPassingAdjacentToTrail_DoesNotReportFailure()
+        {
+            using (var fixture = new Fixture())
+            using (var enemy = new EnemyFixture<BasicBouncer>(fixture, new GridCoordinate(4, 4), Vector2.left, 3.6f))
+            {
+                fixture.Board.Model.MoveTo(new GridCoordinate(3, 3));
+
+                enemy.Controller.AdvanceMovement(.15f);
+
+                Assert.That(enemy.Controller.LastTraversedCells, Has.No.Member(new GridCoordinate(3, 3)));
+                Assert.That(enemy.Controller.LastTrailHitAccepted, Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(3));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Board.Model.ActiveTrail.Count, Is.EqualTo(1));
+            }
+        }
+
+        [TestCase(typeof(BasicBouncer))]
+        [TestCase(typeof(LinearEnemy))]
+        [TestCase(typeof(UnstableEnemy))]
+        public void StandardEnemyTypes_UseSharedTrailTraversal(Type enemyType)
+        {
+            using (var fixture = new Fixture())
+            using (var enemy = new EnemyFixture(fixture, enemyType, new GridCoordinate(4, 3), Vector2.left, 3.6f))
+            {
+                fixture.Board.Model.MoveTo(new GridCoordinate(3, 3));
+
+                enemy.Controller.AdvanceMovement(.15f);
+
+                Assert.That(enemy.Controller.LastTrailHitAccepted, Is.True);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+            }
+        }
+
+        [Test]
+        public void ReusedEnemy_CanReportOneTrailHitAgain()
+        {
+            using (var fixture = new Fixture(startingLives: 3))
+            using (var enemy = new EnemyFixture<BasicBouncer>(fixture, new GridCoordinate(2, 3), Vector2.left, 1.2f))
+            {
+                fixture.Board.Model.MoveTo(new GridCoordinate(1, 3));
+                enemy.Controller.AdvanceMovement(.2f);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+
+                fixture.CompleteRespawn();
+                enemy.Controller.Deactivate();
+                enemy.Activate(new GridCoordinate(2, 4), Vector2.left, 1.2f);
+                fixture.Board.Model.MoveTo(new GridCoordinate(1, 4));
+                enemy.Controller.AdvanceMovement(.2f);
+
+                Assert.That(enemy.Controller.LastTrailHitAccepted, Is.True);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(1));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+            }
+        }
+
+        [Test]
+        public void PooledEnemy_ReportsTrailHitAfterReleaseAndReacquire()
+        {
+            using (var fixture = new Fixture(startingLives: 3))
+            {
+                var poolHost = new GameObject("TrailHitPool");
+                var prefab = new GameObject("TrailHitPrefab");
+                prefab.AddComponent<BasicBouncer>();
+                prefab.SetActive(false);
+                var definition = ScriptableObject.CreateInstance<EnemyDefinition>();
+                definition.moveSpeed = 1.2f;
+                try
+                {
+                    var pool = poolHost.AddComponent<PoolService>();
+                    var firstObject = pool.Acquire(prefab, poolHost.transform);
+                    var first = firstObject.GetComponent<BasicBouncer>();
+                    fixture.Board.Model.MoveTo(new GridCoordinate(1, 3));
+                    first.Activate(definition, fixture.Board, fixture.Game, fixture.Board.GetWorldPosition(new GridCoordinate(2, 3)), Vector2.left);
+                    first.AdvanceMovement(.2f);
+                    Assert.That(first.LastTrailHitAccepted, Is.True);
+                    fixture.CompleteRespawn();
+
+                    first.Deactivate();
+                    pool.Release(prefab, firstObject);
+                    var reusedObject = pool.Acquire(prefab, poolHost.transform);
+                    var reused = reusedObject.GetComponent<BasicBouncer>();
+                    fixture.Board.Model.MoveTo(new GridCoordinate(1, 4));
+                    reused.Activate(definition, fixture.Board, fixture.Game, fixture.Board.GetWorldPosition(new GridCoordinate(2, 4)), Vector2.left);
+                    reused.AdvanceMovement(.2f);
+
+                    Assert.That(reusedObject, Is.SameAs(firstObject));
+                    Assert.That(reused.LastTrailHitAccepted, Is.True);
+                    Assert.That(fixture.Game.Lives, Is.EqualTo(1));
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(poolHost);
+                    UnityEngine.Object.DestroyImmediate(prefab);
+                    UnityEngine.Object.DestroyImmediate(definition);
+                }
+            }
+        }
+
+        [Test]
+        public void DuplicateTrailHitDuringRespawn_DoesNotConsumeAnotherLife()
+        {
+            using (var fixture = new Fixture())
+            {
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.TrailHit), Is.True);
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.TrailHit), Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
             }
         }
 
@@ -283,6 +417,42 @@ namespace SpaceXonix.Tests.EditMode
             {
                 return target.GetType().GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance).Invoke(target, null);
             }
+        }
+
+        private class EnemyFixture : IDisposable
+        {
+            private readonly GameObject enemyObject;
+            private readonly EnemyDefinition definition;
+            private readonly Fixture fixture;
+            public EnemyController Controller { get; }
+
+            public EnemyFixture(Fixture fixture, Type enemyType, GridCoordinate cell, Vector2 direction, float speed)
+            {
+                this.fixture = fixture;
+                enemyObject = new GameObject(enemyType.Name);
+                Controller = (EnemyController)enemyObject.AddComponent(enemyType);
+                definition = ScriptableObject.CreateInstance<EnemyDefinition>();
+                Activate(cell, direction, speed);
+            }
+
+            public void Activate(GridCoordinate cell, Vector2 direction, float speed)
+            {
+                definition.moveSpeed = speed;
+                definition.linearAxis = Mathf.Abs(direction.x) > 0f ? EnemyAxis.Horizontal : EnemyAxis.Vertical;
+                Controller.Activate(definition, fixture.Board, fixture.Game, fixture.Board.GetWorldPosition(cell), direction);
+            }
+
+            public void Dispose()
+            {
+                UnityEngine.Object.DestroyImmediate(enemyObject);
+                UnityEngine.Object.DestroyImmediate(definition);
+            }
+        }
+
+        private sealed class EnemyFixture<T> : EnemyFixture where T : EnemyController
+        {
+            public EnemyFixture(Fixture fixture, GridCoordinate cell, Vector2 direction, float speed)
+                : base(fixture, typeof(T), cell, direction, speed) { }
         }
     }
 }

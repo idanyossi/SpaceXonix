@@ -1,6 +1,7 @@
 using SpaceXonix.Board;
 using SpaceXonix.Core;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 namespace SpaceXonix.Enemies
 {
@@ -10,20 +11,25 @@ namespace SpaceXonix.Enemies
         protected GameManager game;
         protected EnemyDefinition definition;
         protected EnemyMovementModel movement;
+        private readonly List<GridCoordinate> traversedCells = new List<GridCoordinate>();
         public GridCoordinate LogicalCell => board.WorldToGrid(transform.position);
         public Vector2 Velocity => movement != null ? movement.Velocity : Vector2.zero;
         public bool MovementEnabled => movement != null && movement.MovementEnabled;
         public EnemyDefinition Definition => definition;
         public bool IsActiveEnemy { get; private set; }
+        public IReadOnlyList<GridCoordinate> LastTraversedCells => traversedCells;
+        public bool LastTrailHitAccepted { get; private set; }
         public event Action<EnemyController> LogicalCellChanged;
         public virtual void Activate(EnemyDefinition data, BoardManager boardManager, GameManager gameManager, Vector3 position, Vector2 direction)
         {
             definition = data; board = boardManager; game = gameManager;
             transform.position = position;
             movement = new EnemyMovementModel(new Vector2(position.x, position.y), direction.normalized * data.moveSpeed);
+            traversedCells.Clear();
+            LastTrailHitAccepted = false;
             IsActiveEnemy = true; gameObject.SetActive(true);
         }
-        public virtual void Deactivate() { IsActiveEnemy = false; gameObject.SetActive(false); }
+        public virtual void Deactivate() { IsActiveEnemy = false; traversedCells.Clear(); LastTrailHitAccepted = false; gameObject.SetActive(false); }
         public void SetMovementSuspended(bool suspended) { if (movement != null) movement.MovementEnabled = !suspended; }
         public bool IsTrailContact(Vector2 worldPosition)
         {
@@ -41,9 +47,15 @@ namespace SpaceXonix.Enemies
             var previousCell = LogicalCell;
             var before = movement.Position;
             var intendedPosition = before + movement.Velocity * deltaTime;
+            board.GetTraversedCells(before, intendedPosition, traversedCells);
+            LastTrailHitAccepted = false;
+            for (var i = 0; i < traversedCells.Count; i++)
+            {
+                if (board.Model.GetCell(traversedCells[i]) != BoardCellState.Trail) continue;
+                if (game != null) LastTrailHitAccepted = game.ReportPlayerFailure(PlayerFailureReason.TrailHit);
+                break;
+            }
             movement.Advance(deltaTime, IsUncapturedWorld);
-            if (movement.Position == before && IsTrailContact(intendedPosition) && game != null && game.CurrentState == GameplayState.Playing)
-                game.ReportPlayerFailure(PlayerFailureReason.TrailHit);
             transform.position = new Vector3(movement.Position.x, movement.Position.y, transform.position.z);
             if (LogicalCell != previousCell) LogicalCellChanged?.Invoke(this);
             var player = game != null ? game.PlayerController : null;

@@ -103,6 +103,54 @@ namespace SpaceXonix.Board
             return IsInBounds(cell) && Model.GetCell(cell) != BoardCellState.Trail;
         }
 
+        public void GetTraversedCells(Vector3 startWorldPosition, Vector3 endWorldPosition, List<GridCoordinate> cells)
+        {
+            if (cells == null) throw new ArgumentNullException(nameof(cells));
+            cells.Clear();
+
+            var start = transform.InverseTransformPoint(startWorldPosition) / cellWorldSize;
+            var end = transform.InverseTransformPoint(endWorldPosition) / cellWorldSize;
+            var cell = new GridCoordinate(Mathf.FloorToInt(start.x), Mathf.FloorToInt(start.y));
+            var endCell = new GridCoordinate(Mathf.FloorToInt(end.x), Mathf.FloorToInt(end.y));
+            AddTraversedCell(cell, cells);
+
+            var delta = (Vector2)end - (Vector2)start;
+            var stepX = Math.Sign(delta.x);
+            var stepY = Math.Sign(delta.y);
+            var tDeltaX = stepX == 0 ? float.PositiveInfinity : Mathf.Abs(1f / delta.x);
+            var tDeltaY = stepY == 0 ? float.PositiveInfinity : Mathf.Abs(1f / delta.y);
+            var nextBoundaryX = stepX > 0 ? cell.X + 1f : cell.X;
+            var nextBoundaryY = stepY > 0 ? cell.Y + 1f : cell.Y;
+            var tMaxX = stepX == 0 ? float.PositiveInfinity : (nextBoundaryX - start.x) / delta.x;
+            var tMaxY = stepY == 0 ? float.PositiveInfinity : (nextBoundaryY - start.y) / delta.y;
+
+            while (cell != endCell)
+            {
+                if (tMaxX < tMaxY)
+                {
+                    cell = new GridCoordinate(cell.X + stepX, cell.Y);
+                    tMaxX += tDeltaX;
+                }
+                else if (tMaxY < tMaxX)
+                {
+                    cell = new GridCoordinate(cell.X, cell.Y + stepY);
+                    tMaxY += tDeltaY;
+                }
+                else
+                {
+                    cell = new GridCoordinate(cell.X + stepX, cell.Y + stepY);
+                    tMaxX += tDeltaX;
+                    tMaxY += tDeltaY;
+                }
+                AddTraversedCell(cell, cells);
+            }
+        }
+
+        private void AddTraversedCell(GridCoordinate cell, List<GridCoordinate> cells)
+        {
+            if (Model.IsInBounds(cell)) cells.Add(cell);
+        }
+
         public BoardMoveResult TrackPlayerWorldPosition(Vector3 previousWorldPosition, Vector3 currentWorldPosition)
         {
             var clamped = ClampToBoard(currentWorldPosition);
