@@ -17,6 +17,7 @@ namespace SpaceXonix.Hazards
         private GameObject activeWarning;
         private GameObject activeBeam;
         private LaserCycleModel cycle;
+        private bool playerHitThisFiringPhase;
 
         public LaserState State => cycle != null ? cycle.State : LaserState.Cooldown;
         public LaserAxis Axis => definition.axis;
@@ -33,6 +34,7 @@ namespace SpaceXonix.Hazards
             board = boardManager; game = gameManager; pool = poolService;
             warningPrefab = warningPresentationPrefab; beamPrefab = beamPresentationPrefab;
             cycle = new LaserCycleModel(definition.warningDuration, definition.firingDuration, definition.cooldownDuration);
+            playerHitThisFiringPhase = false;
             cycle.StateChanged += OnStateChanged;
         }
 
@@ -70,18 +72,21 @@ namespace SpaceXonix.Hazards
             }
             else if (state == LaserState.Firing)
             {
+                playerHitThisFiringPhase = false;
                 ReleaseWarning(); activeBeam = Acquire(beamPrefab); Configure(activeBeam); CheckPlayerHit(); FiringStarted?.Invoke();
             }
             else
             {
+                playerHitThisFiringPhase = false;
                 ReleasePresentations(); CooldownStarted?.Invoke();
             }
         }
 
         private void CheckPlayerHit()
         {
-            if (game == null || game.CurrentState != GameplayState.Playing || game.PlayerController == null) return;
-            if (ContainsPoint(game.PlayerController.transform.position)) game.ReportPlayerFailure(PlayerFailureReason.Laser);
+            if (playerHitThisFiringPhase || game == null || game.CurrentState != GameplayState.Playing || game.PlayerController == null) return;
+            if (ContainsPoint(game.PlayerController.transform.position) && game.ReportPlayerFailure(PlayerFailureReason.Laser))
+                playerHitThisFiringPhase = true;
         }
 
         private void Configure(GameObject instance)

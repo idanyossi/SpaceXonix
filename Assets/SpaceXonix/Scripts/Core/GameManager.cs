@@ -48,6 +48,8 @@ namespace SpaceXonix.Core
 
             playerController.ConnectInput(inputRouter);
             playerController.ConnectBoard(boardManager);
+            inputRouter.SetGameplayInputEnabled(false);
+            playerController.SetMovementEnabled(false);
             boardManager.TrailStateChanged += OnTrailStateChanged;
         }
 
@@ -64,6 +66,7 @@ namespace SpaceXonix.Core
         private void Start()
         {
             lifeState = new LifeStateModel(startingLives);
+            inputRouter.ResetDirection(playerController.InitialDirection);
             LivesChanged?.Invoke(Lives);
             ApplyState(GameplayState.Playing);
         }

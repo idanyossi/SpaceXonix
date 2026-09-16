@@ -51,6 +51,7 @@ namespace SpaceXonix.Tests.EditMode
 
             try
             {
+                router.SetGameplayInputEnabled(true);
                 Assert.That(router.TrySelectDirection(CardinalDirection.Up), Is.True);
                 router.SetGameplayInputEnabled(false);
 

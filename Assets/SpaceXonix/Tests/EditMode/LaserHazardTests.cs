@@ -90,6 +90,39 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void RespawnDuringSameFiringPhase_IsNotHitAgainAndMovesOnNextTick()
+        {
+            using (var fixture = new Fixture(LaserAxis.Horizontal, withGame: true))
+            {
+                var laserCell = fixture.Board.WorldToGrid(fixture.Emitter.transform.position);
+                var safeCell = new GridCoordinate(0, laserCell.Y);
+                var safePosition = fixture.Board.GetWorldPosition(safeCell);
+                fixture.Player.RespawnAt(safePosition, CardinalDirection.Right);
+                fixture.Board.ResetPlayerTracking(safePosition);
+                var before = fixture.Game.Lives;
+                Assert.That(fixture.Emitter.ContainsPoint(fixture.Player.transform.position), Is.True);
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+
+                fixture.Emitter.Tick(2f);
+                fixture.Emitter.Tick(.75f);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(before - 1));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+                Assert.That(CompleteRespawn(fixture.Game), Is.True);
+                var respawnPosition = fixture.Player.transform.position;
+
+                fixture.Emitter.Tick(.01f);
+
+                Assert.That(fixture.Game.Lives, Is.EqualTo(before - 1));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Player.MovementEnabled, Is.True);
+                Assert.That(fixture.Board.IsLegalPlayerStep(new GridCoordinate(safeCell.X + 1, safeCell.Y)), Is.True);
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+                Assert.That(fixture.Player.transform.position, Is.Not.EqualTo(respawnPosition));
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+            }
+        }
+
+        [Test]
         public void FiringHit_IsNotSkippedByAFrameCrossingTheWholeFiringWindow()
         {
             using (var fixture = new Fixture(LaserAxis.Horizontal, withGame: true))
@@ -182,7 +215,7 @@ namespace SpaceXonix.Tests.EditMode
             public Fixture(LaserAxis axis, bool withGame = false)
             {
                 root.SetActive(false); warningPrefab.AddComponent<LaserPresentation>(); beamPrefab.AddComponent<LaserPresentation>(); warningPrefab.SetActive(false); beamPrefab.SetActive(false);
-                Board = root.AddComponent<BoardManager>(); Board.Initialize(); Player = playerObject.AddComponent<PlayerController>();
+                Board = root.AddComponent<BoardManager>(); Board.Initialize(); Player = playerObject.AddComponent<PlayerController>(); Invoke(Player, "Awake");
                 var pool = root.AddComponent<PoolService>(); Game = withGame ? root.AddComponent<GameManager>() : null;
                 if (Game != null)
                 {
@@ -190,7 +223,7 @@ namespace SpaceXonix.Tests.EditMode
                 }
                 definition = ScriptableObject.CreateInstance<LaserDefinition>(); definition.axis = axis; definition.warningDuration = .75f; definition.firingDuration = .25f; definition.cooldownDuration = 2f; definition.beamWidth = .12f;
                 Emitter = new GameObject("Emitter").AddComponent<LaserEmitter>(); Emitter.transform.position = Board.GetWorldPosition(new GridCoordinate(10, 10)); Set(Emitter, "definition", definition);
-                root.SetActive(true); if (Game != null) Invoke(Game, "Start"); Emitter.Initialize(Board, Game, pool, warningPrefab, beamPrefab);
+                root.SetActive(true); if (Game != null) { Invoke(Game, "Awake"); Invoke(Game, "Start"); } Emitter.Initialize(Board, Game, pool, warningPrefab, beamPrefab);
             }
 
             public void Dispose()
@@ -202,5 +235,6 @@ namespace SpaceXonix.Tests.EditMode
 
         private static void Set(object target, string name, object value) => target.GetType().GetField(name, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(target, value);
         private static void Invoke(object target, string name) => target.GetType().GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance).Invoke(target, null);
+        private static bool CompleteRespawn(GameManager game) => (bool)game.GetType().GetMethod("CompleteRespawn", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(game, null);
     }
 }

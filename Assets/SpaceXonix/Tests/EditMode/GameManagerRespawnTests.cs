@@ -14,6 +14,103 @@ namespace SpaceXonix.Tests.EditMode
     public sealed class GameManagerRespawnTests
     {
         [Test]
+        public void Startup_WaitsForFirstDirectionCommandWithoutCreatingTrailOrCapture()
+        {
+            using (var fixture = new Fixture())
+            {
+                var start = fixture.Player.transform.position;
+
+                Assert.That(fixture.Player.AdvanceMovement(.1f), Is.False);
+                Assert.That(fixture.Player.transform.position, Is.EqualTo(start));
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 1)));
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+                Assert.That(fixture.Board.CapturedPercentage, Is.Zero);
+
+                Assert.That(fixture.Input.TrySelectDirection(CardinalDirection.Right), Is.True);
+                Assert.That(fixture.Player.PendingDirection, Is.EqualTo(CardinalDirection.Right));
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+            }
+        }
+
+        [Test]
+        public void MultipleInputsBeforeMovement_KeepLatestLegalDirection()
+        {
+            using (var fixture = new Fixture())
+            {
+                var cell = new GridCoordinate(0, 5);
+                fixture.Player.RespawnAt(fixture.Board.GetWorldPosition(cell), CardinalDirection.Right);
+
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                fixture.Input.TrySelectDirection(CardinalDirection.Up);
+                fixture.Input.TrySelectDirection(CardinalDirection.Left);
+
+                Assert.That(fixture.Input.CurrentDirection, Is.EqualTo(CardinalDirection.Left));
+                Assert.That(fixture.Player.PendingDirection, Is.EqualTo(CardinalDirection.Up));
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+                Assert.That(fixture.Player.CurrentDirection, Is.EqualTo(CardinalDirection.Up));
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+            }
+        }
+
+        [Test]
+        public void InvalidEdgeDirectionFollowedByValidDirection_DoesNotStall()
+        {
+            using (var fixture = new Fixture())
+            {
+                var cell = new GridCoordinate(0, 5);
+                fixture.Player.RespawnAt(fixture.Board.GetWorldPosition(cell), CardinalDirection.Up);
+                var before = fixture.Player.transform.position;
+
+                fixture.Input.TrySelectDirection(CardinalDirection.Left);
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+
+                Assert.That(fixture.Player.PendingDirection, Is.EqualTo(CardinalDirection.Right));
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+                Assert.That(fixture.Player.transform.position.x, Is.GreaterThan(before.x));
+            }
+        }
+
+        [Test]
+        public void RapidDirectionChangesAfterRespawn_StaySynchronizedAndMove()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Game.ReportPlayerFailure(PlayerFailureReason.Laser);
+                fixture.CompleteRespawn();
+                fixture.Input.TrySelectDirection(CardinalDirection.Up);
+                fixture.Input.TrySelectDirection(CardinalDirection.Down);
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+                Assert.That(fixture.Player.CurrentDirection, Is.EqualTo(CardinalDirection.Right));
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(fixture.Board.WorldToGrid(fixture.Player.transform.position)));
+            }
+        }
+
+        [Test]
+        public void RapidDirectionChangesWhileExposed_ContinueWithoutDiagonalState()
+        {
+            using (var fixture = new Fixture())
+            {
+                var cell = new GridCoordinate(0, 4);
+                fixture.Player.RespawnAt(fixture.Board.GetWorldPosition(cell), CardinalDirection.Right);
+                fixture.Player.AdvanceMovement(.04f);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+
+                fixture.Input.TrySelectDirection(CardinalDirection.Up);
+                fixture.Input.TrySelectDirection(CardinalDirection.Down);
+                var before = fixture.Player.transform.position;
+
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+                Assert.That(fixture.Player.CurrentDirection, Is.EqualTo(CardinalDirection.Down));
+                Assert.That(fixture.Player.transform.position.x, Is.EqualTo(before.x).Within(.0001f));
+                Assert.That(fixture.Player.transform.position.y, Is.LessThan(before.y));
+            }
+        }
+
+        [Test]
         public void FailureLifecycle_ClearsTrailRespawnsAtSafeCellAndRestoresControl()
         {
             using (var fixture = new Fixture())

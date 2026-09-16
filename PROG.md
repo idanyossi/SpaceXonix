@@ -48,8 +48,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 83
-- Passed: 83
+- EditMode discovered: 89
+- Passed: 89
 - Failed: 0
 - Coverage includes input/movement, board/trail/capture/destruction, the complete death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -82,6 +82,16 @@
 - Real `Game.unity` Play Mode proof ran 10 deliberate intersections across Basic, Linear, and Unstable enemies; short, long, horizontal, vertical, multi-cell, and edge-adjacent trails were covered. Every recorded traversal contained a trail cell, reported `TrailHit`, accepted exactly one failure, changed lives by exactly one (20→19 through 11→10), cleared the trail, entered `Respawning`, completed respawn, and allowed immediate movement afterward.
 - Continuous `Game.unity` proof captured territory (0%→0.1022913%), then completed two successive trail deaths: Basic 3→2 and Linear 2→1. Both cleared the trail, entered Respawning, returned to Playing, and moved afterward.
 - Final EditMode suite: 83 passed, 0 failed. Unity Console: 0 SpaceXonix errors.
+
+## Player Startup, Input, and Laser-Respawn Stabilization
+
+- Startup root cause: `InputRouter` and `PlayerController` both defaulted to enabled with `Right` already selected. As soon as the first gameplay update ran, the controller moved without any player command; the real scene reached cell `(1,1)` with one active trail cell and `IsPlayerExposed == true`. Startup now initializes input and movement disabled, synchronizes the configured direction, and keeps the controller stationary until the first legal direction command. Five fresh `Game.unity` entries consistently remained at `(0,1)` with zero trail cells, zero capture, and no exposure.
+- Rapid-input root cause: every raw direction immediately replaced the movement model direction without applying board-step legality. At an edge, a rapid final input toward the outside overwrote a valid direction, after which every update clamped to the same position indefinitely. PlayerController now owns the actual movement direction plus one optional pending direction. InputRouter records raw input, the controller retains only the latest legal request, consumes it once per movement tick, rejects illegal requests without replacing valid movement, and selects a deterministic legal fallback only if the current direction itself becomes illegal.
+- Laser-respawn root cause: a firing emitter checked the player every update. Respawn could return the player to the same beam while that firing phase was still active, immediately consuming another life and re-entering Respawning before the first movement tick. Each `LaserEmitter` now accepts at most one player failure per firing phase and resets that guard at the next phase; life loss remains authoritative through `GameManager.ReportPlayerFailure(Laser)`.
+- Regression coverage adds deterministic startup gating, multiple inputs before a movement tick, invalid-edge then valid input, rapid post-respawn input, rapid exposed movement, and a real laser failure → respawn → same-firing-phase check → successful movement tick.
+- Play Mode stress: 400 rapid-input sequences across all corners produced zero stuck states, zero logical/world/board synchronization failures, and zero diagonal movement. Ten real laser deaths changed lives exactly once each (20→19 through 11→10), rejected repeat damage from the same firing phase, respawned, and moved successfully.
+- Continuous `Game.unity` session passed startup, movement, rapid turns, capture (0%→0.08183306%), laser death (5→4), respawn/movement, another capture (0.1841244%), real Basic enemy contact (4→3), respawn, and continued movement in `Playing` with synchronized positions.
+- Final EditMode suite: 89 passed, 0 failed. Prompt 9 remains not started.
 
 ## Respawn Movement Stress Verification
 

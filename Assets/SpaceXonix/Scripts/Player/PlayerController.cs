@@ -12,13 +12,17 @@ namespace SpaceXonix.Player
         private PlayerMovementModel movementModel;
         private InputRouter connectedInputRouter;
         private BoardManager boardManager;
-        private bool movementEnabled = true;
+        private bool movementEnabled;
+        private bool awaitingDirectionInput = true;
+        private CardinalDirection? pendingDirection;
 
         public CardinalDirection CurrentDirection => movementModel != null ? movementModel.Direction : initialDirection;
         public CardinalDirection InitialDirection => initialDirection;
         public CardinalDirection FacingDirection => CurrentDirection;
         public float MoveSpeed => moveSpeed;
         public bool MovementEnabled => movementEnabled;
+        public bool IsAwaitingDirectionInput => awaitingDirectionInput;
+        public CardinalDirection? PendingDirection => pendingDirection;
         public Vector2 LogicalPosition => movementModel != null ? movementModel.Position : new Vector2(transform.position.x, transform.position.y);
 
         private void Awake()
@@ -33,10 +37,13 @@ namespace SpaceXonix.Player
 
         public bool AdvanceMovement(float deltaTime)
         {
-            if (!movementEnabled)
+            if (!movementEnabled || awaitingDirectionInput)
             {
                 return false;
             }
+
+            ConsumePendingDirection();
+            if (!EnsureCurrentDirectionIsLegal()) return false;
 
             var transformBefore = transform.position;
             var previousPosition = movementModel.Position;
@@ -58,15 +65,11 @@ namespace SpaceXonix.Player
             return transform.position != transformBefore;
         }
 
-        public void SetDirection(CardinalDirection direction)
+        private void RequestDirection(CardinalDirection direction)
         {
-            if (movementModel == null)
-            {
-                initialDirection = direction;
-                return;
-            }
-
-            movementModel.SetDirection(direction);
+            if (!IsDirectionLegal(direction)) return;
+            pendingDirection = direction;
+            awaitingDirectionInput = false;
         }
 
         public void SetMovementEnabled(bool enabled)
@@ -87,12 +90,11 @@ namespace SpaceXonix.Player
         {
             if (connectedInputRouter != null)
             {
-                connectedInputRouter.DirectionChanged -= SetDirection;
+                connectedInputRouter.DirectionChanged -= RequestDirection;
             }
 
             connectedInputRouter = inputRouter;
-            connectedInputRouter.DirectionChanged += SetDirection;
-            SetDirection(inputRouter.CurrentDirection);
+            connectedInputRouter.DirectionChanged += RequestDirection;
         }
 
         public void ConnectBoard(BoardManager board)
@@ -103,6 +105,8 @@ namespace SpaceXonix.Player
             transform.position = spawn;
             movementModel?.SetPosition(new Vector2(spawn.x, spawn.y));
             boardManager.ResetPlayerTracking(spawn);
+            pendingDirection = null;
+            awaitingDirectionInput = true;
         }
 
         public void RespawnAt(Vector3 worldPosition, CardinalDirection direction)
@@ -113,14 +117,51 @@ namespace SpaceXonix.Player
             transform.position = position;
             movementModel?.SetPosition(new Vector2(position.x, position.y));
             movementModel?.SetDirection(direction);
+            pendingDirection = null;
+            awaitingDirectionInput = false;
             boardManager.ResetPlayerTracking(position);
+        }
+
+        private void ConsumePendingDirection()
+        {
+            if (!pendingDirection.HasValue) return;
+            if (IsDirectionLegal(pendingDirection.Value)) movementModel.SetDirection(pendingDirection.Value);
+            pendingDirection = null;
+        }
+
+        private bool EnsureCurrentDirectionIsLegal()
+        {
+            if (IsDirectionLegal(CurrentDirection)) return true;
+            var directions = new[]
+            {
+                CardinalDirection.Up,
+                CardinalDirection.Down,
+                CardinalDirection.Left,
+                CardinalDirection.Right
+            };
+            foreach (var direction in directions)
+            {
+                if (!IsDirectionLegal(direction)) continue;
+                movementModel.SetDirection(direction);
+                connectedInputRouter?.ResetDirection(direction);
+                return true;
+            }
+            return false;
+        }
+
+        private bool IsDirectionLegal(CardinalDirection direction)
+        {
+            if (boardManager == null) return true;
+            var offset = direction.ToVector2();
+            var cell = boardManager.PlayerCell;
+            return boardManager.IsLegalPlayerStep(new GridCoordinate(cell.X + (int)offset.x, cell.Y + (int)offset.y));
         }
 
         private void OnDestroy()
         {
             if (connectedInputRouter != null)
             {
-                connectedInputRouter.DirectionChanged -= SetDirection;
+                connectedInputRouter.DirectionChanged -= RequestDirection;
             }
         }
     }

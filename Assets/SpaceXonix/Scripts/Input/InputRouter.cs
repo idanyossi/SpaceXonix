@@ -9,7 +9,7 @@ namespace SpaceXonix.Input
     {
         public event Action<CardinalDirection> DirectionChanged;
 
-        public bool GameplayInputEnabled { get; private set; } = true;
+        public bool GameplayInputEnabled { get; private set; }
         public CardinalDirection CurrentDirection { get; private set; } = CardinalDirection.Right;
 
         private void Update()
@@ -45,7 +45,6 @@ namespace SpaceXonix.Input
         public void ResetDirection(CardinalDirection direction)
         {
             CurrentDirection = direction;
-            DirectionChanged?.Invoke(direction);
         }
 
         public bool TrySelectDirection(CardinalDirection direction)
