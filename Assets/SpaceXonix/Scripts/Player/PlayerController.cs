@@ -22,6 +22,7 @@ namespace SpaceXonix.Player
         private PlayerMovementModel movementModel;
         private InputRouter connectedInputRouter;
         private BoardManager boardManager;
+        private GameManager lifecycle;
         private PlayerControlState controlState = PlayerControlState.Respawning;
         private CardinalDirection? pendingDirection;
 
@@ -54,6 +55,7 @@ namespace SpaceXonix.Player
                 return false;
             }
 
+            var lifecycleGeneration = lifecycle != null ? lifecycle.PlayerLifecycleGeneration : 0;
             ConsumePendingDirection();
             if (!EnsureCurrentDirectionIsLegal()) return false;
 
@@ -65,6 +67,7 @@ namespace SpaceXonix.Player
             {
                 candidate = boardManager.ClampToBoard(candidate);
                 var result = boardManager.TrackPlayerWorldPosition(new Vector3(previousPosition.x, previousPosition.y, transform.position.z), candidate);
+                if (lifecycle != null && lifecycle.PlayerLifecycleGeneration != lifecycleGeneration) return false;
                 if (controlState == PlayerControlState.Respawning || controlState == PlayerControlState.GameOver) return false;
                 if (result == BoardMoveResult.TrailFailed) return false;
                 if (result == BoardMoveResult.SafeMove || result == BoardMoveResult.Reconnected)
@@ -145,6 +148,11 @@ namespace SpaceXonix.Player
             boardManager.ResetPlayerTracking(spawn);
             pendingDirection = null;
             controlState = PlayerControlState.SafeIdle;
+        }
+
+        public void ConnectLifecycle(GameManager gameManager)
+        {
+            lifecycle = gameManager;
         }
 
         public void RespawnAt(Vector3 worldPosition, CardinalDirection direction)

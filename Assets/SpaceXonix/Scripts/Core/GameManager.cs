@@ -14,17 +14,22 @@ namespace SpaceXonix.Core
         [SerializeField] private BoardManager boardManager;
         [SerializeField, Min(1)] private int startingLives = 3;
         [SerializeField, Min(0f)] private float respawnDelay = 1.25f;
+        [SerializeField, Min(0f)] private float postRespawnInvulnerabilityDuration = 2f;
 
         public static GameManager Instance { get; private set; }
         private LifeStateModel lifeState;
         private Coroutine respawnCoroutine;
         private bool failureInProgress;
         private int failureGateReleaseFrame = -1;
+        private int playerLifecycleGeneration;
+        private float invulnerabilityRemaining;
 
         public GameplayState CurrentState => lifeState != null ? lifeState.State : GameplayState.Playing;
         public int Lives => lifeState != null ? lifeState.Lives : startingLives;
         public PlayerController PlayerController => playerController;
         public bool IsFailureInProgress => failureInProgress;
+        public bool IsInvulnerable => CurrentState == GameplayState.Playing && invulnerabilityRemaining > 0f;
+        public int PlayerLifecycleGeneration => playerLifecycleGeneration;
         public event Action<int> LivesChanged;
         public event Action<PlayerFailureReason> PlayerFailed;
         public event Action RespawnStarted;
@@ -51,6 +56,7 @@ namespace SpaceXonix.Core
 
             playerController.ConnectInput(inputRouter);
             playerController.ConnectBoard(boardManager);
+            playerController.ConnectLifecycle(this);
             inputRouter.SetGameplayInputEnabled(false);
             playerController.SetGameplayState(GameplayState.Respawning);
             boardManager.TrailStateChanged += OnTrailStateChanged;
@@ -69,6 +75,10 @@ namespace SpaceXonix.Core
         private void Start()
         {
             lifeState = new LifeStateModel(startingLives);
+            failureInProgress = false;
+            failureGateReleaseFrame = -1;
+            playerLifecycleGeneration = 0;
+            invulnerabilityRemaining = 0f;
             inputRouter.ResetDirection(playerController.InitialDirection);
             LivesChanged?.Invoke(Lives);
             ApplyState(GameplayState.Playing);
@@ -81,15 +91,27 @@ namespace SpaceXonix.Core
             failureGateReleaseFrame = -1;
         }
 
+        private void Update()
+        {
+            AdvanceLifecycle(Time.deltaTime);
+        }
+
+        public void AdvanceLifecycle(float deltaTime)
+        {
+            if (invulnerabilityRemaining <= 0f) return;
+            invulnerabilityRemaining = Mathf.Max(0f, invulnerabilityRemaining - Mathf.Max(0f, deltaTime));
+        }
+
         public void SetState(GameplayState state)
         {
+            invulnerabilityRemaining = 0f;
             lifeState?.SetState(state);
             ApplyState(state);
         }
 
         public bool ReportPlayerFailure(PlayerFailureReason reason)
         {
-            if (failureInProgress || lifeState == null || lifeState.State != GameplayState.Playing) return false;
+            if (failureInProgress || IsInvulnerable || lifeState == null || lifeState.State != GameplayState.Playing) return false;
             failureInProgress = true;
             if (!lifeState.TryFail())
             {
@@ -97,6 +119,8 @@ namespace SpaceXonix.Core
                 return false;
             }
 
+            playerLifecycleGeneration++;
+            invulnerabilityRemaining = 0f;
             ApplyState(CurrentState);
             boardManager.CancelActiveTrail();
             playerController.PrepareForRespawn();
@@ -104,6 +128,7 @@ namespace SpaceXonix.Core
             PlayerFailed?.Invoke(reason);
             if (CurrentState == GameplayState.GameOver)
             {
+                invulnerabilityRemaining = 0f;
                 GameOver?.Invoke();
                 return true;
             }
@@ -133,12 +158,13 @@ namespace SpaceXonix.Core
             if (!boardManager.IsValidRespawnCell(respawnCell)) return false;
             var respawnDirection = ResolveRespawnDirection(respawnCell, playerController.InitialDirection);
             if (!playerController.RestoreSafeManualState(respawnCell, respawnDirection)) return false;
-            ApplyState(GameplayState.Playing);
             if (!lifeState.CompleteRespawn())
             {
                 ApplyState(GameplayState.Respawning);
                 return false;
             }
+            invulnerabilityRemaining = postRespawnInvulnerabilityDuration;
+            ApplyState(GameplayState.Playing);
             failureGateReleaseFrame = Time.frameCount;
             PlayerRespawned?.Invoke();
             return true;

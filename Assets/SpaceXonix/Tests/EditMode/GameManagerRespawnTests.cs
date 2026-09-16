@@ -416,6 +416,26 @@ namespace SpaceXonix.Tests.EditMode
             }
         }
 
+        [Test]
+        public void DirectEnemyContactOnSafeTerrain_UsesSharedRespawnAndRestoresMovement()
+        {
+            using (var fixture = new Fixture())
+            using (var enemy = new EnemyFixture(fixture, typeof(BasicBouncer), fixture.Board.PlayerCell, Vector2.zero, 0f))
+            {
+                var safeCell = fixture.Board.PlayerCell;
+                enemy.Controller.AdvanceMovement(0f);
+
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+                Assert.That(fixture.Game.PlayerLifecycleGeneration, Is.EqualTo(1));
+                Assert.That(fixture.CompleteRespawn(), Is.True);
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(safeCell));
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.SafeIdle));
+                fixture.Input.TrySelectDirection(fixture.Player.CurrentDirection);
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+            }
+        }
+
         [TestCase(PlayerFailureReason.EnemyContact)]
         [TestCase(PlayerFailureReason.TrailHit)]
         [TestCase(PlayerFailureReason.VolatileExplosion)]
@@ -760,6 +780,7 @@ namespace SpaceXonix.Tests.EditMode
         [TestCase(PlayerFailureReason.EnemyContact, PlayerFailureReason.Laser)]
         [TestCase(PlayerFailureReason.EnemyContact, PlayerFailureReason.VolatileExplosion)]
         [TestCase(PlayerFailureReason.TrailHit, PlayerFailureReason.EnemyContact)]
+        [TestCase(PlayerFailureReason.Laser, PlayerFailureReason.VolatileExplosion)]
         public void OverlappingDifferentFailures_AcceptOnlyTheFirst(PlayerFailureReason first, PlayerFailureReason second)
         {
             using (var fixture = new Fixture())
@@ -776,6 +797,7 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(failedEvents, Is.EqualTo(1));
                 Assert.That(respawnStarts, Is.EqualTo(1));
                 Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+                Assert.That(fixture.Game.PlayerLifecycleGeneration, Is.EqualTo(1));
             }
         }
 
@@ -846,6 +868,40 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.TrailHit), Is.False);
                 Assert.That(fixture.Game.Lives, Is.EqualTo(1));
                 Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+            }
+        }
+
+        [Test]
+        public void RespawnInvulnerability_BlocksDamageForTwoSecondsWithoutBlockingMovement()
+        {
+            using (var fixture = new Fixture())
+            {
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.Laser), Is.True);
+                Assert.That(fixture.CompleteRespawnWithoutAdvancingFrame(), Is.True);
+                Assert.That(fixture.AdvancePastFailureFrame(), Is.True);
+                Assert.That(fixture.Game.IsInvulnerable, Is.True);
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.SafeIdle));
+
+                fixture.Input.TrySelectDirection(fixture.Player.CurrentDirection);
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+                var lives = fixture.Game.Lives;
+                var position = fixture.Player.transform.position;
+                var trailCount = fixture.Board.Model.ActiveTrail.Count;
+
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact), Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(lives));
+                Assert.That(fixture.Player.transform.position, Is.EqualTo(position));
+                Assert.That(fixture.Board.Model.ActiveTrail.Count, Is.EqualTo(trailCount));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+
+                fixture.Game.AdvanceLifecycle(1.99f);
+                Assert.That(fixture.Game.IsInvulnerable, Is.True);
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.VolatileExplosion), Is.False);
+                fixture.Game.AdvanceLifecycle(.01f);
+                Assert.That(fixture.Game.IsInvulnerable, Is.False);
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.VolatileExplosion), Is.True);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(lives - 1));
             }
         }
 
@@ -1040,7 +1096,11 @@ namespace SpaceXonix.Tests.EditMode
             public bool CompleteRespawn()
             {
                 var completed = CompleteRespawnWithoutAdvancingFrame();
-                if (completed) AdvancePastFailureFrame();
+                if (completed)
+                {
+                    AdvancePastFailureFrame();
+                    Game.AdvanceLifecycle(2f);
+                }
                 return completed;
             }
 

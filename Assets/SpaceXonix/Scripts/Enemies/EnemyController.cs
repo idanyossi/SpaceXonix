@@ -44,15 +44,16 @@ namespace SpaceXonix.Enemies
         public void AdvanceMovement(float deltaTime)
         {
             if (!IsActiveEnemy || movement == null || board == null) return;
+            var lifecycleGeneration = game != null ? game.PlayerLifecycleGeneration : 0;
             var previousCell = LogicalCell;
             var before = movement.Position;
             var intendedPosition = before + movement.Velocity * deltaTime;
             board.GetTraversedCells(before, intendedPosition, traversedCells);
             LastTrailHitAccepted = false;
             var player = game != null ? game.PlayerController : null;
-            var hitsExposedPlayer = player != null && game.CurrentState == GameplayState.Playing && board.IsPlayerExposed &&
+            var hitsPlayer = player != null && game.CurrentState == GameplayState.Playing &&
                 Vector2.Distance(intendedPosition, player.transform.position) <= board.CellWorldSize * .6f;
-            if (hitsExposedPlayer && game.ReportPlayerFailure(PlayerFailureReason.EnemyContact))
+            if (hitsPlayer && game.ReportPlayerFailure(PlayerFailureReason.EnemyContact))
             {
                 return;
             }
@@ -63,13 +64,14 @@ namespace SpaceXonix.Enemies
                 if (LastTrailHitAccepted) return;
                 break;
             }
+            if (game != null && game.PlayerLifecycleGeneration != lifecycleGeneration) return;
             movement.Advance(deltaTime, IsUncapturedWorld);
             transform.position = new Vector3(movement.Position.x, movement.Position.y, transform.position.z);
             if (LogicalCell != previousCell) LogicalCellChanged?.Invoke(this);
             if (player == null || game.CurrentState != GameplayState.Playing) return;
             var distance = Vector2.Distance(transform.position, player.transform.position);
             if (distance > board.CellWorldSize * .6f) return;
-            if (board.IsPlayerExposed) game.ReportPlayerFailure(PlayerFailureReason.EnemyContact);
+            game.ReportPlayerFailure(PlayerFailureReason.EnemyContact);
         }
         private bool IsUncapturedWorld(Vector2 world)
         {

@@ -49,8 +49,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 120
-- Passed: 120
+- EditMode discovered: 123
+- Passed: 123
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -183,6 +183,16 @@
 - This removes the restoration gap where a safe-terrain laser death depended on a later broad gameplay-state application to leave the controller's `Respawning` movement state. No laser-specific respawn behavior was added, and repeated beam callbacks remain rejected by the failure gate and firing-phase guard.
 - Focused coverage now runs both `SafeIdle` and `SafeMoving` laser hits through life loss, `Respawning`, same-beam rejection, synchronized `SafeIdle` restoration, and successful movement from fresh held input.
 - `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 120 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
+
+## Unified Player Death and Respawn Lifecycle
+
+- `GameManager.ReportPlayerFailure(...)` remains the only death entry point and now combines the synchronous failure lock, life transition, lifecycle-generation increment, traversal invalidation, single respawn ownership, and post-respawn protection. Simultaneous enemy, trail, laser, and Volatile reports can accept only the first failure and cannot start competing restoration work.
+- Player and enemy traversal capture the current player lifecycle generation. When an accepted death increments it, remaining work from the prior generation exits before it can write another player position, recreate a trail, or continue collision processing.
+- Respawn continues to prefer BoardManager's most recent pre-danger safe cell, revalidates it against the current BoardModel, and deterministically falls back to another current captured cell with a legal outgoing step. The one restoration operation clears trail/exposure, synchronizes BoardManager, movement model, Transform, direction, and InputRouter, and establishes `SafeIdle` before the life model returns to `Playing` and input is enabled.
+- Successful non-GameOver respawns now start configurable protection (`2.0` seconds by default). `GameManager.IsInvulnerable` is authoritative; ignored failures do not alter lives, movement, position, or active trail, while movement and capture remain available. Protection expires automatically, is cleared by accepted death/GameOver and explicit state resets, and is never started on the final life.
+- Direct enemy contact now uses the same `EnemyContact` failure path on safe as well as exposed terrain. Lasers continue to test only the player's position: beam contact with trail alone remains harmless and cannot report `TrailHit` or clear the trail.
+- Regression coverage includes safe/exposed laser deaths, laser/trail isolation, safe direct enemy contact, enemy TrailHit, self-intersection, Volatile damage, simultaneous mixed failures including laser + Volatile, last-safe-cell fallback, lifecycle aborts, post-respawn movement, two-second invulnerability behavior, renewed damage after expiry, and final-life Game Over.
+- `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 123 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
 
 ## Repository Cleanup
 
