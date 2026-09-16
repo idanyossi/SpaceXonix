@@ -72,9 +72,16 @@ namespace SpaceXonix.Player
 
         private void RequestDirection(CardinalDirection direction)
         {
+            var effectiveDirection = pendingDirection ?? CurrentDirection;
+            if (boardManager != null && boardManager.IsPlayerExposed && IsOpposite(effectiveDirection, direction)) return;
             if (!IsDirectionLegal(direction)) return;
             pendingDirection = direction;
             awaitingDirectionInput = false;
+        }
+
+        private static bool IsOpposite(CardinalDirection current, CardinalDirection requested)
+        {
+            return current.ToVector2() + requested.ToVector2() == Vector2.zero;
         }
 
         public void SetMovementEnabled(bool enabled)

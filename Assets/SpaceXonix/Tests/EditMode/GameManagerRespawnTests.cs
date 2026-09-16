@@ -55,6 +55,57 @@ namespace SpaceXonix.Tests.EditMode
             }
         }
 
+        [TestCase(CardinalDirection.Left, CardinalDirection.Right, 3, 0)]
+        [TestCase(CardinalDirection.Right, CardinalDirection.Left, 2, 0)]
+        [TestCase(CardinalDirection.Up, CardinalDirection.Down, 0, 4)]
+        public void SafeTerritory_OppositeDirectionReversesNormally(
+            CardinalDirection first, CardinalDirection opposite, int x, int y)
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Player.RespawnAt(fixture.Board.GetWorldPosition(new GridCoordinate(x, y)), first);
+                fixture.Input.TrySelectDirection(first);
+                Assert.That(fixture.Player.AdvanceMovement(.005f), Is.True);
+                var beforeReverse = fixture.Player.transform.position;
+
+                fixture.Input.TrySelectDirection(opposite);
+
+                Assert.That(fixture.Player.AdvanceMovement(.005f), Is.True);
+                Assert.That(fixture.Player.CurrentDirection, Is.EqualTo(opposite));
+                Assert.That(fixture.Game.Lives, Is.EqualTo(3));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+                Assert.That(fixture.Player.transform.position, Is.Not.EqualTo(beforeReverse));
+            }
+        }
+
+        [TestCase(CardinalDirection.Left, CardinalDirection.Right, 3, 0)]
+        [TestCase(CardinalDirection.Down, CardinalDirection.Up, 0, 4)]
+        public void SafeTerritory_RapidOppositeAlternationNeverStallsOrDesynchronizes(
+            CardinalDirection first, CardinalDirection second, int x, int y)
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Player.RespawnAt(fixture.Board.GetWorldPosition(new GridCoordinate(x, y)), first);
+                for (var index = 0; index < 100; index++)
+                {
+                    var direction = index % 2 == 0 ? first : second;
+                    fixture.Input.TrySelectDirection(direction);
+                    Assert.That(fixture.Player.AdvanceMovement(.001f), Is.True, $"movement {index}");
+                    Assert.That(fixture.Player.CurrentDirection, Is.EqualTo(direction), $"direction {index}");
+                    Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position), $"sync {index}");
+                    Assert.That(fixture.Board.PlayerCell, Is.EqualTo(fixture.Board.WorldToGrid(fixture.Player.transform.position)), $"cell {index}");
+                    Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing), $"state {index}");
+                }
+
+                var beforeProofStep = fixture.Player.transform.position;
+                fixture.Input.TrySelectDirection(second);
+                Assert.That(fixture.Player.AdvanceMovement(.005f), Is.True);
+                Assert.That(fixture.Player.transform.position, Is.Not.EqualTo(beforeProofStep));
+                Assert.That(fixture.Game.Lives, Is.EqualTo(3));
+            }
+        }
+
         [Test]
         public void EnteringUncapturedTerritory_ContinuesWithoutAdditionalInput()
         {
@@ -98,6 +149,8 @@ namespace SpaceXonix.Tests.EditMode
                 fixture.Board.SetEnemyCells(new[] { new GridCoordinate(4, 5) });
                 fixture.Input.TrySelectDirection(CardinalDirection.Right);
                 fixture.Player.AdvanceMovement(.04f);
+                fixture.Input.TrySelectDirection(CardinalDirection.Up);
+                fixture.Player.AdvanceMovement(.04f);
                 fixture.Input.TrySelectDirection(CardinalDirection.Left);
                 fixture.Input.ReleaseDirection();
 
@@ -107,7 +160,7 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Game.Lives, Is.EqualTo(3));
                 Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
                 Assert.That(fixture.Board.CapturedPercentage, Is.GreaterThan(0f));
-                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 1)));
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 2)));
                 Assert.That(fixture.Board.GetSafeRespawnCell(), Is.EqualTo(fixture.Board.PlayerCell));
                 Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
                 var capturePosition = fixture.Player.transform.position;
@@ -125,6 +178,8 @@ namespace SpaceXonix.Tests.EditMode
                 fixture.Board.SetEnemyCells(new[] { new GridCoordinate(4, 5) });
                 fixture.Input.TrySelectDirection(CardinalDirection.Right);
                 fixture.Player.AdvanceMovement(.04f);
+                fixture.Input.TrySelectDirection(CardinalDirection.Up);
+                fixture.Player.AdvanceMovement(.04f);
                 fixture.Input.TrySelectDirection(CardinalDirection.Left);
                 fixture.Input.ReleaseDirection();
                 fixture.Player.AdvanceMovement(.04f);
@@ -134,15 +189,16 @@ namespace SpaceXonix.Tests.EditMode
                 fixture.Player.AdvanceMovement(.04f);
                 fixture.Player.AdvanceMovement(.04f);
                 Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+                fixture.Input.TrySelectDirection(CardinalDirection.Down);
+                fixture.Player.AdvanceMovement(.04f);
                 fixture.Input.TrySelectDirection(CardinalDirection.Left);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Input.ReleaseDirection();
                 fixture.Player.AdvanceMovement(.04f);
 
                 Assert.That(fixture.Board.IsPlayerExposed, Is.False);
-                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.False, "held input should resume safe movement after capture");
-                fixture.Player.AdvanceMovement(.04f);
-                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 1)));
-                fixture.Input.ReleaseDirection();
                 Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(1, 1)));
                 Assert.That(fixture.Player.AdvanceMovement(.2f), Is.False);
             }
         }
@@ -218,14 +274,16 @@ namespace SpaceXonix.Tests.EditMode
                 var before = fixture.Player.transform.position;
 
                 Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
-                Assert.That(fixture.Player.CurrentDirection, Is.EqualTo(CardinalDirection.Down));
+                Assert.That(fixture.Player.CurrentDirection, Is.EqualTo(CardinalDirection.Up));
                 Assert.That(fixture.Player.transform.position.x, Is.EqualTo(before.x).Within(.0001f));
-                Assert.That(fixture.Player.transform.position.y, Is.LessThan(before.y));
+                Assert.That(fixture.Player.transform.position.y, Is.GreaterThan(before.y));
+                Assert.That(fixture.Player.PendingDirection, Is.Null);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(3));
             }
         }
 
         [Test]
-        public void OppositeDirectionWhileExposed_ReversesThenSelfIntersectionFailsOnce()
+        public void OppositeDirectionWhileExposed_IsIgnoredWithoutFailure()
         {
             using (var fixture = new Fixture())
             {
@@ -239,15 +297,37 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Input.TrySelectDirection(CardinalDirection.Down), Is.True);
                 Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.False);
                 Assert.That(fixture.Player.AdvanceMovement(.005f), Is.True);
-                Assert.That(fixture.Player.CurrentDirection, Is.EqualTo(CardinalDirection.Down));
-                Assert.That(fixture.Player.transform.position.y, Is.LessThan(beforeReverse.y));
+                Assert.That(fixture.Player.CurrentDirection, Is.EqualTo(CardinalDirection.Up));
+                Assert.That(fixture.Player.transform.position.y, Is.GreaterThan(beforeReverse.y));
 
-                Assert.That(fixture.Player.AdvanceMovement(.04f), Is.False);
-                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
-                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
-                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
-                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.TrailSelfIntersection), Is.False);
-                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(3));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+                Assert.That(fixture.Player.PendingDirection, Is.Null);
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+            }
+        }
+
+        [Test]
+        public void HorizontalOppositeDirectionWhileExposed_IsIgnoredAndKeepsMoving()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Player.RespawnAt(fixture.Board.GetWorldPosition(new GridCoordinate(0, 4)), CardinalDirection.Right);
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                fixture.Player.AdvanceMovement(.04f);
+                var beforeReverseInput = fixture.Player.transform.position;
+
+                fixture.Input.TrySelectDirection(CardinalDirection.Left);
+
+                Assert.That(fixture.Player.AdvanceMovement(.01f), Is.True);
+                Assert.That(fixture.Player.CurrentDirection, Is.EqualTo(CardinalDirection.Right));
+                Assert.That(fixture.Player.transform.position.x, Is.GreaterThan(beforeReverseInput.x));
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(3));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Board.IsPlayerExposed, Is.True);
             }
         }
 
