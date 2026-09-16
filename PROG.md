@@ -49,8 +49,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 129
-- Passed: 129
+- EditMode discovered: 130
+- Passed: 130
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -232,6 +232,15 @@
 - `GameManager.Awake` now explicitly enables background execution so an accepted death lifecycle cannot be suspended indefinitely at the death position merely because window focus changes. No new respawn path, fallback, or hazard-specific behavior was added.
 - Real `Game.unity` replay verified a middle-board death restored to current captured terrain after the delay and accepted fresh movement. Existing shared regressions continue to cover enemy, laser, TrailHit/self-intersection, Volatile, simultaneous hits, safe restoration, and movement after respawn.
 - `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 129 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
+
+## Remaining Respawn Deadlock Root Cause
+
+- Bounded transition tracing in a continuously focused `Game.unity` session covered repeated EnemyContact, Laser, TrailHit/self-intersection, VolatileExplosion, and overlapping failure reports. Ordinary respawns consistently restored the current safe cell and moved afterward. The corrupting sequence occurred only after a completed respawn while post-respawn invulnerability was still active.
+- Exact reproduction: die, complete the authoritative safe respawn, immediately draw a multi-turn trail, then cross an earlier trail cell during invulnerability. This was category C: `BoardModel.MoveTo` called `CancelTrail` before GameManager evaluated `TrailSelfIntersection`; GameManager correctly rejected the protected damage, but the trail and traversed BoardManager cell had already been mutated under the still-`Playing` player.
+- Trail self-intersection is now transactional. `BoardManager` asks the authoritative GameManager failure gate to accept the failure before BoardModel clears the trail. Accepted failures retain the normal one-life/one-respawn path; rejected protected failures preserve the existing trail, roll back the attempted BoardManager cell, and restore the movement model to the unchanged Transform before returning from that movement tick.
+- Focused real-scene replay kept the Game window focused and verified the rejected intersection left lives unchanged, the player at the original trail head, all three trail cells intact, and exposed movement valid. The exact regression additionally makes a legal perpendicular next move and verifies trail extension, proving the player is not stuck.
+- `runInBackground` did not solve this because the player loop was running normally; the corruption was an ordering bug inside a live movement step after respawn.
+- `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 130 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
 
 ## Repository Cleanup
 

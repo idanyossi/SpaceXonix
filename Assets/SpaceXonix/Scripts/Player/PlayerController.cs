@@ -69,7 +69,11 @@ namespace SpaceXonix.Player
                 var result = boardManager.TrackPlayerWorldPosition(new Vector3(previousPosition.x, previousPosition.y, transform.position.z), candidate);
                 if (lifecycle != null && lifecycle.PlayerLifecycleGeneration != lifecycleGeneration) return false;
                 if (controlState == PlayerControlState.Respawning || controlState == PlayerControlState.GameOver) return false;
-                if (result == BoardMoveResult.TrailFailed) return false;
+                if (result == BoardMoveResult.TrailFailed)
+                {
+                    movementModel.SetPosition(new Vector2(transform.position.x, transform.position.y));
+                    return false;
+                }
                 if (result == BoardMoveResult.SafeMove || result == BoardMoveResult.Reconnected)
                 {
                     candidate = boardManager.GetWorldPosition(boardManager.PlayerCell);

@@ -33,6 +33,7 @@ namespace SpaceXonix.Board
         public GridCoordinate PlayerCell => playerCell;
         public float CapturedPercentage => Model != null ? Model.CapturedPercentage : 0f;
         public event Action<BoardMoveResult> TrailStateChanged;
+        public event Func<bool> TrailFailureRequested;
         public event Action<BoardCaptureResult> CaptureCompleted;
         public event Action<float> CapturedPercentageChanged;
         public event Action<int> TerritoryDestroyed;
@@ -221,12 +222,15 @@ namespace SpaceXonix.Board
             var result = BoardMoveResult.Ignored;
             while (playerCell != target)
             {
+                var previousCell = playerCell;
                 var deltaX = target.X - playerCell.X;
                 var deltaY = target.Y - playerCell.Y;
                 // The controller is cardinal; this fallback only protects against external teleports.
                 if (deltaX != 0) playerCell = new GridCoordinate(playerCell.X + Math.Sign(deltaX), playerCell.Y);
                 else playerCell = new GridCoordinate(playerCell.X, playerCell.Y + Math.Sign(deltaY));
-                result = Model.MoveTo(playerCell, enemySnapshot);
+                result = Model.MoveTo(playerCell, enemySnapshot, TryAcceptTrailFailure);
+                if (result == BoardMoveResult.TrailFailed && Model.IsExposed)
+                    playerCell = previousCell;
                 if (!Model.IsExposed && Model.GetCell(playerCell) == BoardCellState.Captured)
                 {
                     lastSafeCell = playerCell;
@@ -258,5 +262,7 @@ namespace SpaceXonix.Board
         }
 
         private bool IsSafeRespawnCell(GridCoordinate cell) => Model.IsInBounds(cell) && Model.GetCell(cell) == BoardCellState.Captured;
+
+        private bool TryAcceptTrailFailure() => TrailFailureRequested == null || TrailFailureRequested.Invoke();
     }
 }

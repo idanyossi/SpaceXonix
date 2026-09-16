@@ -60,12 +60,12 @@ namespace SpaceXonix.Core
             playerController.ConnectLifecycle(this);
             inputRouter.SetGameplayInputEnabled(false);
             playerController.SetGameplayState(GameplayState.Respawning);
-            boardManager.TrailStateChanged += OnTrailStateChanged;
+            boardManager.TrailFailureRequested += OnTrailFailureRequested;
         }
 
         private void OnDestroy()
         {
-            if (boardManager != null) boardManager.TrailStateChanged -= OnTrailStateChanged;
+            if (boardManager != null) boardManager.TrailFailureRequested -= OnTrailFailureRequested;
             if (respawnCoroutine != null) StopCoroutine(respawnCoroutine);
             if (Instance == this)
             {
@@ -232,10 +232,7 @@ namespace SpaceXonix.Core
             return boardManager.IsLegalPlayerStep(new GridCoordinate(cell.X + (int)offset.x, cell.Y + (int)offset.y));
         }
 
-        private void OnTrailStateChanged(BoardMoveResult result)
-        {
-            if (result == BoardMoveResult.TrailFailed) ReportPlayerFailure(PlayerFailureReason.TrailSelfIntersection);
-        }
+        private bool OnTrailFailureRequested() => ReportPlayerFailure(PlayerFailureReason.TrailSelfIntersection);
 
         private void ApplyState(GameplayState state)
         {

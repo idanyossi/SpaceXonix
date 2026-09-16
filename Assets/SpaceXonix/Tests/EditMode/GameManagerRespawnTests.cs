@@ -983,6 +983,46 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void InvulnerableSelfIntersection_LeavesTrailAndPlayerTraversalUnchanged()
+        {
+            using (var fixture = new Fixture())
+            {
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact), Is.True);
+                Assert.That(fixture.CompleteRespawnWithoutAdvancingFrame(), Is.True);
+                Assert.That(fixture.AdvancePastFailureFrame(), Is.True);
+                Assert.That(fixture.Game.IsInvulnerable, Is.True);
+                fixture.Board.Model.MoveTo(new GridCoordinate(1, 3));
+                fixture.Board.Model.MoveTo(new GridCoordinate(2, 3));
+                fixture.Board.Model.MoveTo(new GridCoordinate(3, 3));
+                var head = new GridCoordinate(3, 3);
+                var from = fixture.Board.GetWorldPosition(head);
+                fixture.Board.ResetPlayerTracking(from);
+                fixture.Player.transform.position = from;
+                var movement = (PlayerMovementModel)Fixture.Get(fixture.Player, "movementModel");
+                movement.SetPosition(from);
+                movement.SetDirection(CardinalDirection.Left);
+                Fixture.Set(fixture.Player, "controlState", PlayerControlState.ExposedMoving);
+                var lives = fixture.Game.Lives;
+
+                var movedIntoTrail = fixture.Player.AdvanceMovement(.04f);
+
+                Assert.That(movedIntoTrail, Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(lives));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(head));
+                Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+                Assert.That(fixture.Board.Model.ActiveTrail.Count, Is.EqualTo(3));
+                Assert.That(fixture.Board.Model.GetCell(head), Is.EqualTo(BoardCellState.Trail));
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+
+                fixture.Input.TrySelectDirection(CardinalDirection.Up);
+                Assert.That(fixture.Player.AdvanceMovement(.04f), Is.True);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.ExposedMoving));
+                Assert.That(fixture.Board.Model.ActiveTrail.Count, Is.EqualTo(4));
+            }
+        }
+
+        [Test]
         public void MultiCellSelfIntersection_StopsTrackingBeforeASecondTrailCanStart()
         {
             using (var fixture = new Fixture())

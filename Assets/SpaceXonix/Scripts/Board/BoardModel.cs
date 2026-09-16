@@ -57,7 +57,8 @@ namespace SpaceXonix.Board
         public bool IsStructural(GridCoordinate cell) => IsInBounds(cell) && structuralCells[ToIndex(cell.X, cell.Y)];
         public GridCoordinate ToCoordinate(int index) => new GridCoordinate(index % Width, index / Width);
 
-        public BoardMoveResult MoveTo(GridCoordinate cell, IReadOnlyCollection<GridCoordinate> activeEnemyCells = null)
+        public BoardMoveResult MoveTo(GridCoordinate cell, IReadOnlyCollection<GridCoordinate> activeEnemyCells = null,
+            Func<bool> tryAcceptTrailFailure = null)
         {
             if (!IsInBounds(cell)) return BoardMoveResult.OutOfBounds;
             var index = ToIndex(cell.X, cell.Y);
@@ -72,7 +73,7 @@ namespace SpaceXonix.Board
 
             if (state == BoardCellState.Trail)
             {
-                CancelTrail();
+                if (tryAcceptTrailFailure == null || tryAcceptTrailFailure()) CancelTrail();
                 TrailStateChanged?.Invoke(BoardMoveResult.TrailFailed);
                 return BoardMoveResult.TrailFailed;
             }
