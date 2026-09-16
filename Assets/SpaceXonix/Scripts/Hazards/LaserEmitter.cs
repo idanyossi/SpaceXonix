@@ -84,7 +84,9 @@ namespace SpaceXonix.Hazards
 
         private void CheckPlayerHit()
         {
-            if (playerHitThisFiringPhase || game == null || game.CurrentState != GameplayState.Playing || game.PlayerController == null) return;
+            if (playerHitThisFiringPhase || game == null || game.PlayerController == null) return;
+            var lifecycleGeneration = game.PlayerLifecycleGeneration;
+            if (!game.CanProcessPlayerContact(lifecycleGeneration)) return;
             if (ContainsPoint(game.PlayerController.transform.position) && game.ReportPlayerFailure(PlayerFailureReason.Laser))
                 playerHitThisFiringPhase = true;
         }

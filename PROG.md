@@ -49,8 +49,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 124
-- Passed: 124
+- EditMode discovered: 125
+- Passed: 125
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -200,6 +200,14 @@
 - Volatile interaction simulation now respects the authoritative gameplay state and captured lifecycle generation. It does not advance protection, detonate, despawn, update explosion occupancy, or evaluate player blast damage while the player is Respawning; intended enemy-triggered detonation resumes after gameplay restoration.
 - Focused coverage overlaps the player, an armed Volatile, and a normal enemy to exercise the competing path. It verifies one failure event, one life, one respawn start, `EnemyContact` as the sole accepted reason, no same-frame detonation, valid safe restoration, `SafeIdle`, and successful next movement.
 - Post-fix `Game.unity` reproduction produced one `EnemyContact`, one life loss, one respawn, no Volatile detonation, a valid safe cell, and successful movement after restoration. Full Unity EditMode suite: 124 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
+
+## Atomic Damage Lifecycle Barrier
+
+- `GameManager` now exposes one lifecycle-token predicate for player-contact work. The first accepted failure closes the synchronous failure gate and increments the lifecycle generation before life-state mutation; stale callers can no longer pass a partial `Playing` check and continue touching player state.
+- Enemy direct contact and TrailHit now check the captured token immediately after reporting damage and return when the failure was accepted, the generation changed, or gameplay left `Playing`. Lasers use the same predicate before their terminal failure report.
+- Volatile explosion ordering is terminal with respect to player damage: enemy removal, territory effects, source despawn, occupancy refresh, and explosion notification complete first. The final operation is the token-validated player failure report, so accepted blast damage has no remaining callback work capable of changing player state or its future respawn destination.
+- The five simultaneous combinations—enemy + enemy, enemy + laser, enemy + Volatile, laser + Volatile, and TrailHit + enemy—now run through the complete shared lifecycle regression: one life, one respawn, valid safe restoration, and successful movement afterward. Completion-frame callbacks remain rejected and invulnerability remains owned by GameManager.
+- `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 125 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
 
 ## Repository Cleanup
 

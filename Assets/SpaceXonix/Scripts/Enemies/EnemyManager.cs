@@ -54,9 +54,13 @@ namespace SpaceXonix.Enemies
         public bool ResolveVolatileExplosion(VolatileEnemy source)
         {
             if (source == null || !activeEnemies.Contains(source) || !source.BeginDetonation()) return false;
+            var lifecycleGeneration = gameManager != null ? gameManager.PlayerLifecycleGeneration : 0;
             DetonationStarted?.Invoke(source);
             var position = source.transform.position;
             var definition = source.Definition;
+            var hitsPlayer = gameManager != null && playerController != null &&
+                gameManager.CanProcessPlayerContact(lifecycleGeneration) &&
+                Vector2.Distance(position, playerController.transform.position) <= definition.volatileBlastRadius;
             var destroyedEnemies = 0;
             for (var i = activeEnemies.Count - 1; i >= 0; i--)
             {
@@ -66,15 +70,14 @@ namespace SpaceXonix.Enemies
                 Despawn(enemy);
                 destroyedEnemies++;
             }
-            if (gameManager != null && playerController != null && gameManager.CurrentState == GameplayState.Playing &&
-                Vector2.Distance(position, playerController.transform.position) <= definition.volatileBlastRadius)
-                gameManager.ReportPlayerFailure(PlayerFailureReason.VolatileExplosion);
             var radius = definition.volatileBlastRadius;
             Debug.DrawLine(position - Vector3.right * radius, position + Vector3.right * radius, Color.yellow, 1f);
             Debug.DrawLine(position - Vector3.up * radius, position + Vector3.up * radius, Color.yellow, 1f);
             var destroyedTerritory = boardManager.RemoveCapturedWithinRadius(source.LogicalCell, definition.volatileTerritoryRadiusCells);
             Despawn(source);
             ExplosionOccurred?.Invoke(position, destroyedEnemies, destroyedTerritory);
+            if (hitsPlayer && gameManager.CanProcessPlayerContact(lifecycleGeneration))
+                gameManager.ReportPlayerFailure(PlayerFailureReason.VolatileExplosion);
             return true;
         }
         public void Register(EnemyController enemy)

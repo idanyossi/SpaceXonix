@@ -51,24 +51,25 @@ namespace SpaceXonix.Enemies
             board.GetTraversedCells(before, intendedPosition, traversedCells);
             LastTrailHitAccepted = false;
             var player = game != null ? game.PlayerController : null;
-            var hitsPlayer = player != null && game.CurrentState == GameplayState.Playing &&
+            var hitsPlayer = player != null && game.CanProcessPlayerContact(lifecycleGeneration) &&
                 Vector2.Distance(intendedPosition, player.transform.position) <= board.CellWorldSize * .6f;
-            if (hitsPlayer && game.ReportPlayerFailure(PlayerFailureReason.EnemyContact))
+            if (hitsPlayer)
             {
-                return;
+                var accepted = game.ReportPlayerFailure(PlayerFailureReason.EnemyContact);
+                if (accepted || !game.CanProcessPlayerContact(lifecycleGeneration)) return;
             }
             for (var i = 0; i < traversedCells.Count; i++)
             {
                 if (board.Model.GetCell(traversedCells[i]) != BoardCellState.Trail) continue;
                 if (game != null) LastTrailHitAccepted = game.ReportPlayerFailure(PlayerFailureReason.TrailHit);
-                if (LastTrailHitAccepted) return;
+                if (LastTrailHitAccepted || game != null && !game.CanProcessPlayerContact(lifecycleGeneration)) return;
                 break;
             }
             if (game != null && game.PlayerLifecycleGeneration != lifecycleGeneration) return;
             movement.Advance(deltaTime, IsUncapturedWorld);
             transform.position = new Vector3(movement.Position.x, movement.Position.y, transform.position.z);
             if (LogicalCell != previousCell) LogicalCellChanged?.Invoke(this);
-            if (player == null || game.CurrentState != GameplayState.Playing) return;
+            if (player == null || !game.CanProcessPlayerContact(lifecycleGeneration)) return;
             var distance = Vector2.Distance(transform.position, player.transform.position);
             if (distance > board.CellWorldSize * .6f) return;
             game.ReportPlayerFailure(PlayerFailureReason.EnemyContact);

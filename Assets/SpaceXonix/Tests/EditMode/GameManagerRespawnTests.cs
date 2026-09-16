@@ -805,6 +805,7 @@ namespace SpaceXonix.Tests.EditMode
         [TestCase(PlayerFailureReason.EnemyContact, PlayerFailureReason.Laser)]
         [TestCase(PlayerFailureReason.EnemyContact, PlayerFailureReason.VolatileExplosion)]
         [TestCase(PlayerFailureReason.TrailHit, PlayerFailureReason.EnemyContact)]
+        [TestCase(PlayerFailureReason.Laser, PlayerFailureReason.VolatileExplosion)]
         public void SimultaneousFailures_RunOneRespawnAndRejectCompletionFrameCallbacks(
             PlayerFailureReason first, PlayerFailureReason overlapping)
         {

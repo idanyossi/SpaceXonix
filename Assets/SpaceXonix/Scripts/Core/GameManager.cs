@@ -109,17 +109,24 @@ namespace SpaceXonix.Core
             ApplyState(state);
         }
 
+        public bool CanProcessPlayerContact(int lifecycleGeneration)
+        {
+            return lifecycleGeneration == playerLifecycleGeneration && !failureInProgress && !IsInvulnerable &&
+                lifeState != null && lifeState.State == GameplayState.Playing;
+        }
+
         public bool ReportPlayerFailure(PlayerFailureReason reason)
         {
             if (failureInProgress || IsInvulnerable || lifeState == null || lifeState.State != GameplayState.Playing) return false;
             failureInProgress = true;
+            playerLifecycleGeneration++;
             if (!lifeState.TryFail())
             {
+                playerLifecycleGeneration--;
                 failureInProgress = false;
                 return false;
             }
 
-            playerLifecycleGeneration++;
             invulnerabilityRemaining = 0f;
             ApplyState(CurrentState);
             boardManager.CancelActiveTrail();
