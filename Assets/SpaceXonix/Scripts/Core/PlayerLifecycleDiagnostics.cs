@@ -11,8 +11,10 @@ namespace SpaceXonix.Core
 {
     internal sealed class PlayerLifecycleDiagnostics
     {
-        private const int Capacity = 50;
-        private readonly Queue<string> history = new Queue<string>(Capacity);
+        private const int MovementCapacity = 50;
+        private const int CriticalCapacity = 30;
+        private readonly Queue<string> movementHistory = new Queue<string>(MovementCapacity);
+        private readonly Queue<string> criticalHistory = new Queue<string>(CriticalCapacity);
         private readonly GameManager game;
         private readonly PlayerController player;
         private readonly BoardManager board;
@@ -20,6 +22,11 @@ namespace SpaceXonix.Core
         private string previousState;
         private bool dumped;
         private PlayerFailureReason? activeFailureReason;
+        private int lastAcceptedFailureFrame = -1;
+        private int? observedGeneration;
+        private GameplayState? observedGameState;
+        private PlayerControlState? observedControlState;
+        private bool? observedInvulnerability;
 
         public PlayerLifecycleDiagnostics(GameManager game, PlayerController player, BoardManager board, InputRouter input)
         {
@@ -33,7 +40,11 @@ namespace SpaceXonix.Core
             bool force = false)
         {
             if (board.Model == null) return;
-            if (failureReason.HasValue && reason == "FailureAccepted") activeFailureReason = failureReason;
+            if (failureReason.HasValue && reason == "FailureAccepted")
+            {
+                activeFailureReason = failureReason;
+                lastAcceptedFailureFrame = Time.frameCount;
+            }
             var boardCell = board.PlayerCell;
             var logicalCell = board.WorldToGrid(new Vector3(player.LogicalPosition.x, player.LogicalPosition.y, 0f));
             var transformCell = board.WorldToGrid(board.ClampToBoard(player.transform.position));
@@ -52,8 +63,9 @@ namespace SpaceXonix.Core
             var entry = $"frame={Time.frameCount} gen={game.PlayerLifecycleGeneration} event={reason} " +
                 $"failure={activeFailureReason?.ToString() ?? "none"} reported={failureReason?.ToString() ?? "none"} " +
                 $"opGen={operationGeneration} {state}";
-            if (history.Count == Capacity) history.Dequeue();
-            history.Enqueue(entry);
+            RecordDerivedCriticalTransitions(reason, state, failureReason);
+            var targetHistory = IsCriticalReason(reason) ? criticalHistory : movementHistory;
+            Enqueue(targetHistory, targetHistory == criticalHistory ? CriticalCapacity : MovementCapacity, entry);
 
             var invalidReason = FindInvalidReason(reason, boardCell, logicalCell, transformCell, cellType,
                 operationGeneration);
@@ -62,7 +74,7 @@ namespace SpaceXonix.Core
             var dump = new StringBuilder(4096);
             dump.AppendLine("=== SPACEXONIX PLAYER LIFECYCLE INVALID STATE ===");
             dump.Append("First invalid transition: ").Append(reason).Append(" — ").AppendLine(invalidReason);
-            foreach (var item in history) dump.AppendLine(item);
+            AppendHistories(dump);
             dump.AppendLine("=== END PLAYER LIFECYCLE DIAGNOSTIC ===");
             Debug.LogError(dump.ToString(), game);
         }
@@ -89,6 +101,8 @@ namespace SpaceXonix.Core
             dump.Append("frame=").Append(Time.frameCount)
                 .Append(" gen=").Append(game.PlayerLifecycleGeneration)
                 .Append(" failure=").Append(activeFailureReason?.ToString() ?? "none")
+                .Append(" lastAcceptedFailureFrame=")
+                .Append(lastAcceptedFailureFrame >= 0 ? lastAcceptedFailureFrame.ToString() : "none")
                 .Append(" game=").Append(game.CurrentState)
                 .Append(" control=").Append(player.ControlState)
                 .Append(" logical=").Append(logicalCell).Append('/').Append(player.LogicalPosition)
@@ -107,10 +121,62 @@ namespace SpaceXonix.Core
                 .Append(" invulnerable=").Append(game.IsInvulnerable).Append('/')
                 .Append(game.InvulnerabilityRemaining.ToString("0.000"))
                 .Append(" respawnActive=").AppendLine(game.HasActiveRespawnOperation.ToString());
-            dump.AppendLine("RECENT LIFECYCLE HISTORY:");
-            foreach (var item in history) dump.AppendLine(item);
+            AppendHistories(dump);
             dump.AppendLine("=== END PLAYER LIFECYCLE DIAGNOSTIC ===");
             Debug.Log(dump.ToString(), game);
+        }
+
+        private void RecordDerivedCriticalTransitions(string reason, string state, PlayerFailureReason? failureReason)
+        {
+            var frame = Time.frameCount;
+            var generation = game.PlayerLifecycleGeneration;
+            if (failureReason.HasValue)
+                AddCritical($"frame={frame} gen={generation} event=FailureReported:{failureReason.Value} {state}");
+            if (reason == "FailureAccepted")
+                AddCritical($"frame={frame} gen={generation} event=DeathTrailCleared {state}");
+            if (reason == "RespawnCompleted")
+                AddCritical($"frame={frame} gen={generation} event=PlayerRestorationCompleted {state}");
+            if (observedGeneration.HasValue && observedGeneration.Value != generation)
+                AddCritical($"frame={frame} gen={generation} event=LifecycleGenerationChanged:" +
+                    $"{observedGeneration.Value}->{generation} {state}");
+            if (observedGameState.HasValue && observedGameState.Value != game.CurrentState)
+                AddCritical($"frame={frame} gen={generation} event=GameManagerStateChanged:" +
+                    $"{observedGameState.Value}->{game.CurrentState} {state}");
+            if (observedControlState.HasValue && observedControlState.Value != player.ControlState)
+                AddCritical($"frame={frame} gen={generation} event=ControlStateChanged:" +
+                    $"{observedControlState.Value}->{player.ControlState} {state}");
+            if (observedInvulnerability.HasValue && observedInvulnerability.Value != game.IsInvulnerable)
+                AddCritical($"frame={frame} gen={generation} event=Invulnerability" +
+                    $"{(game.IsInvulnerable ? "Started" : "Ended")} {state}");
+
+            observedGeneration = generation;
+            observedGameState = game.CurrentState;
+            observedControlState = player.ControlState;
+            observedInvulnerability = game.IsInvulnerable;
+        }
+
+        private static bool IsCriticalReason(string reason)
+        {
+            return reason.StartsWith("Failure") || reason.StartsWith("Respawn") ||
+                reason.StartsWith("GameplayStateApplied") || reason.StartsWith("ControlState:") ||
+                reason.StartsWith("RuntimeInvariantRepair") || reason == "PreparedForRespawn" ||
+                reason == "GameStarted" || reason == "GameOver";
+        }
+
+        private void AddCritical(string entry) => Enqueue(criticalHistory, CriticalCapacity, entry);
+
+        private static void Enqueue(Queue<string> target, int capacity, string entry)
+        {
+            if (target.Count == capacity) target.Dequeue();
+            target.Enqueue(entry);
+        }
+
+        private void AppendHistories(StringBuilder dump)
+        {
+            dump.AppendLine("CRITICAL LIFECYCLE HISTORY:");
+            foreach (var item in criticalHistory) dump.AppendLine(item);
+            dump.AppendLine("RECENT MOVEMENT / INPUT HISTORY:");
+            foreach (var item in movementHistory) dump.AppendLine(item);
         }
 
         private static string GetRawKeyboardState()
