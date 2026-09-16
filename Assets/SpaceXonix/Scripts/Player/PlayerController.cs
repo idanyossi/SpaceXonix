@@ -53,9 +53,9 @@ namespace SpaceXonix.Player
             {
                 candidate = boardManager.ClampToBoard(candidate);
                 var result = boardManager.TrackPlayerWorldPosition(new Vector3(previousPosition.x, previousPosition.y, transform.position.z), candidate);
+                if (!movementEnabled) return false;
                 if (result == BoardMoveResult.TrailFailed)
                 {
-                    movementModel.SetPosition(new Vector2(transform.position.x, transform.position.y));
                     return false;
                 }
                 if (result == BoardMoveResult.SafeMove || result == BoardMoveResult.Reconnected)

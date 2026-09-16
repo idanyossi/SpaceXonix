@@ -114,7 +114,7 @@ namespace SpaceXonix.Board
         {
             var enemyIndices = new HashSet<int>();
             if (activeEnemyCells != null) foreach (var enemy in activeEnemyCells) if (IsInBounds(enemy)) enemyIndices.Add(ToIndex(enemy.X, enemy.Y));
-            var selected = FindSmallestEligibleRegion(enemyIndices);
+            var selected = FindSmallestEligibleRegionAdjacentToTrail(enemyIndices);
             var committedTrailCount = trail.Count;
             foreach (var index in trail) { cells[index] = BoardCellState.Captured; trailMarks[index] = false; capturedPlayableCells++; }
             trail.Clear();
@@ -125,16 +125,23 @@ namespace SpaceXonix.Board
             TrailStateChanged?.Invoke(BoardMoveResult.Reconnected);
         }
 
-        private List<int> FindSmallestEligibleRegion(HashSet<int> enemyIndices)
+        private List<int> FindSmallestEligibleRegionAdjacentToTrail(HashSet<int> enemyIndices)
         {
             if (currentVisitStamp == int.MaxValue) { Array.Clear(visitStamp, 0, visitStamp.Length); currentVisitStamp = 0; }
             currentVisitStamp++;
             List<int> best = null;
-            for (var index = 0; index < cells.Length; index++)
+            for (var trailIndex = 0; trailIndex < trail.Count; trailIndex++)
             {
-                if (cells[index] != BoardCellState.Uncaptured || visitStamp[index] == currentVisitStamp) continue;
-                var component = FloodComponent(index, enemyIndices, out var containsEnemy);
-                if (!containsEnemy && (best == null || component.Count < best.Count)) best = component;
+                var trailCell = ToCoordinate(trail[trailIndex]);
+                foreach (var offset in Neighbours)
+                {
+                    var seed = new GridCoordinate(trailCell.X + offset.X, trailCell.Y + offset.Y);
+                    if (!IsInBounds(seed)) continue;
+                    var seedIndex = ToIndex(seed.X, seed.Y);
+                    if (cells[seedIndex] != BoardCellState.Uncaptured || visitStamp[seedIndex] == currentVisitStamp) continue;
+                    var component = FloodComponent(seedIndex, enemyIndices, out var containsEnemy);
+                    if (!containsEnemy && (best == null || component.Count < best.Count)) best = component;
+                }
             }
             return best;
         }

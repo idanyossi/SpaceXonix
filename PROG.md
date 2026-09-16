@@ -153,6 +153,13 @@
 - Focused coverage verifies enemy+enemy, enemy+laser, enemy+Volatile, and TrailHit+enemy combinations, including a re-entrant hit from `PlayerRespawned`: exactly one life, failure event, respawn start, and respawn completion; empty trail; valid safe state; stale callback rejection; and successful movement after release.
 - Focused movement/respawn suite: 53 passed, 0 failed. Full EditMode suite: 119 passed, 0 failed. Unity compiled with 0 SpaceXonix Console errors. Prompt 9 remains not started.
 
+## Self-Trail Abort and Capture Candidate Repair
+
+- `PlayerController` now exits the movement update immediately when synchronous board traversal accepts a failure and disables movement. Self-intersection can no longer return into post-failure movement-model or Transform processing; the authoritative respawn path remains responsible for clearing the trail and restoring board/logical/world/input state.
+- `BoardModel` now discovers capture candidates only from uncaptured cells directly adjacent to the active closing trail. Each seed flood-fills its entire connected component, structural/captured boundaries remain excluded, enemy-containing components remain invalid, and the existing smallest eligible-region rule is applied only to regions actually created by that closure.
+- This prevents small, disconnected uncaptured fragments elsewhere on the board from being selected as an arbitrary partial capture instead of the full valid enclosed connected territory.
+- Unity compilation completed with 0 SpaceXonix Console errors. Automated and manual tests were not run for this task per request; the previously verified baseline remains 119/119. Prompt 9 remains not started.
+
 ## Repository Cleanup
 
 - Removed unused Unity template Readme/tutorial content, SampleScene, default template Input Actions, local `.vscode` settings, and generated `.slnx` metadata.
