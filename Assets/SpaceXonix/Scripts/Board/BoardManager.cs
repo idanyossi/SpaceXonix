@@ -31,6 +31,8 @@ namespace SpaceXonix.Board
         public float CellWorldSize => cellWorldSize;
         public bool IsPlayerExposed => Model != null && Model.IsExposed;
         public GridCoordinate PlayerCell => playerCell;
+        internal GridCoordinate TrackedLastSafeCell => lastSafeCell;
+        internal bool HasTrackedSafeCell => hasLastSafeCell;
         public float CapturedPercentage => Model != null ? Model.CapturedPercentage : 0f;
         public event Action<BoardMoveResult> TrailStateChanged;
         public event Func<bool> TrailFailureRequested;

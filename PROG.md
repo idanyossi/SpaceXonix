@@ -242,6 +242,13 @@
 - `runInBackground` did not solve this because the player loop was running normally; the corruption was an ordering bug inside a live movement step after respawn.
 - `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 130 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
 
+## Player Lifecycle Diagnostics
+
+- Added lightweight `UNITY_EDITOR` / `DEVELOPMENT_BUILD` tracing at player state-write boundaries only. The in-memory ring retains the most recent 50 movement, direction, capture, failure, lifecycle, respawn, and invariant-repair transitions without logging normal activity.
+- Each entry records frame, lifecycle and operation generations, event/reason, accepted failure reason, gameplay/control states, logical/board/Transform cells and positions, current cell type, exposure/trail state, tracked safe cell, current/pending direction, movement/input state, and invulnerability state/timer.
+- The tracer detects invalid safe/exposed combinations, position disagreement, movement enabled during Respawning, and writes tagged with an obsolete lifecycle generation. The first detected violation emits one clearly delimited history dump identifying the transition that first became invalid; subsequent checks remain silent to prevent Console spam.
+- Diagnostics do not repair state or alter gameplay behavior and compile out of non-development players. Temporary full-frame tracing was not retained. Compilation completed with 0 warnings and 0 errors; automated and Play Mode tests were intentionally not run for this diagnostics-only task. Prompt 9 remains not started.
+
 ## Repository Cleanup
 
 - Removed unused Unity template Readme/tutorial content, SampleScene, default template Input Actions, local `.vscode` settings, and generated `.slnx` metadata.

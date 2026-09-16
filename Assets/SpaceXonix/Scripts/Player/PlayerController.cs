@@ -63,6 +63,7 @@ namespace SpaceXonix.Player
             var previousPosition = movementModel.Position;
             var position = movementModel.Advance(deltaTime);
             var candidate = new Vector3(position.x, position.y, transform.position.z);
+            var transitionReason = "Movement";
             if (boardManager != null)
             {
                 candidate = boardManager.ClampToBoard(candidate);
@@ -72,6 +73,7 @@ namespace SpaceXonix.Player
                 if (result == BoardMoveResult.TrailFailed)
                 {
                     movementModel.SetPosition(new Vector2(transform.position.x, transform.position.y));
+                    lifecycle?.TracePlayerLifecycle("TrailFailureStepRejected", operationGeneration: lifecycleGeneration);
                     return false;
                 }
                 if (result == BoardMoveResult.SafeMove || result == BoardMoveResult.Reconnected)
@@ -84,8 +86,10 @@ namespace SpaceXonix.Player
                 else if (result == BoardMoveResult.TrailStarted || result == BoardMoveResult.TrailExtended)
                     controlState = PlayerControlState.ExposedMoving;
                 movementModel.SetPosition(new Vector2(candidate.x, candidate.y));
+                transitionReason = result == BoardMoveResult.Reconnected ? "CaptureCompleted" : $"Movement:{result}";
             }
             transform.position = candidate;
+            lifecycle?.TracePlayerLifecycle(transitionReason, operationGeneration: lifecycleGeneration);
             return transform.position != transformBefore;
         }
 
@@ -100,6 +104,7 @@ namespace SpaceXonix.Player
                 (boardManager != null && boardManager.IsPlayerExposed)
                 ? PlayerControlState.ExposedMoving
                 : PlayerControlState.SafeMoving;
+            lifecycle?.TracePlayerLifecycle($"DirectionRequested:{direction}");
         }
 
         private static bool IsOpposite(CardinalDirection current, CardinalDirection requested)
@@ -118,6 +123,7 @@ namespace SpaceXonix.Player
             if (state == GameplayState.Playing) controlState = PlayerControlState.SafeIdle;
             else if (state == GameplayState.GameOver) controlState = PlayerControlState.GameOver;
             else controlState = PlayerControlState.Respawning;
+            lifecycle?.TracePlayerLifecycle($"GameplayStateApplied:{state}");
         }
 
         public void SetMoveSpeed(float speed)
@@ -198,6 +204,7 @@ namespace SpaceXonix.Player
             RequireFreshDirectionInput();
             movementModel?.SetDirection(initialDirection);
             connectedInputRouter?.ResetDirection(initialDirection);
+            lifecycle?.TracePlayerLifecycle("PreparedForRespawn");
         }
 
         private void RequireFreshDirectionInput()
@@ -239,6 +246,7 @@ namespace SpaceXonix.Player
                 movementModel?.SetPosition(new Vector2(position.x, position.y));
             }
             RequireFreshDirectionInput();
+            lifecycle?.TracePlayerLifecycle("SafeDirectionReleased");
         }
 
         private void ConsumePendingDirection()

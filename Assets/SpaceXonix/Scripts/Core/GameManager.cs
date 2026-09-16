@@ -23,6 +23,9 @@ namespace SpaceXonix.Core
         private int failureGateReleaseFrame = -1;
         private int playerLifecycleGeneration;
         private float invulnerabilityRemaining;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private PlayerLifecycleDiagnostics playerDiagnostics;
+#endif
 
         public GameplayState CurrentState => lifeState != null ? lifeState.State : GameplayState.Playing;
         public int Lives => lifeState != null ? lifeState.Lives : startingLives;
@@ -30,6 +33,7 @@ namespace SpaceXonix.Core
         public bool IsFailureInProgress => failureInProgress;
         public bool IsInvulnerable => CurrentState == GameplayState.Playing && invulnerabilityRemaining > 0f;
         public int PlayerLifecycleGeneration => playerLifecycleGeneration;
+        internal float InvulnerabilityRemaining => invulnerabilityRemaining;
         public event Action<int> LivesChanged;
         public event Action<PlayerFailureReason> PlayerFailed;
         public event Action RespawnStarted;
@@ -58,6 +62,9 @@ namespace SpaceXonix.Core
             playerController.ConnectInput(inputRouter);
             playerController.ConnectBoard(boardManager);
             playerController.ConnectLifecycle(this);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            playerDiagnostics = new PlayerLifecycleDiagnostics(this, playerController, boardManager, inputRouter);
+#endif
             inputRouter.SetGameplayInputEnabled(false);
             playerController.SetGameplayState(GameplayState.Respawning);
             boardManager.TrailFailureRequested += OnTrailFailureRequested;
@@ -83,6 +90,7 @@ namespace SpaceXonix.Core
             inputRouter.ResetDirection(playerController.InitialDirection);
             LivesChanged?.Invoke(Lives);
             ApplyState(GameplayState.Playing);
+            TracePlayerLifecycle("GameStarted");
         }
 
         private void LateUpdate()
@@ -91,6 +99,7 @@ namespace SpaceXonix.Core
             if (!failureInProgress || failureGateReleaseFrame < 0 || Time.frameCount <= failureGateReleaseFrame) return;
             failureInProgress = false;
             failureGateReleaseFrame = -1;
+            TracePlayerLifecycle("FailureGateReleased");
         }
 
         private void Update()
@@ -119,7 +128,11 @@ namespace SpaceXonix.Core
 
         public bool ReportPlayerFailure(PlayerFailureReason reason)
         {
-            if (failureInProgress || IsInvulnerable || lifeState == null || lifeState.State != GameplayState.Playing) return false;
+            if (failureInProgress || IsInvulnerable || lifeState == null || lifeState.State != GameplayState.Playing)
+            {
+                TracePlayerLifecycle("FailureRejected", reason);
+                return false;
+            }
             failureInProgress = true;
             playerLifecycleGeneration++;
             if (!lifeState.TryFail())
@@ -133,6 +146,7 @@ namespace SpaceXonix.Core
             ApplyState(CurrentState);
             boardManager.CancelActiveTrail();
             playerController.PrepareForRespawn();
+            TracePlayerLifecycle("FailureAccepted", reason);
             LivesChanged?.Invoke(Lives);
             PlayerFailed?.Invoke(reason);
             if (CurrentState == GameplayState.GameOver)
@@ -144,12 +158,14 @@ namespace SpaceXonix.Core
 
             if (respawnCoroutine == null) respawnCoroutine = StartCoroutine(RespawnAfterDelay());
             RespawnStarted?.Invoke();
+            TracePlayerLifecycle("RespawnStarted", reason);
             return true;
         }
 
         private IEnumerator RespawnAfterDelay()
         {
             yield return new WaitForSeconds(respawnDelay);
+            TracePlayerLifecycle("RespawnDelayElapsed");
             respawnCoroutine = null;
             CompleteRespawn();
         }
@@ -163,6 +179,7 @@ namespace SpaceXonix.Core
                 respawnCoroutine = null;
             }
             boardManager.CancelActiveTrail();
+            TracePlayerLifecycle("RespawnCompletionStarted");
             if (!RestorePlayerToCurrentSafeState()) return false;
             if (!lifeState.CompleteRespawn())
             {
@@ -173,6 +190,7 @@ namespace SpaceXonix.Core
             ApplyState(GameplayState.Playing);
             failureGateReleaseFrame = Time.frameCount;
             PlayerRespawned?.Invoke();
+            TracePlayerLifecycle("RespawnCompleted");
             return true;
         }
 
@@ -192,6 +210,8 @@ namespace SpaceXonix.Core
         {
             if (lifeState == null || lifeState.State != GameplayState.Playing || playerController.HasValidPlayingState()) return;
 
+            TracePlayerLifecycle("RuntimeInvariantRepairStarted");
+
             failureInProgress = true;
             playerLifecycleGeneration++;
             invulnerabilityRemaining = 0f;
@@ -205,6 +225,7 @@ namespace SpaceXonix.Core
             ApplyState(GameplayState.Playing);
             failureGateReleaseFrame = Time.frameCount;
             PlayerRespawned?.Invoke();
+            TracePlayerLifecycle("RuntimeInvariantRepairCompleted");
         }
 
         private CardinalDirection ResolveRespawnDirection(GridCoordinate cell, CardinalDirection preferred)
@@ -239,6 +260,14 @@ namespace SpaceXonix.Core
             var isPlaying = state == GameplayState.Playing;
             inputRouter.SetGameplayInputEnabled(isPlaying);
             playerController.SetGameplayState(state);
+        }
+
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        public void TracePlayerLifecycle(string reason, PlayerFailureReason? failureReason = null, int operationGeneration = -1)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            playerDiagnostics?.Record(reason, failureReason, operationGeneration);
+#endif
         }
     }
 }
