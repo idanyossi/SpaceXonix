@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using SpaceXonix.Board;
 using SpaceXonix.Core;
@@ -8,6 +9,7 @@ using SpaceXonix.Player;
 using SpaceXonix.Enemies;
 using SpaceXonix.Pooling;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace SpaceXonix.Tests.EditMode
 {
@@ -571,6 +573,8 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
                 Assert.That(fixture.Board.IsPlayerExposed, Is.False);
 
+                LogAssert.Expect(LogType.Error,
+                    new Regex("^=== SPACEXONIX PLAYER LIFECYCLE INVALID STATE ==="));
                 fixture.EnsureValidPlayingPlayerState();
 
                 Assert.That(fixture.Game.Lives, Is.EqualTo(livesBefore));

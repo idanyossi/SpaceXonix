@@ -253,6 +253,13 @@
 - Diagnostics now retain independent 30-entry critical lifecycle and 50-entry movement/input histories. Failure, generation, gameplay/control-state, respawn, restoration, invulnerability, invariant-repair, and Game Over records can no longer be evicted by routine movement; F8 prints them first and permanently reports the last accepted failure reason/frame.
 - Diagnostics do not repair state or alter gameplay behavior and compile out of non-development players. Temporary full-frame tracing was not retained. Compilation completed with 0 warnings and 0 errors; automated and Play Mode tests were intentionally not run for this diagnostics-only task. Prompt 9 remains not started.
 
+## Atomic Failure Gate and Temporary Life State HUD
+
+- `GameManager` now closes an explicit player-damageability latch before lifecycle generation, life-state, trail, callback, or coroutine work begins. The latch stays closed throughout Respawning and post-respawn invulnerability, so later same-frame enemy, trail, laser, and Volatile reports are strict no-ops even if invoked by already-running callbacks.
+- Existing failure callers continue to use the returned acceptance result and lifecycle token before doing any remaining contact work. Game Over keeps damageability, movement, and gameplay input disabled, never starts respawn or invulnerability, and rejects further damage at zero lives.
+- `Game.unity` now includes a temporary `LifeStateDebugHud` on GameManager. It shows `Lives: N` during gameplay and a large centered `GAME OVER` only in the terminal state; this is intentionally not the later full HUD phase.
+- Real-scene gate verification produced `EnemyContact=True`, same-frame `TrailHit=False`, one life lost, and one lifecycle-generation increment. The same scene verified `3 -> 2 -> 1 -> 0`, Game Over, rejected post-terminal damage, disabled movement/input, and an active HUD component. Full EditMode suite: 130 passed, 0 failed, 0 skipped. Unity Console: 0 errors. Prompt 9 remains not started.
+
 ## Repository Cleanup
 
 - Removed unused Unity template Readme/tutorial content, SampleScene, default template Input Actions, local `.vscode` settings, and generated `.slnx` metadata.

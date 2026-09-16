@@ -77,7 +77,8 @@ namespace SpaceXonix.Input
 
             CurrentDirection = direction;
             IsDirectionHeld = true;
-            GameManager.Instance?.TracePlayerLifecycle($"InputDirectionAccepted:{direction}", force: true);
+            if (GameManager.Instance != null)
+                GameManager.Instance.TracePlayerLifecycle($"InputDirectionAccepted:{direction}", force: true);
             DirectionChanged?.Invoke(direction);
             return true;
         }
@@ -86,13 +87,15 @@ namespace SpaceXonix.Input
         {
             if (!IsDirectionHeld) return;
             IsDirectionHeld = false;
-            GameManager.Instance?.TracePlayerLifecycle($"InputDirectionReleased:{CurrentDirection}", force: true);
+            if (GameManager.Instance != null)
+                GameManager.Instance.TracePlayerLifecycle($"InputDirectionReleased:{CurrentDirection}", force: true);
             DirectionReleased?.Invoke();
         }
 
         private static void TraceRawInput(string key)
         {
-            GameManager.Instance?.TracePlayerLifecycle($"RawInputDetected:{key}", force: true);
+            if (GameManager.Instance != null)
+                GameManager.Instance.TracePlayerLifecycle($"RawInputDetected:{key}", force: true);
         }
 
         private bool TrySelectPressedDirection()

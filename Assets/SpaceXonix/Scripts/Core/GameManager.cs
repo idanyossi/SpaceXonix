@@ -20,6 +20,7 @@ namespace SpaceXonix.Core
         private LifeStateModel lifeState;
         private Coroutine respawnCoroutine;
         private bool failureInProgress;
+        private bool playerDamageable;
         private int failureGateReleaseFrame = -1;
         private int playerLifecycleGeneration;
         private float invulnerabilityRemaining;
@@ -31,6 +32,7 @@ namespace SpaceXonix.Core
         public int Lives => lifeState != null ? lifeState.Lives : startingLives;
         public PlayerController PlayerController => playerController;
         public bool IsFailureInProgress => failureInProgress;
+        public bool IsPlayerDamageable => playerDamageable;
         public bool IsInvulnerable => CurrentState == GameplayState.Playing && invulnerabilityRemaining > 0f;
         public int PlayerLifecycleGeneration => playerLifecycleGeneration;
         internal float InvulnerabilityRemaining => invulnerabilityRemaining;
@@ -87,6 +89,7 @@ namespace SpaceXonix.Core
         {
             lifeState = new LifeStateModel(startingLives);
             failureInProgress = false;
+            playerDamageable = true;
             failureGateReleaseFrame = -1;
             playerLifecycleGeneration = 0;
             invulnerabilityRemaining = 0f;
@@ -102,6 +105,8 @@ namespace SpaceXonix.Core
             if (!failureInProgress || failureGateReleaseFrame < 0 || Time.frameCount <= failureGateReleaseFrame) return;
             failureInProgress = false;
             failureGateReleaseFrame = -1;
+            if (CurrentState == GameplayState.Playing && invulnerabilityRemaining <= 0f)
+                playerDamageable = true;
             TracePlayerLifecycle("FailureGateReleased");
         }
 
@@ -118,34 +123,38 @@ namespace SpaceXonix.Core
         {
             if (invulnerabilityRemaining <= 0f) return;
             invulnerabilityRemaining = Mathf.Max(0f, invulnerabilityRemaining - Mathf.Max(0f, deltaTime));
+            if (invulnerabilityRemaining <= 0f && !failureInProgress && CurrentState == GameplayState.Playing)
+                playerDamageable = true;
         }
 
         public void SetState(GameplayState state)
         {
             invulnerabilityRemaining = 0f;
+            playerDamageable = state == GameplayState.Playing;
             lifeState?.SetState(state);
             ApplyState(state);
         }
 
         public bool CanProcessPlayerContact(int lifecycleGeneration)
         {
-            return lifecycleGeneration == playerLifecycleGeneration && !failureInProgress && !IsInvulnerable &&
+            return lifecycleGeneration == playerLifecycleGeneration && playerDamageable && !failureInProgress && !IsInvulnerable &&
                 lifeState != null && lifeState.State == GameplayState.Playing;
         }
 
         public bool ReportPlayerFailure(PlayerFailureReason reason)
         {
-            if (failureInProgress || IsInvulnerable || lifeState == null || lifeState.State != GameplayState.Playing)
+            if (!playerDamageable || failureInProgress || IsInvulnerable || lifeState == null ||
+                lifeState.State != GameplayState.Playing)
             {
                 TracePlayerLifecycle("FailureRejected", reason);
                 return false;
             }
+            playerDamageable = false;
             failureInProgress = true;
             playerLifecycleGeneration++;
             if (!lifeState.TryFail())
             {
                 playerLifecycleGeneration--;
-                failureInProgress = false;
                 return false;
             }
 
@@ -194,6 +203,7 @@ namespace SpaceXonix.Core
                 return false;
             }
             invulnerabilityRemaining = postRespawnInvulnerabilityDuration;
+            playerDamageable = false;
             ApplyState(GameplayState.Playing);
             failureGateReleaseFrame = Time.frameCount;
             PlayerRespawned?.Invoke();
@@ -221,6 +231,7 @@ namespace SpaceXonix.Core
             TracePlayerLifecycle("RuntimeInvariantRepairStarted");
 
             failureInProgress = true;
+            playerDamageable = false;
             playerLifecycleGeneration++;
             invulnerabilityRemaining = 0f;
             lifeState.SetState(GameplayState.Respawning);
@@ -230,6 +241,7 @@ namespace SpaceXonix.Core
             if (!RestorePlayerToCurrentSafeState() || !lifeState.CompleteRespawn()) return;
 
             invulnerabilityRemaining = postRespawnInvulnerabilityDuration;
+            playerDamageable = false;
             ApplyState(GameplayState.Playing);
             failureGateReleaseFrame = Time.frameCount;
             PlayerRespawned?.Invoke();

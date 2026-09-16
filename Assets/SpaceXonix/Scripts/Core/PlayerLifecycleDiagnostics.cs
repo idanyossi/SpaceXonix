@@ -55,6 +55,7 @@ namespace SpaceXonix.Core
                 $"exposed={board.IsPlayerExposed} trail={board.Model.ActiveTrail.Count} lastSafe={lastSafe} " +
                 $"direction={player.CurrentDirection} pending={player.PendingDirection?.ToString() ?? "none"} " +
                 $"movement={player.MovementEnabled} input={input.GameplayInputEnabled}/{input.IsDirectionHeld}/{input.CurrentDirection} " +
+                $"damageable={game.IsPlayerDamageable} " +
                 $"invulnerable={game.IsInvulnerable}/{game.InvulnerabilityRemaining:0.000} " +
                 $"respawnActive={game.HasActiveRespawnOperation}";
             if (!force && state == previousState && failureReason == null && operationGeneration < 0) return;
@@ -117,6 +118,7 @@ namespace SpaceXonix.Core
                 .Append(" movement=").Append(player.MovementEnabled)
                 .Append(" input=").Append(input.GameplayInputEnabled).Append('/')
                 .Append(input.IsDirectionHeld).Append('/').Append(input.CurrentDirection)
+                .Append(" damageable=").Append(game.IsPlayerDamageable)
                 .Append(" rawKeys=").Append(rawKeys)
                 .Append(" invulnerable=").Append(game.IsInvulnerable).Append('/')
                 .Append(game.InvulnerabilityRemaining.ToString("0.000"))
