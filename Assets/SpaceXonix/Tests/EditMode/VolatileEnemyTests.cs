@@ -132,6 +132,44 @@ namespace SpaceXonix.Tests.EditMode
             }
         }
 
+        [Test]
+        public void DirectPlayerContact_UsesEnemyContactOnceAndAbortsSameFrameDetonation()
+        {
+            using (var fixture = new Fixture(withGameManager: true))
+            {
+                var volatileEnemy = fixture.SpawnVolatile(new GridCoordinate(10, 10));
+                var target = fixture.SpawnTarget(typeof(BasicBouncer), new GridCoordinate(11, 10));
+                target.transform.position = volatileEnemy.transform.position;
+                fixture.Player.transform.position = volatileEnemy.transform.position;
+                var failures = 0;
+                var respawns = 0;
+                PlayerFailureReason? reason = null;
+                fixture.Game.PlayerFailed += value => { failures++; reason = value; };
+                fixture.Game.RespawnStarted += () => respawns++;
+                var lives = fixture.Game.Lives;
+
+                volatileEnemy.AdvanceMovement(0f);
+                fixture.Manager.SimulateVolatileInteractions(.5f);
+
+                Assert.That(reason, Is.EqualTo(PlayerFailureReason.EnemyContact));
+                Assert.That(failures, Is.EqualTo(1));
+                Assert.That(respawns, Is.EqualTo(1));
+                Assert.That(fixture.Game.Lives, Is.EqualTo(lives - 1));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+                Assert.That(volatileEnemy.HasDetonated, Is.False);
+                Assert.That(volatileEnemy.IsActiveEnemy, Is.True);
+                Assert.That(target.IsActiveEnemy, Is.True);
+
+                var respawnCell = fixture.Board.GetSafeRespawnCell();
+                Assert.That(fixture.Board.IsValidRespawnCell(respawnCell), Is.True, respawnCell.ToString());
+                Assert.That(fixture.CompleteRespawn(), Is.True);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.SafeIdle));
+                Assert.That(fixture.Board.IsValidRespawnCell(fixture.Board.PlayerCell), Is.True);
+                fixture.Input.TrySelectDirection(fixture.Player.CurrentDirection);
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+            }
+        }
+
         private sealed class Fixture : IDisposable
         {
             private readonly GameObject root = new GameObject("VolatileFixture");
@@ -140,6 +178,7 @@ namespace SpaceXonix.Tests.EditMode
             public readonly EnemyManager Manager;
             public readonly PlayerController Player;
             public readonly GameManager Game;
+            public readonly InputRouter Input;
             public readonly GameObject VolatilePrefab;
             public readonly EnemyDefinition VolatileDefinition;
             public GameObject LastTargetPrefab { get; private set; }
@@ -153,6 +192,7 @@ namespace SpaceXonix.Tests.EditMode
                 Board.Initialize();
                 var playerObject = new GameObject("Player"); owned.Add(playerObject);
                 Player = playerObject.AddComponent<PlayerController>();
+                Invoke(Player, "Awake");
                 var pool = root.AddComponent<PoolService>();
                 Game = withGameManager ? root.AddComponent<GameManager>() : null;
                 Manager = root.AddComponent<EnemyManager>();
@@ -160,8 +200,8 @@ namespace SpaceXonix.Tests.EditMode
                 SetField(Manager, "poolService", pool); SetField(Manager, "gameManager", Game);
                 if (Game != null)
                 {
-                    var input = root.AddComponent<InputRouter>();
-                    SetField(Game, "inputRouter", input); SetField(Game, "playerController", Player); SetField(Game, "boardManager", Board);
+                    Input = root.AddComponent<InputRouter>();
+                    SetField(Game, "inputRouter", Input); SetField(Game, "playerController", Player); SetField(Game, "boardManager", Board);
                 }
                 VolatilePrefab = Prefab<VolatileEnemy>("VolatilePrefab");
                 VolatileDefinition = Definition(EnemyType.Volatile, 1f);
@@ -171,7 +211,16 @@ namespace SpaceXonix.Tests.EditMode
                 VolatileDefinition.volatileTerritoryRadiusCells = 2f;
                 root.SetActive(true);
                 Player.transform.position = Board.GetWorldPosition(new GridCoordinate(0, 1));
-                if (Game != null) Invoke(Game, "Start");
+                if (Game != null) { Invoke(Game, "Awake"); Invoke(Game, "Start"); }
+            }
+
+            public bool CompleteRespawn()
+            {
+                var completed = (bool)InvokeResult(Game, "CompleteRespawn");
+                if (!completed) return false;
+                SetField(Game, "failureGateReleaseFrame", Time.frameCount - 1);
+                Invoke(Game, "LateUpdate");
+                return true;
             }
 
             public VolatileEnemy SpawnVolatile(GridCoordinate cell)
@@ -209,5 +258,6 @@ namespace SpaceXonix.Tests.EditMode
         private static object GetField(object target, string name) => target.GetType().GetField(name, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(target);
         private static void SetField(object target, string name, object value) => target.GetType().GetField(name, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(target, value);
         private static void Invoke(object target, string name) => target.GetType().GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance).Invoke(target, null);
+        private static object InvokeResult(object target, string name) => target.GetType().GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance).Invoke(target, null);
     }
 }

@@ -49,8 +49,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 123
-- Passed: 123
+- EditMode discovered: 124
+- Passed: 124
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -193,6 +193,13 @@
 - Direct enemy contact now uses the same `EnemyContact` failure path on safe as well as exposed terrain. Lasers continue to test only the player's position: beam contact with trail alone remains harmless and cannot report `TrailHit` or clear the trail.
 - Regression coverage includes safe/exposed laser deaths, laser/trail isolation, safe direct enemy contact, enemy TrailHit, self-intersection, Volatile damage, simultaneous mixed failures including laser + Volatile, last-safe-cell fallback, lifecycle aborts, post-respawn movement, two-second invulnerability behavior, renewed damage after expiry, and final-life Game Over.
 - `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 123 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
+
+## Volatile Direct-Contact Stabilization
+
+- Real `Game.unity` tracing confirmed direct player/Volatile contact routes through exactly one `EnemyContact`; it does not itself detonate the Volatile. The remaining ordering risk was `EnemyManager` continuing same-frame Volatile interaction work after the accepted contact had already advanced the player lifecycle into `Respawning`.
+- Volatile interaction simulation now respects the authoritative gameplay state and captured lifecycle generation. It does not advance protection, detonate, despawn, update explosion occupancy, or evaluate player blast damage while the player is Respawning; intended enemy-triggered detonation resumes after gameplay restoration.
+- Focused coverage overlaps the player, an armed Volatile, and a normal enemy to exercise the competing path. It verifies one failure event, one life, one respawn start, `EnemyContact` as the sole accepted reason, no same-frame detonation, valid safe restoration, `SafeIdle`, and successful next movement.
+- Post-fix `Game.unity` reproduction produced one `EnemyContact`, one life loss, one respawn, no Volatile detonation, a valid safe cell, and successful movement after restoration. Full Unity EditMode suite: 124 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
 
 ## Repository Cleanup
 

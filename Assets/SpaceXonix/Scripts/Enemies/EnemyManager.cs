@@ -34,11 +34,14 @@ namespace SpaceXonix.Enemies
         }
         public void SimulateVolatileInteractions(float deltaTime)
         {
+            if (gameManager != null && gameManager.CurrentState != GameplayState.Playing) return;
+            var lifecycleGeneration = gameManager != null ? gameManager.PlayerLifecycleGeneration : 0;
             for (var i = activeEnemies.Count - 1; i >= 0; i--)
                 if (activeEnemies[i] is VolatileEnemy volatileEnemy) volatileEnemy.AdvanceSpawnProtection(deltaTime);
 
             for (var i = 0; i < activeEnemies.Count; i++)
             {
+                if (gameManager != null && gameManager.PlayerLifecycleGeneration != lifecycleGeneration) return;
                 if (!(activeEnemies[i] is VolatileEnemy volatileEnemy) || !volatileEnemy.IsArmed) continue;
                 for (var j = 0; j < activeEnemies.Count; j++)
                 {
