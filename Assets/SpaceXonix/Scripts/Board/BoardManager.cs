@@ -168,12 +168,12 @@ namespace SpaceXonix.Board
                 if (deltaX != 0) playerCell = new GridCoordinate(playerCell.X + Math.Sign(deltaX), playerCell.Y);
                 else playerCell = new GridCoordinate(playerCell.X, playerCell.Y + Math.Sign(deltaY));
                 result = Model.MoveTo(playerCell, enemySnapshot);
-                if (result == BoardMoveResult.TrailFailed) break;
                 if (!Model.IsExposed && Model.GetCell(playerCell) == BoardCellState.Captured)
                 {
                     lastSafeCell = playerCell;
                     hasLastSafeCell = true;
                 }
+                if (result == BoardMoveResult.TrailFailed || result == BoardMoveResult.SafeMove || result == BoardMoveResult.Reconnected) break;
             }
             return result;
         }

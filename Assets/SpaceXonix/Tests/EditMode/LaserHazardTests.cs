@@ -116,6 +116,8 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
                 Assert.That(fixture.Player.MovementEnabled, Is.True);
                 Assert.That(fixture.Board.IsLegalPlayerStep(new GridCoordinate(safeCell.X + 1, safeCell.Y)), Is.True);
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.False);
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
                 Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
                 Assert.That(fixture.Player.transform.position, Is.Not.EqualTo(respawnPosition));
                 Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
@@ -211,6 +213,7 @@ namespace SpaceXonix.Tests.EditMode
             public readonly LaserEmitter Emitter;
             public readonly PlayerController Player;
             public readonly GameManager Game;
+            public readonly InputRouter Input;
 
             public Fixture(LaserAxis axis, bool withGame = false)
             {
@@ -219,7 +222,7 @@ namespace SpaceXonix.Tests.EditMode
                 var pool = root.AddComponent<PoolService>(); Game = withGame ? root.AddComponent<GameManager>() : null;
                 if (Game != null)
                 {
-                    var input = root.AddComponent<InputRouter>(); Set(Game, "inputRouter", input); Set(Game, "playerController", Player); Set(Game, "boardManager", Board);
+                    Input = root.AddComponent<InputRouter>(); Set(Game, "inputRouter", Input); Set(Game, "playerController", Player); Set(Game, "boardManager", Board);
                 }
                 definition = ScriptableObject.CreateInstance<LaserDefinition>(); definition.axis = axis; definition.warningDuration = .75f; definition.firingDuration = .25f; definition.cooldownDuration = 2f; definition.beamWidth = .12f;
                 Emitter = new GameObject("Emitter").AddComponent<LaserEmitter>(); Emitter.transform.position = Board.GetWorldPosition(new GridCoordinate(10, 10)); Set(Emitter, "definition", definition);

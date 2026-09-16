@@ -59,6 +59,12 @@ namespace SpaceXonix.Player
                     boardManager.ResetPlayerTracking(transform.position);
                     return false;
                 }
+                if (result == BoardMoveResult.SafeMove || result == BoardMoveResult.Reconnected)
+                {
+                    candidate = boardManager.GetWorldPosition(boardManager.PlayerCell);
+                    candidate.z = transform.position.z;
+                    RequireFreshDirectionInput();
+                }
                 movementModel.SetPosition(new Vector2(candidate.x, candidate.y));
             }
             transform.position = candidate;
@@ -117,9 +123,14 @@ namespace SpaceXonix.Player
             transform.position = position;
             movementModel?.SetPosition(new Vector2(position.x, position.y));
             movementModel?.SetDirection(direction);
-            pendingDirection = null;
-            awaitingDirectionInput = false;
+            RequireFreshDirectionInput();
             boardManager.ResetPlayerTracking(position);
+        }
+
+        private void RequireFreshDirectionInput()
+        {
+            pendingDirection = null;
+            awaitingDirectionInput = true;
         }
 
         private void ConsumePendingDirection()

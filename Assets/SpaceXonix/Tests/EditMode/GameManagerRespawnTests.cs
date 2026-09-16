@@ -34,6 +34,107 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void SafeTerritory_MoveConsumesOneCellAndRequiresFreshInput()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Input.TrySelectDirection(CardinalDirection.Up);
+
+                Assert.That(fixture.Player.AdvanceMovement(.04f), Is.True);
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 2)));
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
+                var stoppedPosition = fixture.Player.transform.position;
+
+                Assert.That(fixture.Player.AdvanceMovement(.2f), Is.False);
+                Assert.That(fixture.Player.transform.position, Is.EqualTo(stoppedPosition));
+            }
+        }
+
+        [Test]
+        public void EnteringUncapturedTerritory_ContinuesWithoutAdditionalInput()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                Assert.That(fixture.Player.AdvanceMovement(.04f), Is.True);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+                var exposedPosition = fixture.Player.transform.position;
+
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+                Assert.That(fixture.Player.transform.position.x, Is.GreaterThan(exposedPosition.x));
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.False);
+            }
+        }
+
+        [Test]
+        public void DirectionChangeWhileExposed_PersistsUntilReconnect()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Input.TrySelectDirection(CardinalDirection.Up);
+                fixture.Player.AdvanceMovement(.04f);
+                var afterTurn = fixture.Player.transform.position;
+
+                Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+                Assert.That(fixture.Player.CurrentDirection, Is.EqualTo(CardinalDirection.Up));
+                Assert.That(fixture.Player.transform.position.y, Is.GreaterThan(afterTurn.y));
+            }
+        }
+
+        [Test]
+        public void Reconnect_StopsAtCaptureCellUntilFreshInput()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Board.SetEnemyCells(new[] { new GridCoordinate(4, 5) });
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Input.TrySelectDirection(CardinalDirection.Left);
+
+                Assert.That(fixture.Player.AdvanceMovement(.04f), Is.True);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 1)));
+                Assert.That(fixture.Board.GetSafeRespawnCell(), Is.EqualTo(fixture.Board.PlayerCell));
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
+                var capturePosition = fixture.Player.transform.position;
+
+                Assert.That(fixture.Player.AdvanceMovement(.2f), Is.False);
+                Assert.That(fixture.Player.transform.position, Is.EqualTo(capturePosition));
+            }
+        }
+
+        [Test]
+        public void TwoCaptures_DoNotLeakPersistentDirectionBetweenThem()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Board.SetEnemyCells(new[] { new GridCoordinate(4, 5) });
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Input.TrySelectDirection(CardinalDirection.Left);
+                fixture.Player.AdvanceMovement(.04f);
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
+
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                fixture.Player.AdvanceMovement(.04f);
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True, "safe step must be manual");
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                fixture.Player.AdvanceMovement(.04f);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+                fixture.Input.TrySelectDirection(CardinalDirection.Left);
+                fixture.Player.AdvanceMovement(.04f);
+
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
+                Assert.That(fixture.Player.AdvanceMovement(.2f), Is.False);
+            }
+        }
+
+        [Test]
         public void MultipleInputsBeforeMovement_KeepLatestLegalDirection()
         {
             using (var fixture = new Fixture())
@@ -96,6 +197,7 @@ namespace SpaceXonix.Tests.EditMode
             {
                 var cell = new GridCoordinate(0, 4);
                 fixture.Player.RespawnAt(fixture.Board.GetWorldPosition(cell), CardinalDirection.Right);
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
                 fixture.Player.AdvanceMovement(.04f);
                 Assert.That(fixture.Board.IsPlayerExposed, Is.True);
 
@@ -135,8 +237,11 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Input.CurrentDirection, Is.EqualTo(CardinalDirection.Right));
                 Assert.That(fixture.Input.GameplayInputEnabled, Is.True);
                 Assert.That(fixture.Player.MovementEnabled, Is.True);
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
 
                 var respawnPosition = fixture.Player.transform.position;
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.False);
+                fixture.Input.TrySelectDirection(fixture.Player.CurrentDirection);
                 Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
                 Assert.That(fixture.Player.transform.position, Is.Not.EqualTo(respawnPosition));
                 Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
@@ -157,6 +262,8 @@ namespace SpaceXonix.Tests.EditMode
 
                 Assert.That(fixture.Board.WorldToGrid(respawnPosition), Is.EqualTo(safeCell));
                 Assert.That(fixture.Player.CurrentDirection, Is.Not.EqualTo(CardinalDirection.Right));
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.False);
+                fixture.Input.TrySelectDirection(fixture.Player.CurrentDirection);
                 Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
                 Assert.That(fixture.Player.transform.position, Is.Not.EqualTo(respawnPosition));
                 Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
@@ -383,6 +490,8 @@ namespace SpaceXonix.Tests.EditMode
                     Assert.That(fixture.CompleteRespawn(), Is.True, $"respawn {index}");
                     Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty, $"trail {index}");
                     Assert.That(fixture.Board.IsLegalPlayerStep(NextCell(fixture.Board.PlayerCell, fixture.Player.CurrentDirection)), Is.True, $"direction {index}");
+                    Assert.That(fixture.Player.AdvanceMovement(.02f), Is.False, $"manual wait {index}");
+                    fixture.Input.TrySelectDirection(fixture.Player.CurrentDirection);
                     Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True, $"movement {index}");
                     Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position), $"sync {index}");
                 }

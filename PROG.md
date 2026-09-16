@@ -48,8 +48,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 89
-- Passed: 89
+- EditMode discovered: 94
+- Passed: 94
 - Failed: 0
 - Coverage includes input/movement, board/trail/capture/destruction, the complete death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -92,6 +92,15 @@
 - Play Mode stress: 400 rapid-input sequences across all corners produced zero stuck states, zero logical/world/board synchronization failures, and zero diagonal movement. Ten real laser deaths changed lives exactly once each (20→19 through 11→10), rejected repeat damage from the same firing phase, respawned, and moved successfully.
 - Continuous `Game.unity` session passed startup, movement, rapid turns, capture (0%→0.08183306%), laser death (5→4), respawn/movement, another capture (0.1841244%), real Basic enemy contact (4→3), respawn, and continued movement in `Playing` with synchronized positions.
 - Final EditMode suite: 89 passed, 0 failed. Prompt 9 remains not started.
+
+## Manual Safe Movement / Persistent Capture Movement
+
+- Final rule: movement is manual on safe/captured territory and persistent only while the player is exposed and drawing a trail. A legal input on safe territory completes one logical-cell move, then waits for fresh input; entering uncaptured territory switches naturally to continuous movement through BoardManager's authoritative exposure state.
+- Root cause: once the controller accepted any direction, `awaitingDirectionInput` stayed false across safe movement, capture reconnection, and respawn. BoardManager could also continue traversing cells after `SafeMove` or `Reconnected`, allowing stale direction to consume an extra safe step or begin another trail in the same update.
+- Fix: BoardManager ends a tracking batch at the first safe step or reconnection. PlayerController snaps to that accepted logical cell and clears pending/persistent movement. While exposed, current direction continues automatically and legal turns replace it without stopping; reconnecting or respawning returns immediately to manual waiting.
+- Regression coverage verifies one-cell safe movement, automatic capture entry/continuation, persistent legal turns while exposed, immediate stop on reconnection, fresh input after respawn, and two consecutive captures without direction leakage.
+- Real `Game.unity` QA completed two captures in different directions. In both, movement continued with no input while exposed, stopped exactly at the reconnect cell with zero active trail, remained stationary with controls released, and resumed only after fresh input. Respawn likewise remained still until fresh input, then moved with synchronized board/logical/world positions.
+- Final EditMode suite: 94 passed, 0 failed. Prompt 9 remains not started.
 
 ## Respawn Movement Stress Verification
 
