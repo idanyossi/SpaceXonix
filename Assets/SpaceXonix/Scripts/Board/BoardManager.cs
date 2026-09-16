@@ -100,7 +100,7 @@ namespace SpaceXonix.Board
 
         public bool IsLegalPlayerStep(GridCoordinate cell)
         {
-            return IsInBounds(cell) && Model.GetCell(cell) != BoardCellState.Trail;
+            return IsInBounds(cell);
         }
 
         public void GetTraversedCells(Vector3 startWorldPosition, Vector3 endWorldPosition, List<GridCoordinate> cells)

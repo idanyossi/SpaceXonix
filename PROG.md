@@ -101,6 +101,13 @@
 - Regression coverage verifies continuous held safe movement, release-to-stop, release-independent exposed movement, capture stop with controls released, held movement immediately after capture, two consecutive captures, and existing rapid-input synchronization.
 - Targeted movement tests passed 7/7; the final EditMode suite passed 94/94 with no failures. Unity compiled without errors. Prompt 9 remains not started.
 
+## Player Trail Self-Intersection
+
+- Player movement may now enter an in-bounds active trail cell so the existing authoritative `BoardModel.MoveTo` self-intersection result can reach `GameManager.ReportPlayerFailure(PlayerFailureReason.TrailSelfIntersection)` instead of being blocked by direction validation.
+- Existing traversal stops immediately on `TrailFailed`; the shared failure pipeline removes exactly one life, clears the unfinished trail, enters Respawning, rejects duplicate failures, and restores the player on a safe cell.
+- Added an end-to-end regression covering draw → turn → cross an earlier trail cell → one life lost → trail cleared → duplicate rejected → successful safe respawn/movement. Normal safe-territory reconnection coverage now also asserts no life loss and successful capture.
+- Unity compiled without code errors. Per user direction, targeted and full EditMode tests were not run. Prompt 9 remains not started.
+
 ## Respawn Movement Stress Verification
 
 - Intermittent root cause: a multi-cell player movement update could continue iterating after `BoardModel.MoveTo` reported `TrailFailed`. GameManager synchronously cleared the failed trail and entered `Respawning`, but the remaining cells in the same tracking loop could immediately start a second trail. The tracking method then returned `TrailStarted` with the player exposed during respawn, leaving stale board state that could interfere with movement after control returned.

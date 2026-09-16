@@ -104,6 +104,9 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Player.AdvanceMovement(.04f), Is.True);
                 Assert.That(fixture.Board.IsPlayerExposed, Is.False);
                 Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(3));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Board.CapturedPercentage, Is.GreaterThan(0f));
                 Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 1)));
                 Assert.That(fixture.Board.GetSafeRespawnCell(), Is.EqualTo(fixture.Board.PlayerCell));
                 Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
@@ -479,6 +482,40 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Game.Lives, Is.EqualTo(2));
                 Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
                 Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+            }
+        }
+
+        [Test]
+        public void PlayerCrossingOwnActiveTrail_LosesOneLifeClearsTrailAndRespawns()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Input.TrySelectDirection(CardinalDirection.Up);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Input.TrySelectDirection(CardinalDirection.Left);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Input.TrySelectDirection(CardinalDirection.Down);
+
+                Assert.That(fixture.Player.AdvanceMovement(.04f), Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.TrailSelfIntersection), Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+
+                Assert.That(fixture.CompleteRespawn(), Is.True);
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Input.GameplayInputEnabled, Is.True);
+                Assert.That(fixture.Player.MovementEnabled, Is.True);
+                Assert.That(fixture.Board.Model.GetCell(fixture.Board.PlayerCell), Is.EqualTo(BoardCellState.Captured));
+                fixture.Input.TrySelectDirection(fixture.Player.CurrentDirection);
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
             }
         }
 
