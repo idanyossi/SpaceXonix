@@ -14,6 +14,27 @@ namespace SpaceXonix.Tests.EditMode
     public sealed class GameManagerRespawnTests
     {
         [Test]
+        public void GameManager_KeepsRespawnLifecycleRunningWhenWindowLosesFocus()
+        {
+            var previous = Application.runInBackground;
+            try
+            {
+                Application.runInBackground = false;
+                using (var fixture = new Fixture())
+                {
+                    Assert.That(Application.runInBackground, Is.True);
+                    Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact), Is.True);
+                    Assert.That(fixture.CompleteRespawn(), Is.True);
+                    Assert.That(fixture.Player.HasValidPlayingState(), Is.True);
+                }
+            }
+            finally
+            {
+                Application.runInBackground = previous;
+            }
+        }
+
+        [Test]
         public void Startup_WaitsForFirstDirectionCommandWithoutCreatingTrailOrCapture()
         {
             using (var fixture = new Fixture())

@@ -49,8 +49,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 128
-- Passed: 128
+- EditMode discovered: 129
+- Passed: 129
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -224,6 +224,14 @@
 - Territory destruction now passes the authoritative current player cell as a protected cell into `BoardModel`. Other captured cells in the blast are still removed normally, while the player's safe anchor cannot be erased beneath a surviving player.
 - The exact real-scene sequence now remains `Playing + Captured + SafeIdle + no trail`, and fresh input moves successfully into a valid exposed trail. The focused regression recreates capture, occupied-cell Volatile detonation during invulnerability, and validates the complete player state afterward.
 - `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 128 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
+
+## Post-Death Lifecycle Continuation
+
+- A full real-scene death trace reproduced the apparent stuck-middle state on a non-final life: `ReportPlayerFailure` correctly accepted `EnemyContact`, incremented the lifecycle generation, cleared the trail, disabled input, and entered `Respawning` at the death position. After more than the configured 1.25-second delay, no respawn cell had been selected and no restoration write had occurred.
+- The trace identified the cause before any corrupting writer: Unity had `Application.runInBackground == false` while the player window was unfocused. The player loop stopped, so `RespawnAfterDelay` never resumed. Enabling background execution immediately let the existing single coroutine select the current safe `(0,1)` cell, synchronize BoardManager/movement/Transform, restore `SafeIdle`, enable input, and return to `Playing`.
+- `GameManager.Awake` now explicitly enables background execution so an accepted death lifecycle cannot be suspended indefinitely at the death position merely because window focus changes. No new respawn path, fallback, or hazard-specific behavior was added.
+- Real `Game.unity` replay verified a middle-board death restored to current captured terrain after the delay and accepted fresh movement. Existing shared regressions continue to cover enemy, laser, TrailHit/self-intersection, Volatile, simultaneous hits, safe restoration, and movement after respawn.
+- `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 129 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
 
 ## Repository Cleanup
 
