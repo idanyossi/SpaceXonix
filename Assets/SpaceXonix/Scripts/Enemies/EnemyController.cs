@@ -49,16 +49,25 @@ namespace SpaceXonix.Enemies
             var intendedPosition = before + movement.Velocity * deltaTime;
             board.GetTraversedCells(before, intendedPosition, traversedCells);
             LastTrailHitAccepted = false;
-            for (var i = 0; i < traversedCells.Count; i++)
+            var player = game != null ? game.PlayerController : null;
+            var hitsExposedPlayer = player != null && game.CurrentState == GameplayState.Playing && board.IsPlayerExposed &&
+                Vector2.Distance(intendedPosition, player.transform.position) <= board.CellWorldSize * .6f;
+            if (hitsExposedPlayer)
             {
-                if (board.Model.GetCell(traversedCells[i]) != BoardCellState.Trail) continue;
-                if (game != null) LastTrailHitAccepted = game.ReportPlayerFailure(PlayerFailureReason.TrailHit);
-                break;
+                game.ReportPlayerFailure(PlayerFailureReason.EnemyContact);
+            }
+            else
+            {
+                for (var i = 0; i < traversedCells.Count; i++)
+                {
+                    if (board.Model.GetCell(traversedCells[i]) != BoardCellState.Trail) continue;
+                    if (game != null) LastTrailHitAccepted = game.ReportPlayerFailure(PlayerFailureReason.TrailHit);
+                    break;
+                }
             }
             movement.Advance(deltaTime, IsUncapturedWorld);
             transform.position = new Vector3(movement.Position.x, movement.Position.y, transform.position.z);
             if (LogicalCell != previousCell) LogicalCellChanged?.Invoke(this);
-            var player = game != null ? game.PlayerController : null;
             if (player == null || game.CurrentState != GameplayState.Playing) return;
             var distance = Vector2.Distance(transform.position, player.transform.position);
             if (distance > board.CellWorldSize * .6f) return;

@@ -48,8 +48,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 94
-- Passed: 94
+- EditMode discovered: 102
+- Passed: 102
 - Failed: 0
 - Coverage includes input/movement, board/trail/capture/destruction, the complete death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -106,7 +106,15 @@
 - Player movement may now enter an in-bounds active trail cell so the existing authoritative `BoardModel.MoveTo` self-intersection result can reach `GameManager.ReportPlayerFailure(PlayerFailureReason.TrailSelfIntersection)` instead of being blocked by direction validation.
 - Existing traversal stops immediately on `TrailFailed`; the shared failure pipeline removes exactly one life, clears the unfinished trail, enters Respawning, rejects duplicate failures, and restores the player on a safe cell.
 - Added an end-to-end regression covering draw → turn → cross an earlier trail cell → one life lost → trail cleared → duplicate rejected → successful safe respawn/movement. Normal safe-territory reconnection coverage now also asserts no life loss and successful capture.
-- Unity compiled without code errors. Per user direction, targeted and full EditMode tests were not run. Prompt 9 remains not started.
+- Unity compiled without code errors. The later AirXonix control/respawn stabilization pass ran and superseded the previously deferred verification. Prompt 9 remains not started.
+
+## AirXonix Control and Hazard Respawn Stabilization
+
+- Movement now follows one authoritative rule: safe terrain moves only while input is held; exposed movement persists with a non-zero cardinal direction until reconnection. Opposite exposed input is accepted as a reversal and can legitimately cause `TrailSelfIntersection` instead of being blocked or stopping the player.
+- Direct enemy/player contact is resolved before trail traversal contact at the same trail-head position, so Volatile ship contact uses the shared `EnemyContact` failure path. Enemy trail crossings still use `TrailHit`, and Volatile explosions retain `VolatileExplosion`.
+- `PlayerController.PrepareForRespawn` now clears pending/persistent movement at failure acceptance. `RespawnAt` atomically restores the safe Transform/logical/board position, a valid cardinal direction, manual waiting state, and synchronized `InputRouter` state before `GameManager` returns to Playing.
+- Focused regressions passed 11/11, covering safe hold/release, exposed release, reversal/self-intersection, capture exit, Volatile contact, same-firing-phase laser protection, and safe/manual respawn for EnemyContact, TrailHit, VolatileExplosion, Laser, and TrailSelfIntersection.
+- Full EditMode suite: 102 passed, 0 failed. `Game.unity` Play Mode QA passed three normal captures, safe hold/release, exposed release and multiple turns, deliberate reversal death, three Volatile-contact deaths, and three active-beam laser deaths. Every respawn moved successfully; stale beam ticks caused no extra life loss; zero stuck states and zero Console errors occurred. Prompt 9 remains not started.
 
 ## Respawn Movement Stress Verification
 

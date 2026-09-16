@@ -127,6 +127,12 @@ namespace SpaceXonix.Player
             movementModel?.SetDirection(direction);
             RequireFreshDirectionInput();
             boardManager.ResetPlayerTracking(position);
+            connectedInputRouter?.ResetDirection(direction);
+        }
+
+        public void PrepareForRespawn()
+        {
+            RequireFreshDirectionInput();
         }
 
         private void RequireFreshDirectionInput()

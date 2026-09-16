@@ -82,6 +82,7 @@ namespace SpaceXonix.Core
             if (lifeState == null || !lifeState.TryFail()) return false;
 
             boardManager.CancelActiveTrail();
+            playerController.PrepareForRespawn();
             LivesChanged?.Invoke(Lives);
             PlayerFailed?.Invoke(reason);
             if (CurrentState == GameplayState.GameOver)
@@ -111,7 +112,6 @@ namespace SpaceXonix.Core
             var respawnCell = boardManager.GetSafeRespawnCell();
             var respawnDirection = ResolveRespawnDirection(respawnCell, playerController.InitialDirection);
             playerController.RespawnAt(boardManager.GetWorldPosition(respawnCell), respawnDirection);
-            inputRouter.ResetDirection(playerController.CurrentDirection);
             ApplyState(GameplayState.Playing);
             PlayerRespawned?.Invoke();
             return true;

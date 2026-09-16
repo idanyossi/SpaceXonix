@@ -115,6 +115,12 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Game.Lives, Is.EqualTo(before - 1));
                 Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
                 Assert.That(fixture.Player.MovementEnabled, Is.True);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
+                Assert.That(fixture.Input.IsDirectionHeld, Is.False);
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(fixture.Board.WorldToGrid(fixture.Player.transform.position)));
                 Assert.That(fixture.Board.IsLegalPlayerStep(new GridCoordinate(safeCell.X + 1, safeCell.Y)), Is.True);
                 Assert.That(fixture.Player.AdvanceMovement(.02f), Is.False);
                 fixture.Input.TrySelectDirection(CardinalDirection.Right);

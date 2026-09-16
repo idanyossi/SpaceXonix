@@ -226,6 +226,33 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void OppositeDirectionWhileExposed_ReversesThenSelfIntersectionFailsOnce()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Player.RespawnAt(fixture.Board.GetWorldPosition(new GridCoordinate(0, 4)), CardinalDirection.Right);
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Input.TrySelectDirection(CardinalDirection.Up);
+                fixture.Player.AdvanceMovement(.04f);
+                var beforeReverse = fixture.Player.transform.position;
+
+                Assert.That(fixture.Input.TrySelectDirection(CardinalDirection.Down), Is.True);
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.False);
+                Assert.That(fixture.Player.AdvanceMovement(.005f), Is.True);
+                Assert.That(fixture.Player.CurrentDirection, Is.EqualTo(CardinalDirection.Down));
+                Assert.That(fixture.Player.transform.position.y, Is.LessThan(beforeReverse.y));
+
+                Assert.That(fixture.Player.AdvanceMovement(.04f), Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.TrailSelfIntersection), Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+            }
+        }
+
+        [Test]
         public void FailureLifecycle_ClearsTrailRespawnsAtSafeCellAndRestoresControl()
         {
             using (var fixture = new Fixture())
@@ -259,6 +286,75 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Player.transform.position, Is.Not.EqualTo(respawnPosition));
                 Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
                 Assert.That(fixture.Board.PlayerCell, Is.EqualTo(fixture.Board.WorldToGrid(fixture.Player.transform.position)));
+            }
+        }
+
+        [Test]
+        public void VolatilePlayerContact_UsesEnemyFailureAndMovesAfterRespawn()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                fixture.Player.AdvanceMovement(.04f);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+
+                var definition = ScriptableObject.CreateInstance<EnemyDefinition>();
+                var enemyObject = new GameObject("VolatileContact");
+                var enemy = enemyObject.AddComponent<VolatileEnemy>();
+                try
+                {
+                    definition.moveSpeed = 0f;
+                    PlayerFailureReason? failureReason = null;
+                    fixture.Game.PlayerFailed += reason => failureReason = reason;
+                    enemy.Activate(definition, fixture.Board, fixture.Game, fixture.Player.transform.position, Vector2.right);
+
+                    enemy.AdvanceMovement(0f);
+
+                    Assert.That(failureReason, Is.EqualTo(PlayerFailureReason.EnemyContact));
+                    Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+                    Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+                    Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                    Assert.That(fixture.CompleteRespawn(), Is.True);
+                    Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
+                    Assert.That(fixture.Player.AdvanceMovement(.02f), Is.False);
+                    fixture.Input.TrySelectDirection(fixture.Player.CurrentDirection);
+                    Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(enemyObject);
+                    UnityEngine.Object.DestroyImmediate(definition);
+                }
+            }
+        }
+
+        [TestCase(PlayerFailureReason.EnemyContact)]
+        [TestCase(PlayerFailureReason.TrailHit)]
+        [TestCase(PlayerFailureReason.VolatileExplosion)]
+        [TestCase(PlayerFailureReason.Laser)]
+        [TestCase(PlayerFailureReason.TrailSelfIntersection)]
+        public void EveryNonFatalRespawn_ReturnsToSynchronizedSafeManualMovement(PlayerFailureReason reason)
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                fixture.Player.AdvanceMovement(.04f);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+
+                Assert.That(fixture.Game.ReportPlayerFailure(reason), Is.True);
+                Assert.That(fixture.CompleteRespawn(), Is.True);
+
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Board.Model.GetCell(fixture.Board.PlayerCell), Is.EqualTo(BoardCellState.Captured));
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(fixture.Board.WorldToGrid(fixture.Player.transform.position)));
+                Assert.That(fixture.Input.IsDirectionHeld, Is.False);
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.False);
+                fixture.Input.TrySelectDirection(fixture.Player.CurrentDirection);
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
             }
         }
 
