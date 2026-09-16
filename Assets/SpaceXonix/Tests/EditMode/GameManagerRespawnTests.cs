@@ -770,6 +770,51 @@ namespace SpaceXonix.Tests.EditMode
             }
         }
 
+        [TestCase(PlayerFailureReason.EnemyContact, PlayerFailureReason.EnemyContact)]
+        [TestCase(PlayerFailureReason.EnemyContact, PlayerFailureReason.Laser)]
+        [TestCase(PlayerFailureReason.EnemyContact, PlayerFailureReason.VolatileExplosion)]
+        [TestCase(PlayerFailureReason.TrailHit, PlayerFailureReason.EnemyContact)]
+        public void SimultaneousFailures_RunOneRespawnAndRejectCompletionFrameCallbacks(
+            PlayerFailureReason first, PlayerFailureReason overlapping)
+        {
+            using (var fixture = new Fixture())
+            {
+                var failures = 0;
+                var respawnStarts = 0;
+                var respawnCompletions = 0;
+                var callbackAccepted = true;
+                fixture.Game.PlayerFailed += _ => failures++;
+                fixture.Game.RespawnStarted += () => respawnStarts++;
+                fixture.Game.PlayerRespawned += () =>
+                {
+                    respawnCompletions++;
+                    callbackAccepted = fixture.Game.ReportPlayerFailure(overlapping);
+                };
+
+                Assert.That(fixture.Game.ReportPlayerFailure(first), Is.True);
+                Assert.That(fixture.Game.ReportPlayerFailure(overlapping), Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+                Assert.That(failures, Is.EqualTo(1));
+                Assert.That(respawnStarts, Is.EqualTo(1));
+
+                Assert.That(fixture.CompleteRespawnWithoutAdvancingFrame(), Is.True);
+                Assert.That(callbackAccepted, Is.False, "callbacks queued in the completion frame must remain rejected");
+                Assert.That(fixture.Game.ReportPlayerFailure(overlapping), Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+                Assert.That(respawnCompletions, Is.EqualTo(1));
+                Assert.That(fixture.Game.IsFailureInProgress, Is.True);
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Board.IsValidRespawnCell(fixture.Board.PlayerCell), Is.True);
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+
+                Assert.That(fixture.AdvancePastFailureFrame(), Is.True);
+                fixture.Input.TrySelectDirection(fixture.Player.CurrentDirection);
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+            }
+        }
+
         [Test]
         public void AtomicFailure_RecoversMovementThenAllowsOneLaterDeath()
         {
@@ -984,7 +1029,21 @@ namespace SpaceXonix.Tests.EditMode
 
             public bool CompleteRespawn()
             {
+                var completed = CompleteRespawnWithoutAdvancingFrame();
+                if (completed) AdvancePastFailureFrame();
+                return completed;
+            }
+
+            public bool CompleteRespawnWithoutAdvancingFrame()
+            {
                 return (bool)Invoke(Game, "CompleteRespawn");
+            }
+
+            public bool AdvancePastFailureFrame()
+            {
+                Set(Game, "failureGateReleaseFrame", Time.frameCount - 1);
+                Invoke(Game, "LateUpdate");
+                return !Game.IsFailureInProgress;
             }
 
             public void Dispose()

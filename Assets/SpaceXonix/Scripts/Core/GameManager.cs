@@ -19,6 +19,7 @@ namespace SpaceXonix.Core
         private LifeStateModel lifeState;
         private Coroutine respawnCoroutine;
         private bool failureInProgress;
+        private int failureGateReleaseFrame = -1;
 
         public GameplayState CurrentState => lifeState != null ? lifeState.State : GameplayState.Playing;
         public int Lives => lifeState != null ? lifeState.Lives : startingLives;
@@ -71,6 +72,13 @@ namespace SpaceXonix.Core
             inputRouter.ResetDirection(playerController.InitialDirection);
             LivesChanged?.Invoke(Lives);
             ApplyState(GameplayState.Playing);
+        }
+
+        private void LateUpdate()
+        {
+            if (!failureInProgress || failureGateReleaseFrame < 0 || Time.frameCount <= failureGateReleaseFrame) return;
+            failureInProgress = false;
+            failureGateReleaseFrame = -1;
         }
 
         public void SetState(GameplayState state)
@@ -126,7 +134,7 @@ namespace SpaceXonix.Core
             playerController.RespawnAt(boardManager.GetWorldPosition(respawnCell), respawnDirection);
             if (!lifeState.CompleteRespawn()) return false;
             ApplyState(GameplayState.Playing);
-            failureInProgress = false;
+            failureGateReleaseFrame = Time.frameCount;
             PlayerRespawned?.Invoke();
             return true;
         }

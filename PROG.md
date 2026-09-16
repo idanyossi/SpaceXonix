@@ -48,8 +48,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 115
-- Passed: 115
+- EditMode discovered: 119
+- Passed: 119
 - Failed: 0
 - Coverage includes input/movement, board/trail/capture/destruction, the complete death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -145,6 +145,13 @@
 - `GameManager.ReportPlayerFailure` now applies the accepted `Respawning` or `GameOver` state immediately after the atomic life-state transition, before trail cleanup or any callbacks. This closes input/movement synchronously while retaining the existing single failure gate and authoritative respawn restoration.
 - The focused regression uses a multi-cell enemy traversal across an earlier active-trail cell, attempts re-entrant input/movement during `PlayerFailed`, and verifies one `TrailHit`, aborted enemy/player traversal, empty trail, no exposure, duplicate rejection, valid synchronized safe respawn, manual movement mode, and successful next input movement.
 - Focused movement/respawn suite: 49 passed, 0 failed. Full EditMode suite: 115 passed, 0 failed. Unity compiled with 0 Console errors. Additional manual/client Play Mode verification was intentionally not required. Prompt 9 remains not started.
+
+## Simultaneous Failure Completion-Frame Guard
+
+- Remaining race: respawn restoration cleared `failureInProgress` before `PlayerRespawned` callbacks ran. A stale enemy or hazard callback queued for that completion frame could therefore be accepted as a new failure immediately after the first position restore, starting a competing death/respawn cycle.
+- `GameManager` now keeps its single atomic failure gate closed throughout the respawn-completion frame. Position, board, movement-model, input, and safe/manual state are restored once; completion callbacks and all other same-frame failures remain no-ops. The gate releases only after Unity advances beyond that frame.
+- Focused coverage verifies enemy+enemy, enemy+laser, enemy+Volatile, and TrailHit+enemy combinations, including a re-entrant hit from `PlayerRespawned`: exactly one life, failure event, respawn start, and respawn completion; empty trail; valid safe state; stale callback rejection; and successful movement after release.
+- Focused movement/respawn suite: 53 passed, 0 failed. Full EditMode suite: 119 passed, 0 failed. Unity compiled with 0 SpaceXonix Console errors. Prompt 9 remains not started.
 
 ## Repository Cleanup
 
