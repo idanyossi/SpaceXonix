@@ -56,7 +56,6 @@ namespace SpaceXonix.Player
                 if (result == BoardMoveResult.TrailFailed)
                 {
                     movementModel.SetPosition(new Vector2(transform.position.x, transform.position.y));
-                    boardManager.ResetPlayerTracking(transform.position);
                     return false;
                 }
                 if (result == BoardMoveResult.SafeMove || result == BoardMoveResult.Reconnected)

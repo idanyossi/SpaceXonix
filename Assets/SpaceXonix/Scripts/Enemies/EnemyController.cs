@@ -52,18 +52,16 @@ namespace SpaceXonix.Enemies
             var player = game != null ? game.PlayerController : null;
             var hitsExposedPlayer = player != null && game.CurrentState == GameplayState.Playing && board.IsPlayerExposed &&
                 Vector2.Distance(intendedPosition, player.transform.position) <= board.CellWorldSize * .6f;
-            if (hitsExposedPlayer)
+            if (hitsExposedPlayer && game.ReportPlayerFailure(PlayerFailureReason.EnemyContact))
             {
-                game.ReportPlayerFailure(PlayerFailureReason.EnemyContact);
+                return;
             }
-            else
+            for (var i = 0; i < traversedCells.Count; i++)
             {
-                for (var i = 0; i < traversedCells.Count; i++)
-                {
-                    if (board.Model.GetCell(traversedCells[i]) != BoardCellState.Trail) continue;
-                    if (game != null) LastTrailHitAccepted = game.ReportPlayerFailure(PlayerFailureReason.TrailHit);
-                    break;
-                }
+                if (board.Model.GetCell(traversedCells[i]) != BoardCellState.Trail) continue;
+                if (game != null) LastTrailHitAccepted = game.ReportPlayerFailure(PlayerFailureReason.TrailHit);
+                if (LastTrailHitAccepted) return;
+                break;
             }
             movement.Advance(deltaTime, IsUncapturedWorld);
             transform.position = new Vector3(movement.Position.x, movement.Position.y, transform.position.z);

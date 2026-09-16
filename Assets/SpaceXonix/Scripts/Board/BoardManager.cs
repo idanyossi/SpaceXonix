@@ -6,6 +6,14 @@ namespace SpaceXonix.Board
 {
     public sealed class BoardManager : MonoBehaviour
     {
+        private static readonly GridCoordinate[] CardinalOffsets =
+        {
+            new GridCoordinate(0, 1),
+            new GridCoordinate(0, -1),
+            new GridCoordinate(-1, 0),
+            new GridCoordinate(1, 0)
+        };
+
         [SerializeField, Min(3)] private int columns = 54;
         [SerializeField, Min(3)] private int rows = 96;
         [SerializeField, Min(0.1f)] private float cellWorldSize = 0.18f;
@@ -77,21 +85,36 @@ namespace SpaceXonix.Board
 
         public GridCoordinate GetSafeRespawnCell()
         {
-            if (hasLastSafeCell && IsSafeRespawnCell(lastSafeCell)) return lastSafeCell;
+            if (hasLastSafeCell && IsValidRespawnCell(lastSafeCell)) return lastSafeCell;
 
+            var origin = hasLastSafeCell ? lastSafeCell : new GridCoordinate(0, 1);
             var fallback = new GridCoordinate(0, 1);
-            if (IsSafeRespawnCell(fallback)) return fallback;
-
+            var bestDistance = int.MaxValue;
             for (var y = 0; y < rows; y++)
             {
                 for (var x = 0; x < columns; x++)
                 {
                     var cell = new GridCoordinate(x, y);
-                    if (IsSafeRespawnCell(cell)) return cell;
+                    if (!IsValidRespawnCell(cell)) continue;
+                    var distance = Mathf.Abs(cell.X - origin.X) + Mathf.Abs(cell.Y - origin.Y);
+                    if (distance >= bestDistance) continue;
+                    fallback = cell;
+                    bestDistance = distance;
                 }
             }
 
             return fallback;
+        }
+
+        public bool IsValidRespawnCell(GridCoordinate cell)
+        {
+            if (!IsSafeRespawnCell(cell)) return false;
+            for (var i = 0; i < CardinalOffsets.Length; i++)
+            {
+                var offset = CardinalOffsets[i];
+                if (IsLegalPlayerStep(new GridCoordinate(cell.X + offset.X, cell.Y + offset.Y))) return true;
+            }
+            return false;
         }
 
         public Vector3 GetSafeRespawnPosition() => GetWorldPosition(GetSafeRespawnCell());

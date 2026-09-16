@@ -54,7 +54,7 @@ namespace SpaceXonix.Input
         public void SetGameplayInputEnabled(bool enabled)
         {
             GameplayInputEnabled = enabled;
-            if (!enabled) ReleaseDirection();
+            if (!enabled) IsDirectionHeld = false;
         }
 
         public void ResetDirection(CardinalDirection direction)

@@ -213,7 +213,6 @@ namespace SpaceXonix.Tests.EditMode
                 fixture.Input.TrySelectDirection(CardinalDirection.Right);
                 fixture.Player.AdvanceMovement(.04f);
                 Assert.That(fixture.Board.IsPlayerExposed, Is.True);
-
                 fixture.Input.TrySelectDirection(CardinalDirection.Up);
                 fixture.Input.TrySelectDirection(CardinalDirection.Down);
                 var before = fixture.Player.transform.position;
@@ -388,8 +387,39 @@ namespace SpaceXonix.Tests.EditMode
                 Fixture.Set(fixture.Board, "lastSafeCell", new GridCoordinate(2, 2));
                 Fixture.Set(fixture.Board, "hasLastSafeCell", true);
 
-                Assert.That(fixture.Board.GetSafeRespawnCell(), Is.EqualTo(new GridCoordinate(0, 1)));
-                Assert.That(fixture.Board.Model.GetCell(fixture.Board.GetSafeRespawnCell()), Is.EqualTo(BoardCellState.Captured));
+                var fallback = fixture.Board.GetSafeRespawnCell();
+                Assert.That(fallback, Is.EqualTo(new GridCoordinate(2, 0)));
+                Assert.That(fixture.Board.IsValidRespawnCell(fallback), Is.True);
+            }
+        }
+
+        [Test]
+        public void LargeCaptureThenInvalidatedHistoricalSafeCell_UsesCurrentSafeCellWithExit()
+        {
+            using (var fixture = new Fixture())
+            {
+                for (var x = 1; x < fixture.Board.Columns - 1; x++)
+                    fixture.Board.Model.MoveTo(new GridCoordinate(x, 4));
+                fixture.Board.Model.MoveTo(new GridCoordinate(fixture.Board.Columns - 1, 4));
+                Assert.That(fixture.Board.CapturedPercentage, Is.GreaterThan(25f));
+
+                var historicalCell = new GridCoordinate(2, 2);
+                Assert.That(fixture.Board.Model.GetCell(historicalCell), Is.EqualTo(BoardCellState.Captured));
+                fixture.Board.ResetPlayerTracking(fixture.Board.GetWorldPosition(historicalCell));
+                Assert.That(fixture.Board.RemoveCapturedWithinRadius(historicalCell, 0f), Is.EqualTo(1));
+                Assert.That(fixture.Board.Model.GetCell(historicalCell), Is.EqualTo(BoardCellState.Uncaptured));
+
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact), Is.True);
+                Assert.That(fixture.CompleteRespawn(), Is.True);
+
+                var respawnCell = fixture.Board.PlayerCell;
+                Assert.That(respawnCell, Is.Not.EqualTo(historicalCell));
+                Assert.That(fixture.Board.IsValidRespawnCell(respawnCell), Is.True);
+                Assert.That(fixture.Board.Model.GetCell(respawnCell), Is.EqualTo(BoardCellState.Captured));
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
+                fixture.Input.TrySelectDirection(fixture.Player.CurrentDirection);
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
             }
         }
 
@@ -561,6 +591,72 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void TwoEnemyHitsInSameFrame_StartOneFailureAndOneRespawnFlow()
+        {
+            using (var fixture = new Fixture())
+            {
+                var respawnStarts = 0;
+                fixture.Game.RespawnStarted += () => respawnStarts++;
+
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact), Is.True);
+                var respawnOperation = Fixture.Get(fixture.Game, "respawnCoroutine");
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact), Is.False);
+
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+                Assert.That(fixture.Game.IsFailureInProgress, Is.True);
+                Assert.That(respawnStarts, Is.EqualTo(1));
+                Assert.That(respawnOperation, Is.Not.Null.And.SameAs(Fixture.Get(fixture.Game, "respawnCoroutine")));
+            }
+        }
+
+        [TestCase(PlayerFailureReason.EnemyContact, PlayerFailureReason.Laser)]
+        [TestCase(PlayerFailureReason.EnemyContact, PlayerFailureReason.VolatileExplosion)]
+        [TestCase(PlayerFailureReason.TrailHit, PlayerFailureReason.EnemyContact)]
+        public void OverlappingDifferentFailures_AcceptOnlyTheFirst(PlayerFailureReason first, PlayerFailureReason second)
+        {
+            using (var fixture = new Fixture())
+            {
+                var failedEvents = 0;
+                var respawnStarts = 0;
+                fixture.Game.PlayerFailed += _ => failedEvents++;
+                fixture.Game.RespawnStarted += () => respawnStarts++;
+
+                Assert.That(fixture.Game.ReportPlayerFailure(first), Is.True);
+                Assert.That(fixture.Game.ReportPlayerFailure(second), Is.False);
+
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+                Assert.That(failedEvents, Is.EqualTo(1));
+                Assert.That(respawnStarts, Is.EqualTo(1));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+            }
+        }
+
+        [Test]
+        public void AtomicFailure_RecoversMovementThenAllowsOneLaterDeath()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                fixture.Player.AdvanceMovement(.04f);
+
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact), Is.True);
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.Laser), Is.False);
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.CompleteRespawn(), Is.True);
+                Assert.That(fixture.Game.IsFailureInProgress, Is.False);
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Board.IsValidRespawnCell(fixture.Board.PlayerCell), Is.True);
+                fixture.Input.TrySelectDirection(fixture.Player.CurrentDirection);
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.VolatileExplosion), Is.True);
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.TrailHit), Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(1));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+            }
+        }
+
+        [Test]
         public void MultiCellSelfIntersection_StopsTrackingBeforeASecondTrailCanStart()
         {
             using (var fixture = new Fixture())
@@ -568,12 +664,13 @@ namespace SpaceXonix.Tests.EditMode
                 fixture.Board.Model.MoveTo(new GridCoordinate(1, 3));
                 fixture.Board.Model.MoveTo(new GridCoordinate(2, 3));
                 var from = fixture.Board.GetWorldPosition(new GridCoordinate(3, 3));
-                var target = fixture.Board.GetWorldPosition(new GridCoordinate(1, 3));
+                var target = fixture.Board.GetWorldPosition(new GridCoordinate(0, 3));
                 fixture.Board.ResetPlayerTracking(from);
 
                 var result = fixture.Board.TrackPlayerWorldPosition(from, target);
 
                 Assert.That(result, Is.EqualTo(BoardMoveResult.TrailFailed));
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(2, 3)), "cells after the first intersection must not be processed");
                 Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
                 Assert.That(fixture.Game.Lives, Is.EqualTo(2));
                 Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
@@ -760,6 +857,11 @@ namespace SpaceXonix.Tests.EditMode
             public static void Set(object target, string name, object value)
             {
                 target.GetType().GetField(name, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(target, value);
+            }
+
+            public static object Get(object target, string name)
+            {
+                return target.GetType().GetField(name, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(target);
             }
 
             private static object Invoke(object target, string name)

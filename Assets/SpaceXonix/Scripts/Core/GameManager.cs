@@ -18,10 +18,12 @@ namespace SpaceXonix.Core
         public static GameManager Instance { get; private set; }
         private LifeStateModel lifeState;
         private Coroutine respawnCoroutine;
+        private bool failureInProgress;
 
         public GameplayState CurrentState => lifeState != null ? lifeState.State : GameplayState.Playing;
         public int Lives => lifeState != null ? lifeState.Lives : startingLives;
         public PlayerController PlayerController => playerController;
+        public bool IsFailureInProgress => failureInProgress;
         public event Action<int> LivesChanged;
         public event Action<PlayerFailureReason> PlayerFailed;
         public event Action RespawnStarted;
@@ -79,7 +81,13 @@ namespace SpaceXonix.Core
 
         public bool ReportPlayerFailure(PlayerFailureReason reason)
         {
-            if (lifeState == null || !lifeState.TryFail()) return false;
+            if (failureInProgress || lifeState == null || lifeState.State != GameplayState.Playing) return false;
+            failureInProgress = true;
+            if (!lifeState.TryFail())
+            {
+                failureInProgress = false;
+                return false;
+            }
 
             boardManager.CancelActiveTrail();
             playerController.PrepareForRespawn();
@@ -93,26 +101,33 @@ namespace SpaceXonix.Core
             }
 
             ApplyState(GameplayState.Respawning);
+            if (respawnCoroutine == null) respawnCoroutine = StartCoroutine(RespawnAfterDelay());
             RespawnStarted?.Invoke();
-            respawnCoroutine = StartCoroutine(RespawnAfterDelay());
             return true;
         }
 
         private IEnumerator RespawnAfterDelay()
         {
             yield return new WaitForSeconds(respawnDelay);
+            respawnCoroutine = null;
             CompleteRespawn();
         }
 
         private bool CompleteRespawn()
         {
-            respawnCoroutine = null;
-            if (lifeState == null || !lifeState.CompleteRespawn()) return false;
+            if (!failureInProgress || lifeState == null || lifeState.State != GameplayState.Respawning) return false;
+            if (respawnCoroutine != null)
+            {
+                StopCoroutine(respawnCoroutine);
+                respawnCoroutine = null;
+            }
             boardManager.CancelActiveTrail();
             var respawnCell = boardManager.GetSafeRespawnCell();
             var respawnDirection = ResolveRespawnDirection(respawnCell, playerController.InitialDirection);
             playerController.RespawnAt(boardManager.GetWorldPosition(respawnCell), respawnDirection);
+            if (!lifeState.CompleteRespawn()) return false;
             ApplyState(GameplayState.Playing);
+            failureInProgress = false;
             PlayerRespawned?.Invoke();
             return true;
         }

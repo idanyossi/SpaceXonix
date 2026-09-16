@@ -48,8 +48,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 102
-- Passed: 102
+- EditMode discovered: 108
+- Passed: 108
 - Failed: 0
 - Coverage includes input/movement, board/trail/capture/destruction, the complete death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -115,6 +115,14 @@
 - `PlayerController.PrepareForRespawn` now clears pending/persistent movement at failure acceptance. `RespawnAt` atomically restores the safe Transform/logical/board position, a valid cardinal direction, manual waiting state, and synchronized `InputRouter` state before `GameManager` returns to Playing.
 - Focused regressions passed 11/11, covering safe hold/release, exposed release, reversal/self-intersection, capture exit, Volatile contact, same-firing-phase laser protection, and safe/manual respawn for EnemyContact, TrailHit, VolatileExplosion, Laser, and TrailSelfIntersection.
 - Full EditMode suite: 102 passed, 0 failed. `Game.unity` Play Mode QA passed three normal captures, safe hold/release, exposed release and multiple turns, deliberate reversal death, three Volatile-contact deaths, and three active-beam laser deaths. Every respawn moved successfully; stale beam ticks caused no extra life loss; zero stuck states and zero Console errors occurred. Prompt 9 remains not started.
+
+## Atomic Player Failure Handling
+
+- `GameManager.ReportPlayerFailure` now closes an explicit synchronous failure gate before life loss, callbacks, trail cleanup, or coroutine startup. Every overlapping callback is rejected until the single authoritative respawn has completely restored the player.
+- Only one respawn coroutine may exist. Manual/early completion cancels its pending coroutine, and delayed completion relinquishes coroutine ownership before restoring state, preventing a stale second completion.
+- Accepted enemy-contact and enemy-trail callbacks return immediately without advancing the rest of that enemy movement update. Input disable clears held state without emitting a reentrant safe-release callback during failed player traversal.
+- Respawn revalidates historical safe cells against the current board, selects a deterministic current safe cell with an outgoing move when needed, synchronizes board/logical/world/input state while still Respawning, and enters Playing only after restoration completes.
+- Focused atomic regressions passed 7/7. Full EditMode suite: 108 passed, 0 failed. `Game.unity` overlap QA passed two simultaneous enemy contacts plus enemy+laser, enemy+Volatile, and trail+enemy pairs; each lost exactly one life, cleared the trail, performed one valid respawn, and moved afterward. Unity Console: 0 errors. Prompt 9 remains not started.
 
 ## Respawn Movement Stress Verification
 
