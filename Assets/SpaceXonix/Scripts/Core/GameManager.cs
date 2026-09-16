@@ -34,6 +34,9 @@ namespace SpaceXonix.Core
         public bool IsInvulnerable => CurrentState == GameplayState.Playing && invulnerabilityRemaining > 0f;
         public int PlayerLifecycleGeneration => playerLifecycleGeneration;
         internal float InvulnerabilityRemaining => invulnerabilityRemaining;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        internal bool HasActiveRespawnOperation => respawnCoroutine != null;
+#endif
         public event Action<int> LivesChanged;
         public event Action<PlayerFailureReason> PlayerFailed;
         public event Action RespawnStarted;
@@ -105,6 +108,10 @@ namespace SpaceXonix.Core
         private void Update()
         {
             AdvanceLifecycle(Time.deltaTime);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (UnityEngine.InputSystem.Keyboard.current?.f8Key.wasPressedThisFrame == true)
+                playerDiagnostics?.DumpManual();
+#endif
         }
 
         public void AdvanceLifecycle(float deltaTime)

@@ -42,7 +42,8 @@ namespace SpaceXonix.Core
                 $"exposed={board.IsPlayerExposed} trail={board.Model.ActiveTrail.Count} lastSafe={lastSafe} " +
                 $"direction={player.CurrentDirection} pending={player.PendingDirection?.ToString() ?? "none"} " +
                 $"movement={player.MovementEnabled} input={input.GameplayInputEnabled}/{input.IsDirectionHeld}/{input.CurrentDirection} " +
-                $"invulnerable={game.IsInvulnerable}/{game.InvulnerabilityRemaining:0.000}";
+                $"invulnerable={game.IsInvulnerable}/{game.InvulnerabilityRemaining:0.000} " +
+                $"respawnActive={game.HasActiveRespawnOperation}";
             if (state == previousState && failureReason == null && operationGeneration < 0) return;
             previousState = state;
 
@@ -61,6 +62,50 @@ namespace SpaceXonix.Core
             foreach (var item in history) dump.AppendLine(item);
             dump.AppendLine("=== END PLAYER LIFECYCLE DIAGNOSTIC ===");
             Debug.LogError(dump.ToString(), game);
+        }
+
+        public void DumpManual()
+        {
+            if (board.Model == null)
+            {
+                Debug.Log("=== SPACEXONIX MANUAL PLAYER LIFECYCLE DUMP (F8) ===\nBoard model is not initialized.\n" +
+                    "=== END PLAYER LIFECYCLE DIAGNOSTIC ===", game);
+                return;
+            }
+
+            Record("ManualF8Dump", operationGeneration: game.PlayerLifecycleGeneration);
+            var boardCell = board.PlayerCell;
+            var logicalCell = board.WorldToGrid(new Vector3(player.LogicalPosition.x, player.LogicalPosition.y, 0f));
+            var transformCell = board.WorldToGrid(board.ClampToBoard(player.transform.position));
+            var cellType = board.Model.IsInBounds(boardCell) ? board.Model.GetCell(boardCell).ToString() : "OutOfBounds";
+            var lastSafe = board.HasTrackedSafeCell ? board.TrackedLastSafeCell.ToString() : "none";
+            var dump = new StringBuilder(8192);
+            dump.AppendLine("=== SPACEXONIX MANUAL PLAYER LIFECYCLE DUMP (F8) ===");
+            dump.AppendLine("CURRENT COMPLETE PLAYER STATE:");
+            dump.Append("frame=").Append(Time.frameCount)
+                .Append(" gen=").Append(game.PlayerLifecycleGeneration)
+                .Append(" failure=").Append(activeFailureReason?.ToString() ?? "none")
+                .Append(" game=").Append(game.CurrentState)
+                .Append(" control=").Append(player.ControlState)
+                .Append(" logical=").Append(logicalCell).Append('/').Append(player.LogicalPosition)
+                .Append(" board=").Append(boardCell)
+                .Append(" transformCell=").Append(transformCell).Append(" transform=").Append(player.transform.position)
+                .Append(" cell=").Append(cellType)
+                .Append(" lastSafe=").Append(lastSafe)
+                .Append(" trail=").Append(board.Model.ActiveTrail.Count)
+                .Append(" exposed=").Append(board.IsPlayerExposed)
+                .Append(" direction=").Append(player.CurrentDirection)
+                .Append(" pending=").Append(player.PendingDirection?.ToString() ?? "none")
+                .Append(" movement=").Append(player.MovementEnabled)
+                .Append(" input=").Append(input.GameplayInputEnabled).Append('/')
+                .Append(input.IsDirectionHeld).Append('/').Append(input.CurrentDirection)
+                .Append(" invulnerable=").Append(game.IsInvulnerable).Append('/')
+                .Append(game.InvulnerabilityRemaining.ToString("0.000"))
+                .Append(" respawnActive=").AppendLine(game.HasActiveRespawnOperation.ToString());
+            dump.AppendLine("RECENT LIFECYCLE HISTORY:");
+            foreach (var item in history) dump.AppendLine(item);
+            dump.AppendLine("=== END PLAYER LIFECYCLE DIAGNOSTIC ===");
+            Debug.Log(dump.ToString(), game);
         }
 
         private string FindInvalidReason(GridCoordinate boardCell, GridCoordinate logicalCell,
