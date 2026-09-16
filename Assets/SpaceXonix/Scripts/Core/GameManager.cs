@@ -130,10 +130,15 @@ namespace SpaceXonix.Core
             }
             boardManager.CancelActiveTrail();
             var respawnCell = boardManager.GetSafeRespawnCell();
+            if (!boardManager.IsValidRespawnCell(respawnCell)) return false;
             var respawnDirection = ResolveRespawnDirection(respawnCell, playerController.InitialDirection);
-            playerController.RespawnAt(boardManager.GetWorldPosition(respawnCell), respawnDirection);
-            if (!lifeState.CompleteRespawn()) return false;
+            if (!playerController.RestoreSafeManualState(respawnCell, respawnDirection)) return false;
             ApplyState(GameplayState.Playing);
+            if (!lifeState.CompleteRespawn())
+            {
+                ApplyState(GameplayState.Respawning);
+                return false;
+            }
             failureGateReleaseFrame = Time.frameCount;
             PlayerRespawned?.Invoke();
             return true;

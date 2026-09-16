@@ -126,19 +126,30 @@ namespace SpaceXonix.Player
         public void RespawnAt(Vector3 worldPosition, CardinalDirection direction)
         {
             if (boardManager == null) return;
-            var position = boardManager.ClampToBoard(worldPosition);
+            RestoreSafeManualState(boardManager.WorldToGrid(boardManager.ClampToBoard(worldPosition)), direction);
+        }
+
+        public bool RestoreSafeManualState(GridCoordinate cell, CardinalDirection direction)
+        {
+            if (boardManager == null || movementModel == null || !boardManager.IsValidRespawnCell(cell)) return false;
+            boardManager.CancelActiveTrail();
+            var position = boardManager.GetWorldPosition(cell);
             position.z = transform.position.z;
-            transform.position = position;
-            movementModel?.SetPosition(new Vector2(position.x, position.y));
-            movementModel?.SetDirection(direction);
-            RequireFreshDirectionInput();
             boardManager.ResetPlayerTracking(position);
+            movementModel.SetPosition(new Vector2(position.x, position.y));
+            movementModel.SetDirection(direction);
+            transform.position = position;
+            RequireFreshDirectionInput();
             connectedInputRouter?.ResetDirection(direction);
+            return boardManager.PlayerCell == cell && !boardManager.IsPlayerExposed &&
+                movementModel.Position == (Vector2)transform.position;
         }
 
         public void PrepareForRespawn()
         {
             RequireFreshDirectionInput();
+            movementModel?.SetDirection(initialDirection);
+            connectedInputRouter?.ResetDirection(initialDirection);
         }
 
         private void RequireFreshDirectionInput()

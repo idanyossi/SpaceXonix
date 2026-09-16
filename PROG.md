@@ -160,6 +160,14 @@
 - This prevents small, disconnected uncaptured fragments elsewhere on the board from being selected as an arbitrary partial capture instead of the full valid enclosed connected territory.
 - Unity compilation completed with 0 SpaceXonix Console errors. Automated and manual tests were not run for this task per request; the previously verified baseline remains 119/119. Prompt 9 remains not started.
 
+## Authoritative Player Respawn State
+
+- Root cause addressed: runtime respawn previously called a `void` world-position reset and then transitioned to `Playing` without confirmation that the destination remained safe or that board, movement model, Transform, trail mode, pending direction, and input direction all agreed.
+- `PlayerController.RestoreSafeManualState` is now the single runtime restoration operation. It accepts a validated logical safe cell, clears any residual trail, synchronizes BoardManager tracking, movement-model position/direction, Transform, pending/manual state, and InputRouter direction, then reports whether the restored state is coherent.
+- Failure preparation now clears pending movement and resets controller/InputRouter direction state immediately. `GameManager` revalidates the current respawn cell, requires successful restoration, enables safe/manual controls, and only then completes the state transition to `Playing`; duplicate failures and completion-frame callbacks remain behind the existing atomic gate.
+- The shared player and enemy traversal aborts remain in place for every accepted failure source; enemy, laser, Volatile, trail-hit, and self-intersection callbacks continue to route exclusively through `ReportPlayerFailure`.
+- Unity compilation completed with 0 SpaceXonix Console errors. Automated tests and Play Mode QA were not run per request; the previously verified baseline remains 119/119. Prompt 9 remains not started.
+
 ## Repository Cleanup
 
 - Removed unused Unity template Readme/tutorial content, SampleScene, default template Input Actions, local `.vscode` settings, and generated `.slnx` metadata.
