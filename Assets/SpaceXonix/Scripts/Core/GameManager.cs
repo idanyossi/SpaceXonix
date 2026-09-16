@@ -205,6 +205,7 @@ namespace SpaceXonix.Core
         {
             boardManager.CancelActiveTrail();
             var respawnCell = boardManager.GetSafeRespawnCell();
+            TracePlayerLifecycle($"RespawnCellSelected:{respawnCell}", force: true);
             if (!boardManager.IsValidRespawnCell(respawnCell)) return false;
             var respawnDirection = ResolveRespawnDirection(respawnCell, playerController.InitialDirection);
             if (!playerController.RestoreSafeManualState(respawnCell, respawnDirection)) return false;
@@ -270,10 +271,11 @@ namespace SpaceXonix.Core
         }
 
         [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
-        public void TracePlayerLifecycle(string reason, PlayerFailureReason? failureReason = null, int operationGeneration = -1)
+        public void TracePlayerLifecycle(string reason, PlayerFailureReason? failureReason = null,
+            int operationGeneration = -1, bool force = false)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            playerDiagnostics?.Record(reason, failureReason, operationGeneration);
+            playerDiagnostics?.Record(reason, failureReason, operationGeneration, force);
 #endif
         }
     }

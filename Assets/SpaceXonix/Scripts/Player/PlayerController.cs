@@ -57,23 +57,41 @@ namespace SpaceXonix.Player
 
             var lifecycleGeneration = lifecycle != null ? lifecycle.PlayerLifecycleGeneration : 0;
             ConsumePendingDirection();
-            if (!EnsureCurrentDirectionIsLegal()) return false;
+            if (!EnsureCurrentDirectionIsLegal())
+            {
+                lifecycle?.TracePlayerLifecycle("LogicalStepRejected:NoLegalDirection", operationGeneration: lifecycleGeneration);
+                return false;
+            }
 
             var transformBefore = transform.position;
             var previousPosition = movementModel.Position;
             var position = movementModel.Advance(deltaTime);
             var candidate = new Vector3(position.x, position.y, transform.position.z);
             var transitionReason = "Movement";
+            string logicalStepOutcome = null;
             if (boardManager != null)
             {
+                var stepOrigin = boardManager.PlayerCell;
+                var attemptedCell = boardManager.WorldToGrid(candidate);
+                var attemptedLogicalStep = attemptedCell != stepOrigin;
+                if (attemptedLogicalStep)
+                    lifecycle?.TracePlayerLifecycle($"LogicalStepAttempt:{stepOrigin}->{attemptedCell}", operationGeneration: lifecycleGeneration);
                 candidate = boardManager.ClampToBoard(candidate);
                 var result = boardManager.TrackPlayerWorldPosition(new Vector3(previousPosition.x, previousPosition.y, transform.position.z), candidate);
-                if (lifecycle != null && lifecycle.PlayerLifecycleGeneration != lifecycleGeneration) return false;
-                if (controlState == PlayerControlState.Respawning || controlState == PlayerControlState.GameOver) return false;
+                if (lifecycle != null && lifecycle.PlayerLifecycleGeneration != lifecycleGeneration)
+                {
+                    lifecycle.TracePlayerLifecycle($"LogicalStepRejected:LifecycleChanged:{result}", force: true);
+                    return false;
+                }
+                if (controlState == PlayerControlState.Respawning || controlState == PlayerControlState.GameOver)
+                {
+                    lifecycle?.TracePlayerLifecycle($"LogicalStepRejected:ControlState:{controlState}", operationGeneration: lifecycleGeneration);
+                    return false;
+                }
                 if (result == BoardMoveResult.TrailFailed)
                 {
                     movementModel.SetPosition(new Vector2(transform.position.x, transform.position.y));
-                    lifecycle?.TracePlayerLifecycle("TrailFailureStepRejected", operationGeneration: lifecycleGeneration);
+                    lifecycle?.TracePlayerLifecycle("LogicalStepRejected:TrailFailure", operationGeneration: lifecycleGeneration);
                     return false;
                 }
                 if (result == BoardMoveResult.SafeMove || result == BoardMoveResult.Reconnected)
@@ -87,23 +105,46 @@ namespace SpaceXonix.Player
                     controlState = PlayerControlState.ExposedMoving;
                 movementModel.SetPosition(new Vector2(candidate.x, candidate.y));
                 transitionReason = result == BoardMoveResult.Reconnected ? "CaptureCompleted" : $"Movement:{result}";
+                if (attemptedLogicalStep)
+                {
+                    var outcome = boardManager.PlayerCell != stepOrigin ? "Accepted" : "Rejected";
+                    logicalStepOutcome = $"LogicalStep{outcome}:{result}:{boardManager.PlayerCell}";
+                }
             }
             transform.position = candidate;
-            lifecycle?.TracePlayerLifecycle(transitionReason, operationGeneration: lifecycleGeneration);
+            if (logicalStepOutcome != null)
+                lifecycle?.TracePlayerLifecycle(logicalStepOutcome, operationGeneration: lifecycleGeneration);
+            if (transitionReason == "CaptureCompleted")
+                lifecycle?.TracePlayerLifecycle(transitionReason, operationGeneration: lifecycleGeneration);
             return transform.position != transformBefore;
         }
 
         private void RequestDirection(CardinalDirection direction)
         {
-            if (controlState == PlayerControlState.Respawning || controlState == PlayerControlState.GameOver) return;
+            if (controlState == PlayerControlState.Respawning || controlState == PlayerControlState.GameOver)
+            {
+                lifecycle?.TracePlayerLifecycle($"DirectionRejected:{direction}:ControlState:{controlState}", force: true);
+                return;
+            }
             var effectiveDirection = pendingDirection ?? CurrentDirection;
-            if (controlState == PlayerControlState.ExposedMoving && IsOpposite(effectiveDirection, direction)) return;
-            if (!IsDirectionLegal(direction)) return;
+            if (controlState == PlayerControlState.ExposedMoving && IsOpposite(effectiveDirection, direction))
+            {
+                lifecycle?.TracePlayerLifecycle($"DirectionRejected:{direction}:ExposedReverse", force: true);
+                return;
+            }
+            if (!IsDirectionLegal(direction))
+            {
+                lifecycle?.TracePlayerLifecycle($"DirectionRejected:{direction}:IllegalStep", force: true);
+                return;
+            }
+            var previousControlState = controlState;
             pendingDirection = direction;
             controlState = controlState == PlayerControlState.ExposedMoving ||
                 (boardManager != null && boardManager.IsPlayerExposed)
                 ? PlayerControlState.ExposedMoving
                 : PlayerControlState.SafeMoving;
+            if (previousControlState == PlayerControlState.SafeIdle && controlState == PlayerControlState.SafeMoving)
+                lifecycle?.TracePlayerLifecycle("ControlState:SafeIdle->SafeMoving", force: true);
             lifecycle?.TracePlayerLifecycle($"DirectionRequested:{direction}");
         }
 
@@ -209,9 +250,12 @@ namespace SpaceXonix.Player
 
         private void RequireFreshDirectionInput()
         {
+            var wasSafeMoving = controlState == PlayerControlState.SafeMoving;
             pendingDirection = null;
             if (controlState != PlayerControlState.Respawning && controlState != PlayerControlState.GameOver)
                 controlState = PlayerControlState.SafeIdle;
+            if (wasSafeMoving && controlState == PlayerControlState.SafeIdle)
+                lifecycle?.TracePlayerLifecycle("ControlState:SafeMoving->SafeIdle", force: true);
         }
 
         private void ContinueHeldSafeMovementOrStop()
@@ -253,6 +297,7 @@ namespace SpaceXonix.Player
         {
             if (!pendingDirection.HasValue) return;
             if (IsDirectionLegal(pendingDirection.Value)) movementModel.SetDirection(pendingDirection.Value);
+            else lifecycle?.TracePlayerLifecycle($"DirectionRejected:{pendingDirection.Value}:IllegalWhenConsumed", force: true);
             pendingDirection = null;
         }
 

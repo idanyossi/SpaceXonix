@@ -5,6 +5,7 @@ using SpaceXonix.Board;
 using SpaceXonix.Input;
 using SpaceXonix.Player;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace SpaceXonix.Core
 {
@@ -28,7 +29,8 @@ namespace SpaceXonix.Core
             this.input = input;
         }
 
-        public void Record(string reason, PlayerFailureReason? failureReason = null, int operationGeneration = -1)
+        public void Record(string reason, PlayerFailureReason? failureReason = null, int operationGeneration = -1,
+            bool force = false)
         {
             if (board.Model == null) return;
             if (failureReason.HasValue && reason == "FailureAccepted") activeFailureReason = failureReason;
@@ -44,7 +46,7 @@ namespace SpaceXonix.Core
                 $"movement={player.MovementEnabled} input={input.GameplayInputEnabled}/{input.IsDirectionHeld}/{input.CurrentDirection} " +
                 $"invulnerable={game.IsInvulnerable}/{game.InvulnerabilityRemaining:0.000} " +
                 $"respawnActive={game.HasActiveRespawnOperation}";
-            if (state == previousState && failureReason == null && operationGeneration < 0) return;
+            if (!force && state == previousState && failureReason == null && operationGeneration < 0) return;
             previousState = state;
 
             var entry = $"frame={Time.frameCount} gen={game.PlayerLifecycleGeneration} event={reason} " +
@@ -79,6 +81,7 @@ namespace SpaceXonix.Core
             var transformCell = board.WorldToGrid(board.ClampToBoard(player.transform.position));
             var cellType = board.Model.IsInBounds(boardCell) ? board.Model.GetCell(boardCell).ToString() : "OutOfBounds";
             var lastSafe = board.HasTrackedSafeCell ? board.TrackedLastSafeCell.ToString() : "none";
+            var rawKeys = GetRawKeyboardState();
             var dump = new StringBuilder(8192);
             dump.AppendLine("=== SPACEXONIX MANUAL PLAYER LIFECYCLE DUMP (F8) ===");
             dump.AppendLine("CURRENT COMPLETE PLAYER STATE:");
@@ -99,6 +102,7 @@ namespace SpaceXonix.Core
                 .Append(" movement=").Append(player.MovementEnabled)
                 .Append(" input=").Append(input.GameplayInputEnabled).Append('/')
                 .Append(input.IsDirectionHeld).Append('/').Append(input.CurrentDirection)
+                .Append(" rawKeys=").Append(rawKeys)
                 .Append(" invulnerable=").Append(game.IsInvulnerable).Append('/')
                 .Append(game.InvulnerabilityRemaining.ToString("0.000"))
                 .Append(" respawnActive=").AppendLine(game.HasActiveRespawnOperation.ToString());
@@ -106,6 +110,15 @@ namespace SpaceXonix.Core
             foreach (var item in history) dump.AppendLine(item);
             dump.AppendLine("=== END PLAYER LIFECYCLE DIAGNOSTIC ===");
             Debug.Log(dump.ToString(), game);
+        }
+
+        private static string GetRawKeyboardState()
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard == null) return "keyboard:none";
+            return $"W:{keyboard.wKey.isPressed},A:{keyboard.aKey.isPressed},S:{keyboard.sKey.isPressed},D:{keyboard.dKey.isPressed}," +
+                $"Up:{keyboard.upArrowKey.isPressed},Left:{keyboard.leftArrowKey.isPressed}," +
+                $"Down:{keyboard.downArrowKey.isPressed},Right:{keyboard.rightArrowKey.isPressed}";
         }
 
         private string FindInvalidReason(GridCoordinate boardCell, GridCoordinate logicalCell,

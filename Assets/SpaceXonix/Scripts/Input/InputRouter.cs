@@ -1,4 +1,5 @@
 using System;
+using SpaceXonix.Core;
 using SpaceXonix.Player;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -23,18 +24,22 @@ namespace SpaceXonix.Input
 
             if (Keyboard.current.wKey.wasPressedThisFrame || Keyboard.current.upArrowKey.wasPressedThisFrame)
             {
+                TraceRawInput(Keyboard.current.wKey.wasPressedThisFrame ? "W" : "UpArrow");
                 TrySelectDirection(CardinalDirection.Up);
             }
             else if (Keyboard.current.sKey.wasPressedThisFrame || Keyboard.current.downArrowKey.wasPressedThisFrame)
             {
+                TraceRawInput(Keyboard.current.sKey.wasPressedThisFrame ? "S" : "DownArrow");
                 TrySelectDirection(CardinalDirection.Down);
             }
             else if (Keyboard.current.aKey.wasPressedThisFrame || Keyboard.current.leftArrowKey.wasPressedThisFrame)
             {
+                TraceRawInput(Keyboard.current.aKey.wasPressedThisFrame ? "A" : "LeftArrow");
                 TrySelectDirection(CardinalDirection.Left);
             }
             else if (Keyboard.current.dKey.wasPressedThisFrame || Keyboard.current.rightArrowKey.wasPressedThisFrame)
             {
+                TraceRawInput(Keyboard.current.dKey.wasPressedThisFrame ? "D" : "RightArrow");
                 TrySelectDirection(CardinalDirection.Right);
             }
             else if (IsDirectionHeld && IsPressed(CurrentDirection))
@@ -72,6 +77,7 @@ namespace SpaceXonix.Input
 
             CurrentDirection = direction;
             IsDirectionHeld = true;
+            GameManager.Instance?.TracePlayerLifecycle($"InputDirectionAccepted:{direction}", force: true);
             DirectionChanged?.Invoke(direction);
             return true;
         }
@@ -80,7 +86,13 @@ namespace SpaceXonix.Input
         {
             if (!IsDirectionHeld) return;
             IsDirectionHeld = false;
+            GameManager.Instance?.TracePlayerLifecycle($"InputDirectionReleased:{CurrentDirection}", force: true);
             DirectionReleased?.Invoke();
+        }
+
+        private static void TraceRawInput(string key)
+        {
+            GameManager.Instance?.TracePlayerLifecycle($"RawInputDetected:{key}", force: true);
         }
 
         private bool TrySelectPressedDirection()
