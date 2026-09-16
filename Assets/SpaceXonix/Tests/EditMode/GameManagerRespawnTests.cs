@@ -515,7 +515,7 @@ namespace SpaceXonix.Tests.EditMode
                 var historicalCell = new GridCoordinate(2, 2);
                 Assert.That(fixture.Board.Model.GetCell(historicalCell), Is.EqualTo(BoardCellState.Captured));
                 fixture.Board.ResetPlayerTracking(fixture.Board.GetWorldPosition(historicalCell));
-                Assert.That(fixture.Board.RemoveCapturedWithinRadius(historicalCell, 0f), Is.EqualTo(1));
+                Assert.That(fixture.Board.Model.RemoveCapturedWithinRadius(historicalCell, 0f), Is.EqualTo(1));
                 Assert.That(fixture.Board.Model.GetCell(historicalCell), Is.EqualTo(BoardCellState.Uncaptured));
 
                 Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact), Is.True);
@@ -576,7 +576,7 @@ namespace SpaceXonix.Tests.EditMode
                 var staleCell = new GridCoordinate(2, 2);
                 fixture.Board.ResetPlayerTracking(fixture.Board.GetWorldPosition(staleCell));
                 fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact);
-                fixture.Board.RemoveCapturedWithinRadius(staleCell, 0f);
+                fixture.Board.Model.RemoveCapturedWithinRadius(staleCell, 0f);
 
                 Assert.That(fixture.CompleteRespawn(), Is.True);
                 Assert.That(fixture.Board.PlayerCell, Is.Not.EqualTo(staleCell));

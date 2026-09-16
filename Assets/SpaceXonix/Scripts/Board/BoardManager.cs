@@ -249,7 +249,8 @@ namespace SpaceXonix.Board
 
         public int RemoveCapturedWithinRadius(GridCoordinate center, float radius)
         {
-            var removed = Model.RemoveCapturedWithinRadius(center, radius);
+            var protectedPlayerCell = hasPlayerCell ? playerCell : (GridCoordinate?)null;
+            var removed = Model.RemoveCapturedWithinRadius(center, radius, protectedPlayerCell);
             if (removed <= 0) return 0;
             boardRenderer?.Refresh(Model);
             TerritoryDestroyed?.Invoke(removed);

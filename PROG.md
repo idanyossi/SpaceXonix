@@ -49,8 +49,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 127
-- Passed: 127
+- EditMode discovered: 128
+- Passed: 128
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -216,6 +216,14 @@
 - `GameManager` checks the invariant at the end of each gameplay frame. An impossible `Playing` state creates an immediate lifecycle barrier, invalidates old traversal callbacks, and repairs the player through the same authoritative safe restoration path without deducting a life.
 - Regression coverage explicitly corrupts the player into uncaptured territory without a trail and verifies deterministic synchronized recovery, and invalidates a selected respawn cell before completion to verify current-board fallback.
 - `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 127 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
+
+## Invalid Player-State Root Transition
+
+- Real `Game.unity` reproduction placed the player on newly captured interior terrain during post-respawn invulnerability, then detonated a real armed Volatile at that cell. Immediately before territory damage the player was valid (`Captured`, no trail, `SafeIdle`); immediately after `EnemyManager.ResolveVolatileExplosion` called `BoardManager.RemoveCapturedWithinRadius`, the same occupied cell was `Uncaptured` while the game remained `Playing`, exposure was false, and the trail was empty.
+- The first invalid write was `BoardModel.RemoveCapturedWithinRadius`, which removed the currently occupied player cell. Damage gating correctly skipped the invulnerable player, but territory damage was independent. The previous end-of-frame invariant repair only reacted after this invalid state had already been created and therefore did not prevent the real transition.
+- Territory destruction now passes the authoritative current player cell as a protected cell into `BoardModel`. Other captured cells in the blast are still removed normally, while the player's safe anchor cannot be erased beneath a surviving player.
+- The exact real-scene sequence now remains `Playing + Captured + SafeIdle + no trail`, and fresh input moves successfully into a valid exposed trail. The focused regression recreates capture, occupied-cell Volatile detonation during invulnerability, and validates the complete player state afterward.
+- `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 128 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
 
 ## Repository Cleanup
 

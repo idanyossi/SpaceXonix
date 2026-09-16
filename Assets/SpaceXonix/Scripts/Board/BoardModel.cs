@@ -93,7 +93,7 @@ namespace SpaceXonix.Board
             trail.Clear();
         }
 
-        public int RemoveCapturedWithinRadius(GridCoordinate center, float radius)
+        public int RemoveCapturedWithinRadius(GridCoordinate center, float radius, GridCoordinate? protectedCell = null)
         {
             var radiusSquared = radius * radius;
             var removed = 0;
@@ -101,6 +101,7 @@ namespace SpaceXonix.Board
             {
                 var dx = x - center.X; var dy = y - center.Y;
                 if (dx * dx + dy * dy > radiusSquared) continue;
+                if (protectedCell.HasValue && protectedCell.Value == new GridCoordinate(x, y)) continue;
                 var index = ToIndex(x, y);
                 if (cells[index] != BoardCellState.Captured) continue;
                 cells[index] = BoardCellState.Uncaptured;

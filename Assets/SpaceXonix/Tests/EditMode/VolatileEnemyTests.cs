@@ -133,6 +133,36 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void ExplosionDuringInvulnerability_PreservesOccupiedCapturedCellAndValidPlayerState()
+        {
+            using (var fixture = new Fixture(withGameManager: true))
+            {
+                for (var x = 1; x < fixture.Board.Columns - 1; x++)
+                    fixture.Board.Model.MoveTo(new GridCoordinate(x, 48));
+                fixture.Board.Model.MoveTo(new GridCoordinate(fixture.Board.Columns - 1, 48));
+                var playerCell = new GridCoordinate(10, 70);
+                Assert.That(fixture.Player.RestoreSafeManualState(playerCell, CardinalDirection.Right), Is.True);
+                var volatileEnemy = fixture.SpawnVolatile(new GridCoordinate(10, 10));
+                volatileEnemy.Activate(fixture.VolatileDefinition, fixture.Board, fixture.Game,
+                    fixture.Board.GetWorldPosition(playerCell), Vector2.right);
+                volatileEnemy.AdvanceSpawnProtection(.5f);
+                SetField(fixture.Game, "invulnerabilityRemaining", 2f);
+                var livesBefore = fixture.Game.Lives;
+
+                Assert.That(fixture.Manager.ResolveVolatileExplosion(volatileEnemy), Is.True);
+
+                Assert.That(fixture.Game.Lives, Is.EqualTo(livesBefore));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(playerCell));
+                Assert.That(fixture.Board.Model.GetCell(playerCell), Is.EqualTo(BoardCellState.Captured));
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.SafeIdle));
+                Assert.That(fixture.Player.HasValidPlayingState(), Is.True);
+            }
+        }
+
+        [Test]
         public void DirectPlayerContact_UsesEnemyContactOnceAndAbortsSameFrameDetonation()
         {
             using (var fixture = new Fixture(withGameManager: true))
