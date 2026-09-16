@@ -93,14 +93,13 @@
 - Continuous `Game.unity` session passed startup, movement, rapid turns, capture (0%→0.08183306%), laser death (5→4), respawn/movement, another capture (0.1841244%), real Basic enemy contact (4→3), respawn, and continued movement in `Playing` with synchronized positions.
 - Final EditMode suite: 89 passed, 0 failed. Prompt 9 remains not started.
 
-## Manual Safe Movement / Persistent Capture Movement
+## Held Safe Movement / Persistent Capture Movement
 
-- Final rule: movement is manual on safe/captured territory and persistent only while the player is exposed and drawing a trail. A legal input on safe territory completes one logical-cell move, then waits for fresh input; entering uncaptured territory switches naturally to continuous movement through BoardManager's authoritative exposure state.
-- Root cause: once the controller accepted any direction, `awaitingDirectionInput` stayed false across safe movement, capture reconnection, and respawn. BoardManager could also continue traversing cells after `SafeMove` or `Reconnected`, allowing stale direction to consume an extra safe step or begin another trail in the same update.
-- Fix: BoardManager ends a tracking batch at the first safe step or reconnection. PlayerController snaps to that accepted logical cell and clears pending/persistent movement. While exposed, current direction continues automatically and legal turns replace it without stopping; reconnecting or respawning returns immediately to manual waiting.
-- Regression coverage verifies one-cell safe movement, automatic capture entry/continuation, persistent legal turns while exposed, immediate stop on reconnection, fresh input after respawn, and two consecutive captures without direction leakage.
-- Real `Game.unity` QA completed two captures in different directions. In both, movement continued with no input while exposed, stopped exactly at the reconnect cell with zero active trail, remained stationary with controls released, and resumed only after fresh input. Respawn likewise remained still until fresh input, then moved with synchronized board/logical/world positions.
-- Final EditMode suite: 94 passed, 0 failed. Prompt 9 remains not started.
+- Final rule: safe/captured movement continues only while a direction is held and stops on release. Once exposed and drawing a trail, the accepted direction persists after release until reconnection. Capture ends exposed persistence, while a direction that remains physically held continues as ordinary safe movement.
+- Root cause: `InputRouter` emitted only direction-press events, so `PlayerController` could stop stale exposed persistence after capture but could not distinguish a held safe-terrain command from a released key.
+- Fix: `InputRouter` now reports held/released direction state while retaining latest-press behavior. `PlayerController` re-arms each accepted safe step only while that direction remains held, ignores releases while exposed, and stops/recenters on the authoritative safe cell when released. Reconnection checks current held state instead of leaking exposed persistence.
+- Regression coverage verifies continuous held safe movement, release-to-stop, release-independent exposed movement, capture stop with controls released, held movement immediately after capture, two consecutive captures, and existing rapid-input synchronization.
+- Targeted movement tests passed 7/7; the final EditMode suite passed 94/94 with no failures. Unity compiled without errors. Prompt 9 remains not started.
 
 ## Respawn Movement Stress Verification
 

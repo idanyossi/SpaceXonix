@@ -34,7 +34,7 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
-        public void SafeTerritory_MoveConsumesOneCellAndRequiresFreshInput()
+        public void SafeTerritory_HeldDirectionContinuesUntilReleased()
         {
             using (var fixture = new Fixture())
             {
@@ -42,6 +42,11 @@ namespace SpaceXonix.Tests.EditMode
 
                 Assert.That(fixture.Player.AdvanceMovement(.04f), Is.True);
                 Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 2)));
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.False);
+                Assert.That(fixture.Player.AdvanceMovement(.04f), Is.True);
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 3)));
+
+                fixture.Input.ReleaseDirection();
                 Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
                 var stoppedPosition = fixture.Player.transform.position;
 
@@ -58,6 +63,7 @@ namespace SpaceXonix.Tests.EditMode
                 fixture.Input.TrySelectDirection(CardinalDirection.Right);
                 Assert.That(fixture.Player.AdvanceMovement(.04f), Is.True);
                 Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+                fixture.Input.ReleaseDirection();
                 var exposedPosition = fixture.Player.transform.position;
 
                 Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
@@ -93,6 +99,7 @@ namespace SpaceXonix.Tests.EditMode
                 fixture.Input.TrySelectDirection(CardinalDirection.Right);
                 fixture.Player.AdvanceMovement(.04f);
                 fixture.Input.TrySelectDirection(CardinalDirection.Left);
+                fixture.Input.ReleaseDirection();
 
                 Assert.That(fixture.Player.AdvanceMovement(.04f), Is.True);
                 Assert.That(fixture.Board.IsPlayerExposed, Is.False);
@@ -116,19 +123,22 @@ namespace SpaceXonix.Tests.EditMode
                 fixture.Input.TrySelectDirection(CardinalDirection.Right);
                 fixture.Player.AdvanceMovement(.04f);
                 fixture.Input.TrySelectDirection(CardinalDirection.Left);
+                fixture.Input.ReleaseDirection();
                 fixture.Player.AdvanceMovement(.04f);
                 Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
 
                 fixture.Input.TrySelectDirection(CardinalDirection.Right);
                 fixture.Player.AdvanceMovement(.04f);
-                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True, "safe step must be manual");
-                fixture.Input.TrySelectDirection(CardinalDirection.Right);
                 fixture.Player.AdvanceMovement(.04f);
                 Assert.That(fixture.Board.IsPlayerExposed, Is.True);
                 fixture.Input.TrySelectDirection(CardinalDirection.Left);
                 fixture.Player.AdvanceMovement(.04f);
 
                 Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.False, "held input should resume safe movement after capture");
+                fixture.Player.AdvanceMovement(.04f);
+                Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 1)));
+                fixture.Input.ReleaseDirection();
                 Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
                 Assert.That(fixture.Player.AdvanceMovement(.2f), Is.False);
             }

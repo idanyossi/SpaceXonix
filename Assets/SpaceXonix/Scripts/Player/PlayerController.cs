@@ -63,7 +63,7 @@ namespace SpaceXonix.Player
                 {
                     candidate = boardManager.GetWorldPosition(boardManager.PlayerCell);
                     candidate.z = transform.position.z;
-                    RequireFreshDirectionInput();
+                    ContinueHeldSafeMovementOrStop();
                 }
                 movementModel.SetPosition(new Vector2(candidate.x, candidate.y));
             }
@@ -97,10 +97,12 @@ namespace SpaceXonix.Player
             if (connectedInputRouter != null)
             {
                 connectedInputRouter.DirectionChanged -= RequestDirection;
+                connectedInputRouter.DirectionReleased -= StopSafeMovement;
             }
 
             connectedInputRouter = inputRouter;
             connectedInputRouter.DirectionChanged += RequestDirection;
+            connectedInputRouter.DirectionReleased += StopSafeMovement;
         }
 
         public void ConnectBoard(BoardManager board)
@@ -131,6 +133,32 @@ namespace SpaceXonix.Player
         {
             pendingDirection = null;
             awaitingDirectionInput = true;
+        }
+
+        private void ContinueHeldSafeMovementOrStop()
+        {
+            if (connectedInputRouter != null && connectedInputRouter.IsDirectionHeld &&
+                IsDirectionLegal(connectedInputRouter.CurrentDirection))
+            {
+                pendingDirection = connectedInputRouter.CurrentDirection;
+                awaitingDirectionInput = false;
+                return;
+            }
+
+            RequireFreshDirectionInput();
+        }
+
+        private void StopSafeMovement()
+        {
+            if (boardManager != null && boardManager.IsPlayerExposed) return;
+            if (boardManager != null)
+            {
+                var position = boardManager.GetWorldPosition(boardManager.PlayerCell);
+                position.z = transform.position.z;
+                transform.position = position;
+                movementModel?.SetPosition(new Vector2(position.x, position.y));
+            }
+            RequireFreshDirectionInput();
         }
 
         private void ConsumePendingDirection()
@@ -173,6 +201,7 @@ namespace SpaceXonix.Player
             if (connectedInputRouter != null)
             {
                 connectedInputRouter.DirectionChanged -= RequestDirection;
+                connectedInputRouter.DirectionReleased -= StopSafeMovement;
             }
         }
     }
