@@ -48,8 +48,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 114
-- Passed: 114
+- EditMode discovered: 115
+- Passed: 115
 - Failed: 0
 - Coverage includes input/movement, board/trail/capture/destruction, the complete death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -138,6 +138,13 @@
 - `PlayerController` remains the sole authority for current movement direction and retains at most one legal pending direction. Ignored exposed reversals leave the current/pending movement state unchanged; perpendicular turns and safe-terrain reversals remain valid.
 - Regression coverage now exercises all requested safe reversals, 100 rapid reversals on each safe axis with board/logical/world synchronization assertions, exposed opposite suppression on both axes, no life/state changes, persistent non-zero exposed movement, and legal perpendicular self-trail paths.
 - Focused movement/respawn suite: 48 passed, 0 failed. Full EditMode suite: 114 passed, 0 failed. Real `Game.unity` stress passed 200 A/D and 200 W/S safe reversals plus 50 ignored exposed reversals on each axis; the player remained synchronized, moving, and in `Playing`, with zero Console errors. Prompt 9 remains not started.
+
+## Trail-Hit Respawn Stabilization
+
+- Root cause: `LifeStateModel.TryFail` synchronously entered `Respawning`, but `GameManager` left gameplay input and player movement enabled until after trail cleanup and failure callbacks. A re-entrant callback could therefore accept a direction and advance the player after the old trail was cleared, recreating exposed trail state inside the accepted failure frame.
+- `GameManager.ReportPlayerFailure` now applies the accepted `Respawning` or `GameOver` state immediately after the atomic life-state transition, before trail cleanup or any callbacks. This closes input/movement synchronously while retaining the existing single failure gate and authoritative respawn restoration.
+- The focused regression uses a multi-cell enemy traversal across an earlier active-trail cell, attempts re-entrant input/movement during `PlayerFailed`, and verifies one `TrailHit`, aborted enemy/player traversal, empty trail, no exposure, duplicate rejection, valid synchronized safe respawn, manual movement mode, and successful next input movement.
+- Focused movement/respawn suite: 49 passed, 0 failed. Full EditMode suite: 115 passed, 0 failed. Unity compiled with 0 Console errors. Additional manual/client Play Mode verification was intentionally not required. Prompt 9 remains not started.
 
 ## Repository Cleanup
 

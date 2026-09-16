@@ -560,6 +560,65 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void MultiCellEnemyTrailHit_AtomicallyRespawnsAndRestoresMovement()
+        {
+            using (var fixture = new Fixture())
+            using (var enemy = new EnemyFixture<BasicBouncer>(fixture, new GridCoordinate(4, 1), Vector2.left, 3.6f))
+            {
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Player.AdvanceMovement(.04f);
+                fixture.Input.TrySelectDirection(CardinalDirection.Up);
+                fixture.Player.AdvanceMovement(.04f);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+
+                var failures = 0;
+                var reentrantInputAccepted = true;
+                var reentrantMovementAdvanced = true;
+                PlayerFailureReason? acceptedReason = null;
+                fixture.Game.PlayerFailed += reason =>
+                {
+                    failures++;
+                    acceptedReason = reason;
+                    reentrantInputAccepted = fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                    reentrantMovementAdvanced = fixture.Player.AdvanceMovement(.04f);
+                };
+                var enemyPosition = enemy.Controller.transform.position;
+
+                enemy.Controller.AdvanceMovement(.15f);
+
+                Assert.That(enemy.Controller.LastTraversedCells, Is.EqualTo(new[]
+                {
+                    new GridCoordinate(4, 1), new GridCoordinate(3, 1),
+                    new GridCoordinate(2, 1), new GridCoordinate(1, 1)
+                }));
+                Assert.That(enemy.Controller.LastTrailHitAccepted, Is.True);
+                Assert.That(enemy.Controller.transform.position, Is.EqualTo(enemyPosition), "accepted failure must abort enemy traversal");
+                Assert.That(acceptedReason, Is.EqualTo(PlayerFailureReason.TrailHit));
+                Assert.That(failures, Is.EqualTo(1));
+                Assert.That(reentrantInputAccepted, Is.False, "input must be disabled before failure callbacks run");
+                Assert.That(reentrantMovementAdvanced, Is.False, "player traversal must be disabled before failure callbacks run");
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+                Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact), Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+
+                Assert.That(fixture.CompleteRespawn(), Is.True);
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Board.IsValidRespawnCell(fixture.Board.PlayerCell), Is.True);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+                Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
+                Assert.That(fixture.Player.PendingDirection, Is.Null);
+                Assert.That(fixture.Player.LogicalPosition, Is.EqualTo((Vector2)fixture.Player.transform.position));
+                fixture.Input.TrySelectDirection(fixture.Player.CurrentDirection);
+                Assert.That(fixture.Player.AdvanceMovement(.02f), Is.True);
+            }
+        }
+
+        [Test]
         public void EnemyPassingAdjacentToTrail_DoesNotReportFailure()
         {
             using (var fixture = new Fixture())

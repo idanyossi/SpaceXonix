@@ -89,18 +89,17 @@ namespace SpaceXonix.Core
                 return false;
             }
 
+            ApplyState(CurrentState);
             boardManager.CancelActiveTrail();
             playerController.PrepareForRespawn();
             LivesChanged?.Invoke(Lives);
             PlayerFailed?.Invoke(reason);
             if (CurrentState == GameplayState.GameOver)
             {
-                ApplyState(GameplayState.GameOver);
                 GameOver?.Invoke();
                 return true;
             }
 
-            ApplyState(GameplayState.Respawning);
             if (respawnCoroutine == null) respawnCoroutine = StartCoroutine(RespawnAfterDelay());
             RespawnStarted?.Invoke();
             return true;
