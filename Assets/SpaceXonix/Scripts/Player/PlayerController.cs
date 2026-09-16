@@ -150,8 +150,7 @@ namespace SpaceXonix.Player
         public void RespawnAt(Vector3 worldPosition, CardinalDirection direction)
         {
             if (boardManager == null) return;
-            if (RestoreSafeManualState(boardManager.WorldToGrid(boardManager.ClampToBoard(worldPosition)), direction))
-                controlState = PlayerControlState.SafeIdle;
+            RestoreSafeManualState(boardManager.WorldToGrid(boardManager.ClampToBoard(worldPosition)), direction);
         }
 
         public bool RestoreSafeManualState(GridCoordinate cell, CardinalDirection direction)
@@ -166,8 +165,10 @@ namespace SpaceXonix.Player
             transform.position = position;
             RequireFreshDirectionInput();
             connectedInputRouter?.ResetDirection(direction);
-            return boardManager.PlayerCell == cell && !boardManager.IsPlayerExposed &&
-                movementModel.Position == (Vector2)transform.position;
+            if (boardManager.PlayerCell != cell || boardManager.IsPlayerExposed ||
+                movementModel.Position != (Vector2)transform.position) return false;
+            controlState = PlayerControlState.SafeIdle;
+            return true;
         }
 
         public void PrepareForRespawn()

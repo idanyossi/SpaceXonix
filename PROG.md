@@ -49,8 +49,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 119
-- Passed: 119
+- EditMode discovered: 120
+- Passed: 120
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -176,6 +176,13 @@
 - The existing atomic failure gate and single restoration operation remain authoritative. Failure disables player/input state before callbacks, traversal aborts on the accepted failure, and restoration revalidates a current safe cell before synchronizing BoardManager, movement model, Transform, trail/exposure, direction, and InputRouter; `Playing` is applied only after restoration succeeds.
 - Regression assertions now verify every control-state transition in addition to existing rapid reversal, self-intersection, TrailHit, simultaneous hazard, stale-safe-cell, capture, and post-respawn movement coverage.
 - `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 119 passed, 0 failed, 0 skipped. Unity Console after the run: 0 errors. `git diff --check`: passed. Prompt 9 remains not started.
+
+## Safe-Terrain Laser Respawn Restoration
+
+- The shared `PlayerController.RestoreSafeManualState` operation now establishes `SafeIdle` itself only after the board cell, movement-model position, Transform, exposure state, and input direction have all synchronized successfully. GameManager still keeps gameplay input disabled and remains in `Respawning` until that restoration returns success, then transitions to `Playing` through the existing single atomic failure flow.
+- This removes the restoration gap where a safe-terrain laser death depended on a later broad gameplay-state application to leave the controller's `Respawning` movement state. No laser-specific respawn behavior was added, and repeated beam callbacks remain rejected by the failure gate and firing-phase guard.
+- Focused coverage now runs both `SafeIdle` and `SafeMoving` laser hits through life loss, `Respawning`, same-beam rejection, synchronized `SafeIdle` restoration, and successful movement from fresh held input.
+- `SpaceXonix.EditModeTests.csproj` compilation: 0 warnings, 0 errors. Full Unity EditMode suite: 120 passed, 0 failed, 0 skipped. Prompt 9 remains not started.
 
 ## Repository Cleanup
 

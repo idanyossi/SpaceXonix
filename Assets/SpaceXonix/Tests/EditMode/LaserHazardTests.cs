@@ -89,8 +89,9 @@ namespace SpaceXonix.Tests.EditMode
             }
         }
 
-        [Test]
-        public void RespawnDuringSameFiringPhase_IsNotHitAgainAndMovesOnNextTick()
+        [TestCase(false)]
+        [TestCase(true)]
+        public void SafeTerrainLaserHit_RestoresSafeIdleAndMovesOnFreshInput(bool startMoving)
         {
             using (var fixture = new Fixture(LaserAxis.Horizontal, withGame: true))
             {
@@ -99,14 +100,20 @@ namespace SpaceXonix.Tests.EditMode
                 var safePosition = fixture.Board.GetWorldPosition(safeCell);
                 fixture.Player.RespawnAt(safePosition, CardinalDirection.Right);
                 fixture.Board.ResetPlayerTracking(safePosition);
+                if (startMoving) fixture.Input.TrySelectDirection(CardinalDirection.Right);
                 var before = fixture.Game.Lives;
                 Assert.That(fixture.Emitter.ContainsPoint(fixture.Player.transform.position), Is.True);
                 Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(startMoving
+                    ? PlayerControlState.SafeMoving
+                    : PlayerControlState.SafeIdle));
 
                 fixture.Emitter.Tick(2f);
                 fixture.Emitter.Tick(.75f);
                 Assert.That(fixture.Game.Lives, Is.EqualTo(before - 1));
                 Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.Respawning));
+                Assert.That(fixture.Input.IsDirectionHeld, Is.False);
                 Assert.That(CompleteRespawn(fixture.Game), Is.True);
                 var respawnPosition = fixture.Player.transform.position;
 
@@ -115,6 +122,7 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Game.Lives, Is.EqualTo(before - 1));
                 Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
                 Assert.That(fixture.Player.MovementEnabled, Is.True);
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.SafeIdle));
                 Assert.That(fixture.Board.IsPlayerExposed, Is.False);
                 Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
                 Assert.That(fixture.Player.IsAwaitingDirectionInput, Is.True);
