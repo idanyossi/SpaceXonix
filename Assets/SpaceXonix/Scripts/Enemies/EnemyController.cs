@@ -64,6 +64,8 @@ namespace SpaceXonix.Enemies
             for (var i = 0; i < traversedCells.Count; i++)
             {
                 if (board.Model.GetCell(traversedCells[i]) != BoardCellState.Trail) continue;
+                // The trail head under a shielded ship is ship contact, which the shield blocks; the rest of the trail stays vulnerable.
+                if (game != null && game.IsShieldActive && traversedCells[i] == board.PlayerCell) continue;
                 if (game != null) LastTrailHitAccepted = game.ReportPlayerFailure(PlayerFailureReason.TrailHit);
                 if (LastTrailHitAccepted || game != null && !game.CanProcessPlayerContact(lifecycleGeneration)) return;
                 break;

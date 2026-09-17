@@ -205,6 +205,54 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void ShieldedExposedShip_EnemyReachingShipCell_DoesNotKill()
+        {
+            using (var fixture = new Fixture())
+            {
+                var enemy = fixture.PrepareExposedShipFacingEnemy(shielded: true);
+                PlayerFailureReason? reason = null;
+                fixture.Game.PlayerFailed += r => reason = r;
+                var reachedShipCell = false;
+                for (var i = 0; i < 120; i++)
+                {
+                    enemy.AdvanceMovement(.02f);
+                    foreach (var cell in enemy.LastTraversedCells) if (cell == fixture.Board.PlayerCell) reachedShipCell = true;
+                }
+                Assert.That(reachedShipCell, Is.True);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(3), $"died with shield: {reason}");
+                Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+            }
+        }
+
+        [Test]
+        public void UnshieldedExposedShip_EnemyReachingShip_StillKills()
+        {
+            using (var fixture = new Fixture())
+            {
+                var enemy = fixture.PrepareExposedShipFacingEnemy(shielded: false);
+                for (var i = 0; i < 120 && fixture.Game.Lives == 3; i++) enemy.AdvanceMovement(.02f);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+            }
+        }
+
+        [Test]
+        public void Shield_DoesNotProtectTrailBehindShip()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.PrepareExposedShipFacingEnemy(shielded: true);
+                var trailCell = fixture.Board.Model.ToCoordinate(fixture.Board.Model.ActiveTrail[0]);
+                Assert.That(trailCell, Is.Not.EqualTo(fixture.Board.PlayerCell));
+                var onTrail = fixture.SpawnEnemyAt(fixture.Board.GetWorldPosition(trailCell) + Vector3.up * fixture.Board.CellWorldSize, Vector2.down);
+                PlayerFailureReason? reason = null;
+                fixture.Game.PlayerFailed += r => reason = r;
+                for (var i = 0; i < 60 && reason == null; i++) onTrail.AdvanceMovement(.02f);
+                Assert.That(reason, Is.EqualTo(PlayerFailureReason.TrailHit));
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+            }
+        }
+
+        [Test]
         public void Freeze_StopsAllEnemiesAndTintsThemUntilExpiry()
         {
             using (var fixture = new Fixture())
@@ -361,6 +409,32 @@ namespace SpaceXonix.Tests.EditMode
             {
                 Assert.That(EnemyManager.Spawn(enemyPrefab, enemyDefinition, cell, Vector2.right), Is.True);
                 return EnemyManager.ActiveEnemies[EnemyManager.ActiveEnemies.Count - 1];
+            }
+
+            public EnemyController PrepareExposedShipFacingEnemy(bool shielded)
+            {
+                if (shielded)
+                {
+                    Store(PowerUpType.Shield);
+                    Assert.That(Manager.TryUseStoredAbility(), Is.True);
+                }
+                Input.TrySelectDirection(CardinalDirection.Up);
+                for (var i = 0; i < 400 && Board.PlayerCell.Y < 20; i++) Player.AdvanceMovement(.02f);
+                Input.TrySelectDirection(CardinalDirection.Right);
+                for (var i = 0; i < 400 && Board.PlayerCell.X < 4; i++) Player.AdvanceMovement(.02f);
+                Input.ReleaseDirection();
+                Assert.That(Board.IsPlayerExposed, Is.True);
+                var start = Board.GetWorldPosition(new GridCoordinate(Board.PlayerCell.X + 3, Board.PlayerCell.Y));
+                return SpawnEnemyAt(start, Vector2.left);
+            }
+
+            public EnemyController SpawnEnemyAt(Vector3 worldPosition, Vector2 direction)
+            {
+                var enemy = SpawnEnemy(new GridCoordinate(30, 60));
+                enemy.transform.position = worldPosition;
+                typeof(EnemyController).GetField("movement", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .SetValue(enemy, new EnemyMovementModel(worldPosition, direction));
+                return enemy;
             }
 
             public void SpawnPickupAtPlayer(PowerUpType type)
