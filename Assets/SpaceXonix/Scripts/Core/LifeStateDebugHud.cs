@@ -16,6 +16,7 @@ namespace SpaceXonix.Core
         private GUIStyle rightStyle;
         private GUIStyle awardStyle;
         private GUIStyle gameOverStyle;
+        private GUIStyle stageCompleteStyle;
         private float awardShownAt = float.NegativeInfinity;
 
         private void Awake()
@@ -45,8 +46,18 @@ namespace SpaceXonix.Core
             if (boardManager != null)
                 GUI.Label(new Rect(Screen.width - 424f, 64f, 400f, 60f), $"{boardManager.CapturedPercentage:0.0}%", rightStyle);
             DrawLastAward();
-            if (game.CurrentState != GameplayState.GameOver) return;
-            GUI.Label(new Rect(0f, Screen.height * .4f, Screen.width, 120f), "GAME OVER", gameOverStyle);
+            if (game.CurrentState == GameplayState.GameOver)
+                GUI.Label(new Rect(0f, Screen.height * .4f, Screen.width, 120f), "GAME OVER", gameOverStyle);
+            else if (game.CurrentState == GameplayState.StageComplete)
+                DrawStageComplete();
+        }
+
+        private void DrawStageComplete()
+        {
+            GUI.Label(new Rect(0f, Screen.height * .4f, Screen.width, 120f), "STAGE COMPLETE", stageCompleteStyle);
+            if (scoreManager == null) return;
+            GUI.Label(new Rect(0f, Screen.height * .4f + 110f, Screen.width, 60f),
+                $"Score {scoreManager.Score}   Largest capture {scoreManager.LargestCapturePercentage:0.0}%", awardStyle);
         }
 
         private void DrawLastAward()
@@ -82,6 +93,7 @@ namespace SpaceXonix.Core
                 fontSize = 64,
                 normal = { textColor = new Color(1f, .2f, .2f) }
             };
+            stageCompleteStyle = new GUIStyle(gameOverStyle) { normal = { textColor = new Color(.3f, 1f, .5f) } };
         }
     }
 }

@@ -8,7 +8,7 @@
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
 - Current phase: Phase 8 complete; Phase 9 not started
-- Latest completed feature: scoring + large-capture multipliers
+- Latest completed feature: scoring + large-capture multipliers; 75% stage-completion state
 
 ## Phase Progress
 
@@ -50,8 +50,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 150
-- Passed: 150
+- EditMode discovered: 157
+- Passed: 157
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -276,6 +276,14 @@
 - `ScoreManager` publishes `CaptureScored(CaptureScoreAward)` and `ScoreChanged(int)`. The temporary `LifeStateDebugHud` now also shows score, capture percentage, and a 2-second `+points xN` capture popup; it remains a placeholder until the UI phase.
 - Tests: 20 new EditMode tests cover every tier boundary, formula examples, accumulation, largest-capture tracking, risk/reward ordering, bonus stacking, non-positive captures, reset, empty tier data, and `PercentageGained` for region and trail-only captures. Full EditMode suite: 150 passed, 0 failed.
 - Real `Game.unity` Play Mode QA drove actual PlayerController/InputRouter captures: 6.38% → ×1.5 → 957; 12.77% → ×2 → 2553; 1.06% trail-only → ×1 → 106 (twice, one due to aliens on both sides); 25.53% → ×3 → 7660. Final score 11488 at 47.87% board capture, largest capture 25.53%, lives unchanged, HUD verified by screenshot. Unity Console: 0 errors/warnings.
+
+## Stage Completion Target (75%)
+
+- `GameManager` owns a serialized `captureTargetPercentage` (75 by default, per GDD). `TryCompleteStage()` runs in `LateUpdate` after the frame's movement and only succeeds while `Playing`, with no failure in progress, the player on safe terrain (not exposed), and captured percentage at or above the target.
+- Completion enters the terminal `GameplayState.StageComplete` through `LifeStateModel.TryCompleteStage()`, disables input/damage, increments the lifecycle generation to abort any in-flight traversal, sets `PlayerControlState.StageComplete`, and raises `StageCompleted` once.
+- `EnemyManager` suspends all active enemy movement and `LaserManager` shuts down every emitter (releasing warning/beam presentations) on `StageCompleted`. The temporary debug HUD shows a green `STAGE COMPLETE` with score and largest capture.
+- This is the stage-end trigger only; Stage Complete screen, upgrade selection, and next-stage flow remain Phase 11 work.
+- Tests: 7 new EditMode tests (below target, reaching target once with full player/input/damage lock, end-of-frame detection, no completion while Respawning/GameOver/exposed, enemy freeze, `LifeStateModel` gating). Full suite: 157 passed, 0 failed. The user verified the banner and freeze manually in `Game.unity` Play Mode.
 
 ## Known Issues / Tooling Noise
 

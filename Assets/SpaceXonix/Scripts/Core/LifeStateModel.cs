@@ -22,6 +22,13 @@ namespace SpaceXonix.Core
             return true;
         }
 
+        public bool TryCompleteStage()
+        {
+            if (State != GameplayState.Playing) return false;
+            State = GameplayState.StageComplete;
+            return true;
+        }
+
         public bool CompleteRespawn()
         {
             if (State != GameplayState.Respawning) return false;

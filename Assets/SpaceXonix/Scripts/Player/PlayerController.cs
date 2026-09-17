@@ -11,7 +11,8 @@ namespace SpaceXonix.Player
         SafeMoving,
         ExposedMoving,
         Respawning,
-        GameOver
+        GameOver,
+        StageComplete
     }
 
     public sealed class PlayerController : MonoBehaviour
@@ -36,6 +37,8 @@ namespace SpaceXonix.Player
             controlState != PlayerControlState.ExposedMoving;
         public CardinalDirection? PendingDirection => pendingDirection;
         public PlayerControlState ControlState => controlState;
+        private bool IsControlLocked => controlState == PlayerControlState.Respawning ||
+            controlState == PlayerControlState.GameOver || controlState == PlayerControlState.StageComplete;
         public Vector2 LogicalPosition => movementModel != null ? movementModel.Position : new Vector2(transform.position.x, transform.position.y);
 
         private void Awake()
@@ -83,7 +86,7 @@ namespace SpaceXonix.Player
                     lifecycle.TracePlayerLifecycle($"LogicalStepAborted:LifecycleChanged:{result}", force: true);
                     return false;
                 }
-                if (controlState == PlayerControlState.Respawning || controlState == PlayerControlState.GameOver)
+                if (IsControlLocked)
                 {
                     lifecycle?.TracePlayerLifecycle($"LogicalStepAborted:ControlState:{controlState}", operationGeneration: lifecycleGeneration);
                     return false;
@@ -121,7 +124,7 @@ namespace SpaceXonix.Player
 
         private void RequestDirection(CardinalDirection direction)
         {
-            if (controlState == PlayerControlState.Respawning || controlState == PlayerControlState.GameOver)
+            if (IsControlLocked)
             {
                 lifecycle?.TracePlayerLifecycle($"DirectionRejected:{direction}:ControlState:{controlState}", force: true);
                 return;
@@ -163,6 +166,7 @@ namespace SpaceXonix.Player
             pendingDirection = null;
             if (state == GameplayState.Playing) controlState = PlayerControlState.SafeIdle;
             else if (state == GameplayState.GameOver) controlState = PlayerControlState.GameOver;
+            else if (state == GameplayState.StageComplete) controlState = PlayerControlState.StageComplete;
             else controlState = PlayerControlState.Respawning;
             lifecycle?.TracePlayerLifecycle($"GameplayStateApplied:{state}");
         }
@@ -252,7 +256,7 @@ namespace SpaceXonix.Player
         {
             var wasSafeMoving = controlState == PlayerControlState.SafeMoving;
             pendingDirection = null;
-            if (controlState != PlayerControlState.Respawning && controlState != PlayerControlState.GameOver)
+            if (!IsControlLocked)
                 controlState = PlayerControlState.SafeIdle;
             if (wasSafeMoving && controlState == PlayerControlState.SafeIdle)
                 lifecycle?.TracePlayerLifecycle("ControlState:SafeMoving->SafeIdle", force: true);
@@ -280,8 +284,7 @@ namespace SpaceXonix.Player
 
         private void StopSafeMovement()
         {
-            if (controlState == PlayerControlState.ExposedMoving || controlState == PlayerControlState.Respawning ||
-                controlState == PlayerControlState.GameOver) return;
+            if (controlState == PlayerControlState.ExposedMoving || IsControlLocked) return;
             if (boardManager != null)
             {
                 var position = boardManager.GetWorldPosition(boardManager.PlayerCell);

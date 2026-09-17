@@ -1185,6 +1185,146 @@ namespace SpaceXonix.Tests.EditMode
             }
         }
 
+        [Test]
+        public void CaptureBelowTarget_KeepsPlaying()
+        {
+            using (var fixture = new Fixture())
+            {
+                CaptureBottomBand(fixture);
+                Assert.That(fixture.Board.CapturedPercentage, Is.LessThan(fixture.Game.CaptureTargetPercentage));
+                Assert.That(fixture.Game.TryCompleteStage(), Is.False);
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+            }
+        }
+
+        [Test]
+        public void CaptureReachingTarget_CompletesStageOnceAndLocksPlayer()
+        {
+            using (var fixture = new Fixture())
+            {
+                Fixture.Set(fixture.Game, "captureTargetPercentage", 20f);
+                var completions = 0;
+                fixture.Game.StageCompleted += () => completions++;
+                CaptureBottomBand(fixture);
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing), "completion waits for the end-of-frame check");
+
+                Assert.That(fixture.Game.TryCompleteStage(), Is.True);
+                Assert.That(fixture.Game.TryCompleteStage(), Is.False);
+                Assert.That(completions, Is.EqualTo(1));
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.StageComplete));
+                Assert.That(fixture.Player.ControlState, Is.EqualTo(PlayerControlState.StageComplete));
+                Assert.That(fixture.Input.GameplayInputEnabled, Is.False);
+                Assert.That(fixture.Input.TrySelectDirection(CardinalDirection.Up), Is.False);
+                var position = fixture.Player.transform.position;
+                Assert.That(fixture.Player.AdvanceMovement(.2f), Is.False);
+                Assert.That(fixture.Player.transform.position, Is.EqualTo(position));
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact), Is.False);
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.Laser), Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(3));
+            }
+        }
+
+        [Test]
+        public void StageCompletion_IsDetectedByEndOfFrameCheck()
+        {
+            using (var fixture = new Fixture())
+            {
+                Fixture.Set(fixture.Game, "captureTargetPercentage", 20f);
+                CaptureBottomBand(fixture);
+                fixture.AdvancePastFailureFrame();
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.StageComplete));
+            }
+        }
+
+        [Test]
+        public void StageCompletion_IsNotTriggeredWhileRespawningOrGameOver()
+        {
+            using (var fixture = new Fixture(startingLives: 2))
+            {
+                CaptureBottomBand(fixture);
+                Fixture.Set(fixture.Game, "captureTargetPercentage", 1f);
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact), Is.True);
+                Assert.That(fixture.Game.TryCompleteStage(), Is.False);
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Respawning));
+            }
+            using (var fixture = new Fixture(startingLives: 1))
+            {
+                CaptureBottomBand(fixture);
+                Fixture.Set(fixture.Game, "captureTargetPercentage", 1f);
+                Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.Laser), Is.True);
+                Assert.That(fixture.Game.TryCompleteStage(), Is.False);
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.GameOver));
+            }
+        }
+
+        [Test]
+        public void StageCompletion_IsNotTriggeredWhileExposed()
+        {
+            using (var fixture = new Fixture())
+            {
+                CaptureBottomBand(fixture);
+                Fixture.Set(fixture.Game, "captureTargetPercentage", 1f);
+                fixture.Input.TrySelectDirection(CardinalDirection.Up);
+                for (var i = 0; i < 200 && fixture.Board.PlayerCell.Y < 3; i++) fixture.Player.AdvanceMovement(.02f);
+                fixture.Input.TrySelectDirection(CardinalDirection.Left);
+                for (var i = 0; i < 200 && !fixture.Board.IsPlayerExposed; i++) fixture.Player.AdvanceMovement(.02f);
+                Assert.That(fixture.Board.IsPlayerExposed, Is.True);
+                Assert.That(fixture.Game.TryCompleteStage(), Is.False);
+                Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+            }
+        }
+
+        [Test]
+        public void EnemyManager_SuspendsEnemyMovementWhenStageCompletes()
+        {
+            using (var fixture = new Fixture())
+            {
+                var managers = new GameObject("StageCompleteManagers");
+                try
+                {
+                    var enemyManager = managers.AddComponent<EnemyManager>();
+                    Fixture.Set(enemyManager, "boardManager", fixture.Board);
+                    Fixture.Set(enemyManager, "gameManager", fixture.Game);
+                    Fixture.Set(enemyManager, "playerController", fixture.Player);
+                    typeof(EnemyManager).GetMethod("Start", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(enemyManager, null);
+                    using (var enemy = new EnemyFixture<BasicBouncer>(fixture, new GridCoordinate(3, 7), Vector2.right, 1f))
+                    {
+                        CaptureBottomBand(fixture);
+                        Assert.That(enemyManager.Spawn(enemy.Controller, enemy.Controller.Definition, new GridCoordinate(3, 7), Vector2.right), Is.True);
+                        Assert.That(enemy.Controller.MovementEnabled, Is.True);
+                        Fixture.Set(fixture.Game, "captureTargetPercentage", 20f);
+                        Assert.That(fixture.Game.TryCompleteStage(), Is.True);
+                        Assert.That(enemy.Controller.MovementEnabled, Is.False);
+                        var before = enemy.Controller.transform.position;
+                        enemy.Controller.AdvanceMovement(.5f);
+                        Assert.That(enemy.Controller.transform.position, Is.EqualTo(before));
+                    }
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(managers);
+                }
+            }
+        }
+
+        private static void CaptureBottomBand(Fixture fixture)
+        {
+            fixture.Input.TrySelectDirection(CardinalDirection.Up);
+            for (var i = 0; i < 200 && fixture.Board.PlayerCell.Y < 2; i++) fixture.Player.AdvanceMovement(.02f);
+            fixture.Input.TrySelectDirection(CardinalDirection.Right);
+            var exposed = false;
+            for (var i = 0; i < 500; i++)
+            {
+                fixture.Player.AdvanceMovement(.02f);
+                if (fixture.Board.IsPlayerExposed && !exposed) { exposed = true; fixture.Input.ReleaseDirection(); }
+                if (exposed && !fixture.Board.IsPlayerExposed) break;
+            }
+            fixture.Input.ReleaseDirection();
+            Assert.That(exposed, Is.True);
+            Assert.That(fixture.Board.IsPlayerExposed, Is.False);
+            Assert.That(fixture.Board.CapturedPercentage, Is.GreaterThan(0f));
+        }
+
         private sealed class Fixture : IDisposable
         {
             private readonly GameObject root = new GameObject("RespawnFixture");

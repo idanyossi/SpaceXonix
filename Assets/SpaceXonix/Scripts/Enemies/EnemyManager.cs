@@ -25,8 +25,14 @@ namespace SpaceXonix.Enemies
         }
         private void Start()
         {
+            if (gameManager != null) gameManager.StageCompleted += OnStageCompleted;
             SpawnInitialEnemies();
         }
+        private void OnDestroy()
+        {
+            if (gameManager != null) gameManager.StageCompleted -= OnStageCompleted;
+        }
+        private void OnStageCompleted() => SetMovementSuspended(true);
         private void Update()
         {
             SimulateVolatileInteractions(Time.deltaTime);

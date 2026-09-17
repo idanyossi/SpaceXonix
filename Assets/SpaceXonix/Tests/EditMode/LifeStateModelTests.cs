@@ -53,5 +53,21 @@ namespace SpaceXonix.Tests.EditMode
             lives.SetState(GameplayState.Playing);
             Assert.That(lives.TryFail(), Is.True);
         }
+
+        [Test]
+        public void TryCompleteStage_OnlyFromPlaying()
+        {
+            var model = new LifeStateModel(2);
+            Assert.That(model.TryCompleteStage(), Is.True);
+            Assert.That(model.State, Is.EqualTo(GameplayState.StageComplete));
+            Assert.That(model.TryCompleteStage(), Is.False);
+            Assert.That(model.TryFail(), Is.False);
+            Assert.That(model.Lives, Is.EqualTo(2));
+
+            var respawning = new LifeStateModel(2);
+            respawning.TryFail();
+            Assert.That(respawning.TryCompleteStage(), Is.False);
+            Assert.That(respawning.State, Is.EqualTo(GameplayState.Respawning));
+        }
     }
 }

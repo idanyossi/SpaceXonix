@@ -18,12 +18,24 @@ namespace SpaceXonix.Hazards
 
         private void Start()
         {
+            if (gameManager != null) gameManager.StageCompleted += ShutdownEmitters;
             if (emitters == null) return;
             for (var i = 0; i < emitters.Length; i++)
                 if (emitters[i] != null) emitters[i].Initialize(boardManager, gameManager, poolService, warningPrefab, beamPrefab);
         }
 
+        private void OnDestroy()
+        {
+            if (gameManager != null) gameManager.StageCompleted -= ShutdownEmitters;
+        }
+
         private void Update() => Tick(Time.deltaTime);
+
+        public void ShutdownEmitters()
+        {
+            if (emitters == null) return;
+            for (var i = 0; i < emitters.Length; i++) if (emitters[i] != null) emitters[i].Shutdown();
+        }
 
         public void Tick(float deltaTime)
         {

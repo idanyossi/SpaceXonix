@@ -15,6 +15,7 @@ namespace SpaceXonix.Core
         [SerializeField, Min(1)] private int startingLives = 3;
         [SerializeField, Min(0f)] private float respawnDelay = 1.25f;
         [SerializeField, Min(0f)] private float postRespawnInvulnerabilityDuration = 2f;
+        [SerializeField, Range(1f, 100f)] private float captureTargetPercentage = 75f;
 
         public static GameManager Instance { get; private set; }
         private LifeStateModel lifeState;
@@ -35,6 +36,7 @@ namespace SpaceXonix.Core
         public bool IsPlayerDamageable => playerDamageable;
         public bool IsInvulnerable => CurrentState == GameplayState.Playing && invulnerabilityRemaining > 0f;
         public int PlayerLifecycleGeneration => playerLifecycleGeneration;
+        public float CaptureTargetPercentage => captureTargetPercentage;
         internal float InvulnerabilityRemaining => invulnerabilityRemaining;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         internal bool HasActiveRespawnOperation => respawnCoroutine != null;
@@ -44,6 +46,7 @@ namespace SpaceXonix.Core
         public event Action RespawnStarted;
         public event Action PlayerRespawned;
         public event Action GameOver;
+        public event Action StageCompleted;
 
         private void Awake()
         {
@@ -102,6 +105,7 @@ namespace SpaceXonix.Core
         private void LateUpdate()
         {
             EnsureValidPlayingPlayerState();
+            TryCompleteStage();
             if (!failureInProgress || failureGateReleaseFrame < 0 || Time.frameCount <= failureGateReleaseFrame) return;
             failureInProgress = false;
             failureGateReleaseFrame = -1;
@@ -133,6 +137,21 @@ namespace SpaceXonix.Core
             playerDamageable = state == GameplayState.Playing;
             lifeState?.SetState(state);
             ApplyState(state);
+        }
+
+        /// <summary>Runs after the frame's movement so a completing capture has fully settled the player on safe terrain.</summary>
+        public bool TryCompleteStage()
+        {
+            if (lifeState == null || lifeState.State != GameplayState.Playing || failureInProgress ||
+                boardManager.IsPlayerExposed || boardManager.CapturedPercentage < captureTargetPercentage) return false;
+            if (!lifeState.TryCompleteStage()) return false;
+            invulnerabilityRemaining = 0f;
+            playerDamageable = false;
+            playerLifecycleGeneration++;
+            ApplyState(GameplayState.StageComplete);
+            TracePlayerLifecycle("StageCompleted", force: true);
+            StageCompleted?.Invoke();
+            return true;
         }
 
         public bool CanProcessPlayerContact(int lifecycleGeneration)
