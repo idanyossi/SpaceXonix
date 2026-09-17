@@ -1,4 +1,5 @@
 using SpaceXonix.Board;
+using SpaceXonix.Power;
 using SpaceXonix.Scoring;
 using UnityEngine;
 
@@ -9,6 +10,7 @@ namespace SpaceXonix.Core
     {
         [SerializeField] private ScoreManager scoreManager;
         [SerializeField] private BoardManager boardManager;
+        [SerializeField] private PowerMeter powerMeter;
         [SerializeField, Min(0f)] private float captureAwardDisplaySeconds = 2f;
 
         private GameManager game;
@@ -45,11 +47,29 @@ namespace SpaceXonix.Core
                 GUI.Label(new Rect(Screen.width - 424f, 20f, 400f, 60f), $"Score: {scoreManager.Score}", rightStyle);
             if (boardManager != null)
                 GUI.Label(new Rect(Screen.width - 424f, 64f, 400f, 60f), $"{boardManager.CapturedPercentage:0.0}%", rightStyle);
+            DrawPowerMeter();
             DrawLastAward();
             if (game.CurrentState == GameplayState.GameOver)
                 GUI.Label(new Rect(0f, Screen.height * .4f, Screen.width, 120f), "GAME OVER", gameOverStyle);
             else if (game.CurrentState == GameplayState.StageComplete)
                 DrawStageComplete();
+        }
+
+        private void DrawPowerMeter()
+        {
+            if (powerMeter == null) return;
+            const float width = 400f;
+            const float height = 26f;
+            var frame = new Rect(Screen.width - 424f, 116f, width, height);
+            var fill = powerMeter.MaxPower > 0f ? Mathf.Clamp01(powerMeter.Power / powerMeter.MaxPower) : 0f;
+            var previous = GUI.color;
+            GUI.color = new Color(0f, 0f, 0f, .6f);
+            GUI.DrawTexture(frame, Texture2D.whiteTexture);
+            GUI.color = powerMeter.IsReady ? new Color(.2f, 1f, 1f) : new Color(.2f, .6f, 1f);
+            GUI.DrawTexture(new Rect(frame.x, frame.y, frame.width * fill, frame.height), Texture2D.whiteTexture);
+            GUI.color = previous;
+            var label = powerMeter.IsReady ? "POWER READY [SPACE]" : $"Power {Mathf.FloorToInt(powerMeter.Power)}";
+            GUI.Label(new Rect(frame.x, frame.yMax + 2f, width, 44f), label, rightStyle);
         }
 
         private void DrawStageComplete()

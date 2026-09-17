@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 8 complete; Phase 9 not started
-- Latest completed feature: scoring + large-capture multipliers; 75% stage-completion state
+- Current phase: Phase 9 complete; Phase 10 not started
+- Latest completed feature: Power Meter + pooled Power Shot
 
 ## Phase Progress
 
@@ -20,7 +20,7 @@
 6. **COMPLETE** — Pooled Volatile Alien, protected detonation, enemy/player blast effects, and territory destruction (`84391c1`)
 7. **COMPLETE** — Pooled horizontal/vertical Laser Hazards with warning, firing, and cooldown states
 8. **COMPLETE** — Scoring + Large-Capture Multipliers
-9. **NOT STARTED** — Power Meter + Power Shot
+9. **COMPLETE** — Power Meter + Power Shot
 10. **NOT STARTED** — Shield + Freeze + Arena Tilt
 11. **NOT STARTED** — Campaign Stages + Progression
 12. **NOT STARTED** — Roguelite Upgrades
@@ -47,11 +47,12 @@
 - `LaserManager` advances independent axis-aligned emitters; `LaserEmitter` routes firing contact through the authoritative `GameManager` failure pipeline.
 - Laser warning and beam presentations are pooled, and lasers intentionally do not affect enemies, Volatile behavior, territory, or unfinished trails.
 - `BoardCaptureResult.PercentageGained` reports the playable area made safe by one reconnection (selected region plus committed trail). `ScoreManager` listens to `BoardManager.CaptureCompleted` and delegates to the pure `ScoreModel`; tuning lives in `ScoringDefinition` (`ScriptableObjects/Balance/Scoring.asset`).
+- `PowerMeter` charges from `BoardManager.CaptureCompleted` through the pure `PowerMeterModel`, fires on `InputRouter.PowerShotRequested`, and advances pooled `PowerShotProjectile` instances that despawn the first standard enemy through `EnemyManager`. Tuning lives in `PowerDefinition` (`ScriptableObjects/Balance/Power.asset`).
 
 ## Current Test State
 
-- EditMode discovered: 157
-- Passed: 157
+- EditMode discovered: 173
+- Passed: 173
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -285,6 +286,15 @@
 - This is the stage-end trigger only; Stage Complete screen, upgrade selection, and next-stage flow remain Phase 11 work.
 - Tests: 7 new EditMode tests (below target, reaching target once with full player/input/damage lock, end-of-frame detection, no completion while Respawning/GameOver/exposed, enemy freeze, `LifeStateModel` gating). Full suite: 157 passed, 0 failed. The user verified the banner and freeze manually in `Game.unity` Play Mode.
 
+## Phase 9 — Power Meter + Power Shot
+
+- Gain: `powerPerCapturedPercent (5) × BoardCaptureResult.PercentageGained × gain multiplier`, capped at `maxPower (100)`; overflow is discarded. `PowerFull` fires once when a capture fills the meter. `SetGainMultiplier` is the hook for the Rapid Capacitor upgrade; `ResetMeter` is the campaign-reset hook.
+- Firing: `Space` (and the public `InputRouter.RequestPowerShot()` for the future Android button) requests a shot only while gameplay input is enabled. A shot requires `Playing` and a full meter, consumes the entire meter, and launches from the player in `PlayerController.FacingDirection` (most recently accepted cardinal direction).
+- Projectile: pooled `PowerShot.prefab` (unlit cyan cube). Each frame it sweeps its straight movement segment against active standard enemies (`shotHitRadius`) so it cannot tunnel, destroys the nearest one along the path via `EnemyManager.Despawn`, and is released when it hits or leaves the board. It ignores territory and trails. A Volatile hit by the shot is removed without detonating. Active shots are released on `StageCompleted`. Boss interruption is deferred to the boss phase.
+- The temporary debug HUD shows a power bar under score/capture percentage with `POWER READY [SPACE]` when full.
+- Tests: 16 new EditMode tests cover gain formula, capping, full-only consumption, gain multiplier/reset, non-positive captures, nearest-hit sweep selection, capture-driven charging and single `PowerFull`, no-fire below full, first-enemy destruction on the facing axis, all four directions, board exit plus pool reuse, and disabled input. Full suite: 173 passed, 0 failed.
+- Real `Game.unity` Play Mode: captures of 2.45%, 3.70%, and 4.77% produced 12.3, 18.5, and 23.8 power; a large capture capped the meter at 100; the HUD bar rendered; the user fired a shot during live play, the meter emptied and recharged, the shot instance returned to the pool, and targeted enemies were removed. Unity Console: 0 errors/warnings.
+
 ## Known Issues / Tooling Noise
 
 - Unity MCP's editor-state resource can briefly continue reporting `is_changing` after Play Mode has begun. Runtime event instrumentation and advancing frame/time values conclusively verified respawn completion despite that stale status field.
@@ -301,11 +311,12 @@
 - `Assets/SpaceXonix/Scripts/Hazards` — laser cycle, emitter, manager, and presentation behavior
 - `Assets/SpaceXonix/Scripts/Pooling` — reusable runtime object service
 - `Assets/SpaceXonix/Scripts/Scoring` — score model, capture multipliers, and score manager
+- `Assets/SpaceXonix/Scripts/Power` — power meter, power shot projectile, and power tuning
 - `Assets/SpaceXonix/Tests/EditMode` — deterministic regression suite
 - `Assets/SpaceXonix/Scenes/Game.unity` — representative gameplay scene
 
 ## Next Recommended Action
 
-**Phase 9 — Power Meter + Power Shot**
+**Phase 10 — Shield + Freeze + Arena Tilt**
 
 Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.

@@ -663,6 +663,7 @@ MonoBehaviour:
   startingLives: 3
   respawnDelay: 1.25
   postRespawnInvulnerabilityDuration: 2
+  captureTargetPercentage: 75
 --- !u!4 &1599803367
 Transform:
   m_ObjectHideFlags: 0
@@ -692,6 +693,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Core.LifeStateDebugHud
   scoreManager: {fileID: 1599803369}
   boardManager: {fileID: 618364317}
+  powerMeter: {fileID: 1823213373}
   captureAwardDisplaySeconds: 2
 --- !u!114 &1599803369
 MonoBehaviour:
@@ -751,6 +753,58 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1884602790}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1823213372
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1823213374}
+  - component: {fileID: 1823213373}
+  m_Layer: 0
+  m_Name: PowerMeter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1823213373
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1823213372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b04befce819fa547ad3d710086bf254, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Power.PowerMeter
+  definition: {fileID: 11400000, guid: 137132b9bdbf7a14394c3cabb137448d, type: 2}
+  boardManager: {fileID: 618364317}
+  gameManager: {fileID: 1599803366}
+  inputRouter: {fileID: 448994548}
+  playerController: {fileID: 1987019904147353759}
+  enemyManager: {fileID: 2088577235}
+  poolService: {fileID: 296692061}
+  shotPrefab: {fileID: 6912669344792508757, guid: e30fb1f048881584fb1befb48b34c4e9, type: 3}
+--- !u!4 &1823213374
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1823213372}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1884602788
 GameObject:
@@ -956,3 +1010,4 @@ SceneRoots:
   - {fileID: 296692062}
   - {fileID: 2088577236}
   - {fileID: 1884602790}
+  - {fileID: 1823213374}
