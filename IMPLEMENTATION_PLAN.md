@@ -317,14 +317,17 @@ addressable-style identifiers only after the intended scene names exist.
 8. Add score, capture multipliers, PowerMeter, and pooled Power Shot.
 9. Add pickup spawning, one-slot storage, Shield, Freeze, and Arena Tilt.
 10. Add stages 1–4 as StageDefinitions and stage-completion/briefing flows.
-11. Add UpgradeManager and compatible StageModifierManager behaviour.
-12. Implement Boss scene/controller and campaign-complete flow.
-13. Complete UI, safe-area handling, Android swipe/button input, settings, and
+11. Build the 2.5D presentation foundation (see section 12): Cinemachine
+    perspective diagonal-down camera, raised 3D territory board view, hovering
+    billboard actors with shadows, and hazards/effects placed in 3D space.
+12. Add UpgradeManager and compatible StageModifierManager behaviour.
+13. Implement Boss scene/controller and campaign-complete flow.
+14. Complete UI, safe-area handling, Android swipe/button input, settings, and
     PlayerPrefs.
-14. Add licensed art, audio, VFX, animation, Cinemachine presentation, and
+15. Add licensed art, audio, VFX, animation, final Cinemachine presentation, and
     attribution records.
-15. Polish readability/feedback and accessibility of hazards.
-16. Run end-to-end QA, device profiling, allocation review, and builds.
+16. Polish readability/feedback and accessibility of hazards.
+17. Run end-to-end QA, device profiling, allocation review, and builds.
 
 ## 9. Testing Strategy
 
@@ -382,3 +385,108 @@ the target Android device before declaring performance ready.
 | Reinforced Hull timing | Apply +1 life at the beginning of every following stage, not retroactively during the stage in which it is selected. |
 
 No gameplay implementation is included in this task.
+
+## 12. 2.5D Presentation Plan
+
+### Reference research (AirXonix, AxySoft, 2000–2001)
+
+AirXonix keeps flat Xonix rules and delivers its "full 3D" through presentation:
+a **diagonal-down** camera (MobyGames perspective classification) over a
+rectangular 3D playfield; a small craft that **hovers above the field** and spins
+on its axis; large bouncing spheres; mines that travel over filled territory
+("walls laid by the helicopter"); flying-saucer mines that **cast a shadow
+before descending**; and a filled area that reviewers read as solid but
+criticised as "just one basic color". Exact camera angles and whether filled
+territory is extruded could not be verified from text sources; confirm against
+gameplay footage during the camera prototype.
+
+SpaceXonix adopts the same principle — 2D-authoritative gameplay with a 3D
+presentation — with its own twist: portrait framing, a space theme, pixel-art
+sprites, and raised captured territory with animated rise/sink.
+
+### Approved decisions (2026-09-17)
+
+| Topic | Decision |
+|---|---|
+| Camera | **Perspective**, diagonal-down, narrow field of view, driven by Cinemachine. This intentionally supersedes the GDD's orthographic tilted camera. |
+| Actors | **Pixel-art sprites** (ship, aliens, pickups), billboarded toward the camera and hovering above the board. |
+| Territory | **Raised captured territory**: captured cells are an extruded slab with side walls above a recessed uncaptured space floor. |
+| Schedule | Implemented as its own phase **immediately after Campaign Stages + Progression** and before upgrades, modifiers, boss, UI, and final VFX. |
+
+### Non-negotiable constraint
+
+All gameplay remains on the board's local XY plane at its current positions.
+`PlayerMovementModel`, `EnemyMovementModel`, `BoardManager.WorldToGrid`,
+collision distances, lasers, power shots, and pickups read world X/Y and must
+not change. The 2.5D look is achieved only by:
+
+- the camera (pitch, field of view, framing);
+- visual-only child objects offset toward the camera (local −Z is "up" off the
+  board) for hover height, shadows, and billboards;
+- a board **view** built from mesh data that mirrors `BoardModel` state;
+- an optional visual-only pivot for Arena Tilt presentation.
+
+No gameplay object, board transform, or logical position is rotated out of the
+XY plane. Presentation never delays or alters a logical state transition.
+
+### Work breakdown
+
+1. **Camera prototype and framing**
+   - Install Cinemachine 3.x; add a CinemachineBrain to the Main Camera and a
+     fixed CinemachineCamera targeting the board centre.
+   - Perspective, pitched roughly 30–45° from top-down, field of view roughly
+     25–35° to limit far-row shrink; tune so the full 54 × 96 board fits a
+     1080 × 1920 portrait view with top and bottom HUD margins and safe area.
+   - Deliver comparison screenshots of 2–3 pitch/FOV candidates for approval.
+   - Verify readability of the farthest rows (trail, small enemies, pickups)
+     and that swipe input remains screen-direction based.
+2. **3D board view**
+   - Replace the flat per-cell `BoardRenderer` with a chunked mesh board view
+     (e.g. 9 × 12 cell chunks) that rebuilds only chunks whose cells changed.
+     Add a changed-cell/dirty-region notification from `BoardManager` so the
+     view no longer refreshes the whole board on every change.
+   - Captured cells: raised slab (tunable height) with side walls only where a
+     captured cell borders uncaptured/trail space; uncaptured cells: recessed
+     space floor (starfield-style material); structural perimeter as the arena
+     rim.
+   - Trail: glowing ribbon slightly above the floor.
+   - Capture animation: newly captured cells rise to full height over ~0.3 s;
+     Volatile territory destruction sinks cells. Logic is already committed
+     before either animation starts.
+   - Pool/reuse mesh buffers; no per-frame allocations while idle.
+3. **Hovering billboard actors**
+   - Split Player, enemies, and pickups into a logical root (unchanged XY
+     transform and components) and a visual child with hover height, a
+     camera-facing pixel-art sprite quad (URP unlit sprite material, point
+     filtering), and a floor shadow blob.
+   - Placeholder sprites are acceptable in this phase; final licensed art
+     arrives in the asset phase with attribution records.
+   - Freeze tint, shield bubble, and pickup spin move onto the visual child.
+4. **Hazards and effects in 3D space**
+   - Laser emitters on the arena rim; warning line on the floor; beam at hover
+     height. Power Shot and shield at hover height. Volatile blast shown as a
+     floor radius ring.
+5. **Camera feel hooks**
+   - Cinemachine Impulse source/listener for capture and explosion shake
+     (respecting the future camera-shake setting).
+   - Arena Tilt: replace the current placeholder camera roll with a Cinemachine
+     Dutch blend plus optional visual-only board pivot tilt; enemy drift and
+     player slow logic stay unchanged.
+6. **Verification**
+   - Full EditMode suite passes unchanged (proves presentation isolation).
+   - New tests: chunk dirty tracking/rebuild coverage, rise/sink animation does
+     not affect `BoardModel`, and visual child offsets never move logical roots.
+   - Play Mode: capture, trail, death/respawn, lasers, Volatile explosion, power
+     shot, pickups, and all abilities under the new camera; screenshots at
+     1080 × 1920; Android-profile check of draw calls, mesh rebuild cost, and
+     GC allocations.
+
+### Risks
+
+- **Perspective far-row readability** on small portrait screens — mitigate with
+  narrow FOV, moderate pitch, hover heights, and outline/contrast on sprites.
+- **Mesh rebuild cost** on large captures — chunking and batched dirty regions.
+- **Depth sorting** between translucent effects, billboards, and raised
+  territory — explicit render queues and hover offsets.
+- **Screen-space UI/world alignment** (HUD, capture popups) — later UI phase
+  uses camera projection rather than fixed screen positions.

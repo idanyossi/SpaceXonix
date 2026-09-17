@@ -23,15 +23,16 @@
 9. **COMPLETE** — Power Meter + Power Shot
 10. **COMPLETE** — Shield + Freeze + Arena Tilt
 11. **NOT STARTED** — Campaign Stages + Progression
-12. **NOT STARTED** — Roguelite Upgrades
-13. **NOT STARTED** — Stage Modifiers
-14. **NOT STARTED** — Alien Core Boss
-15. **NOT STARTED** — UI + Menus + HUD
-16. **NOT STARTED** — Android Controls
-17. **NOT STARTED** — Audio
-18. **NOT STARTED** — Asset Acquisition/Integration
-19. **NOT STARTED** — Visual Polish + VFX + Cinemachine
-20. **NOT STARTED** — Final QA + Profiling + Submission Cleanup
+12. **NOT STARTED** — 2.5D Presentation Foundation (perspective Cinemachine camera, raised territory, hovering pixel-art billboards)
+13. **NOT STARTED** — Roguelite Upgrades
+14. **NOT STARTED** — Stage Modifiers
+15. **NOT STARTED** — Alien Core Boss
+16. **NOT STARTED** — UI + Menus + HUD
+17. **NOT STARTED** — Android Controls
+18. **NOT STARTED** — Audio
+19. **NOT STARTED** — Asset Acquisition/Integration
+20. **NOT STARTED** — Visual Polish + VFX + Cinemachine
+21. **NOT STARTED** — Final QA + Profiling + Submission Cleanup
 
 ## Current Architecture
 
@@ -308,6 +309,12 @@
 - Stage Complete and Game Over end all effects, release the board pickup, and dismiss any pending decision. Boss-stage restrictions (no Tilt pickups, Freeze immunity) are deferred to the boss phase; upgrade hooks use the definition durations/values.
 - Tests: 21 new EditMode tests cover spawn-chance boundaries/cap, slot store/decision/keep/replace/consume, drift movement, small-capture no-spawn, placement validity and single pickup, lifetime expiry, collection by cell, pause-based Keep/Replace (time scale, input, damage rejection, state preservation), empty-slot use, Shield blocking/not blocking and expiry, Freeze suspension/tint/restore, Tilt drift/slow/camera roll/restore, non-compounding Tilt, and Game Over cleanup. Full suite: 194 passed, 0 failed.
 - Real `Game.unity` Play Mode: pickups spawned on valid cells and rendered; collecting and using Arena Tilt slowed the ship 5 → 4, applied (-1.2, 0) enemy drift, rolled the camera, and showed a HUD timer, then restored speed/drift on expiry; Freeze stopped and tinted all 4 enemies; Shield rejected a real `EnemyContact` report without life loss and displayed the bubble around the ship. Unity Console: 0 errors/warnings.
+
+## 2.5D Presentation Decisions
+
+- Researched AirXonix: its 3D is presentation over flat Xonix rules (diagonal-down camera, hovering craft, shadows, solid filled territory). Full notes and work breakdown: `IMPLEMENTATION_PLAN.md` section 12.
+- Approved 2026-09-17: perspective diagonal-down Cinemachine camera (deliberately replacing the GDD's orthographic camera), pixel-art billboard sprites, raised captured territory, scheduled as Phase 12 right after Campaign Stages + Progression.
+- Constraint for every later phase: gameplay objects and the board stay on the XY plane; the 2.5D look comes only from the camera, visual-only child objects, and the board view. Arena Tilt's current camera roll is a placeholder until Phase 12 replaces it with a Cinemachine Dutch blend.
 
 ## Known Issues / Tooling Noise
 
