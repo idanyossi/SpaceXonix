@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b455e401833ad24c9f81bf18194df78, type: 3}
+  m_Name: Stage4_VolatileZone
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Campaign.StageDefinition
+  stageNumber: 4
+  stageName: Volatile Zone
+  briefing: Volatile Aliens explode on contact with other aliens, destroying nearby
+    aliens and captured territory. Keep blasts away from your progress.
+  enemySpawns:
+  - prefab: {fileID: 6461552448834079123, guid: 0cb255ada51aba94c9ba572e412bef09, type: 3}
+    definition: {fileID: 11400000, guid: c9142e5760c99b44893e01c6c842faa2, type: 2}
+    column: 12
+    row: 22
+    direction: {x: 1, y: 1}
+  - prefab: {fileID: 2198234542537271096, guid: 226502bdaf4b2b7439fac18918897532, type: 3}
+    definition: {fileID: 11400000, guid: 5c3bb54ddc00a354ebb908a1199b0f49, type: 2}
+    column: 44
+    row: 30
+    direction: {x: 0, y: 1}
+  - prefab: {fileID: 7951906493875139093, guid: bdb6b5feb9a93724282df9f1ab806e53, type: 3}
+    definition: {fileID: 11400000, guid: 6a5c03cfcac169f4e9aab476e9295209, type: 2}
+    column: 35
+    row: 60
+    direction: {x: -1, y: 1}
+  - prefab: {fileID: 46801405078460151, guid: c1e2afd0e3bcb6441ad3ca4ddf186b81, type: 3}
+    definition: {fileID: 11400000, guid: cae550ba16f44e147be39f0589e4b282, type: 2}
+    column: 22
+    row: 62
+    direction: {x: -1, y: 1}
+  - prefab: {fileID: 46801405078460151, guid: c1e2afd0e3bcb6441ad3ca4ddf186b81, type: 3}
+    definition: {fileID: 11400000, guid: cae550ba16f44e147be39f0589e4b282, type: 2}
+    column: 30
+    row: 85
+    direction: {x: 1, y: -1}
+  lasers:
+  - definition: {fileID: 11400000, guid: dc9dbda3e7386db4d84954db86c673ca, type: 2}
+    line: 40
+  - definition: {fileID: 11400000, guid: a16ad04638680454aa77e8276f964334, type: 2}
+    line: 20

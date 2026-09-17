@@ -44,11 +44,27 @@ namespace SpaceXonix.Board
 
         public void Initialize()
         {
+            CreateModel();
+            if (Application.isPlaying && boardRenderer != null) boardRenderer.Initialize(this);
+        }
+
+        /// <summary>Replaces the board with a fresh stage grid. Subscribers of this manager's events stay connected.</summary>
+        public void ResetBoard()
+        {
+            CreateModel();
+            hasPlayerCell = false;
+            hasLastSafeCell = false;
+            enemySnapshot.Clear();
+            boardRenderer?.Refresh(Model);
+            CapturedPercentageChanged?.Invoke(Model.CapturedPercentage);
+        }
+
+        private void CreateModel()
+        {
             Model = new BoardModel(columns, rows);
             Model.TrailStateChanged += result => { boardRenderer?.Refresh(Model); TrailStateChanged?.Invoke(result); };
             Model.CaptureCompleted += result => CaptureCompleted?.Invoke(result);
             Model.CapturedPercentageChanged += value => CapturedPercentageChanged?.Invoke(value);
-            if (Application.isPlaying && boardRenderer != null) boardRenderer.Initialize(this);
         }
 
         public void SetEnemyCells(IEnumerable<GridCoordinate> enemyCells)

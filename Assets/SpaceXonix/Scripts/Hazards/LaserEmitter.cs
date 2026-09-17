@@ -26,6 +26,14 @@ namespace SpaceXonix.Hazards
         public event Action FiringStarted;
         public event Action CooldownStarted;
 
+        public LaserDefinition Definition => definition;
+
+        public void SetDefinition(LaserDefinition laserDefinition)
+        {
+            Shutdown();
+            definition = laserDefinition;
+        }
+
         public void Initialize(BoardManager boardManager, GameManager gameManager, PoolService poolService,
             GameObject warningPresentationPrefab, GameObject beamPresentationPrefab)
         {

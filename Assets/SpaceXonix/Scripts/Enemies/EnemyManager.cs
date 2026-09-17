@@ -114,10 +114,20 @@ namespace SpaceXonix.Enemies
             }
             if (boardManager != null) boardManager.SetEnemyCells(occupancy);
         }
-        public void SpawnInitialEnemies()
+        public void SpawnInitialEnemies() => SpawnAll(initialSpawns);
+        public int SpawnAll(IReadOnlyList<EnemySpawnRequest> requests)
         {
-            if (initialSpawns == null) return;
-            foreach (var request in initialSpawns) Spawn(request.prefab, request.definition, request.Cell, request.direction);
+            if (requests == null) return 0;
+            var spawned = 0;
+            foreach (var request in requests)
+                if (request != null && Spawn(request.prefab, request.definition, request.Cell, request.direction)) spawned++;
+            return spawned;
+        }
+        public void DespawnAll()
+        {
+            for (var i = activeEnemies.Count - 1; i >= 0; i--) Despawn(activeEnemies[i]);
+            IsMovementSuspended = false;
+            RefreshOccupancy();
         }
         public bool Spawn(GameObject prefab, EnemyDefinition definition, GridCoordinate cell, Vector2 direction)
         {

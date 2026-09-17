@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b455e401833ad24c9f81bf18194df78, type: 3}
+  m_Name: Stage3_UnstableSector
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Campaign.StageDefinition
+  stageNumber: 3
+  stageName: Unstable Sector
+  briefing: Unstable Aliens change speed at telegraphed intervals. Lasers cycle faster
+    on both axes.
+  enemySpawns:
+  - prefab: {fileID: 6461552448834079123, guid: 0cb255ada51aba94c9ba572e412bef09, type: 3}
+    definition: {fileID: 11400000, guid: c9142e5760c99b44893e01c6c842faa2, type: 2}
+    column: 12
+    row: 20
+    direction: {x: 1, y: 1}
+  - prefab: {fileID: 2198234542537271096, guid: 226502bdaf4b2b7439fac18918897532, type: 3}
+    definition: {fileID: 11400000, guid: aafc7ce75a8a6974bbce5d115e0cc72d, type: 2}
+    column: 30
+    row: 40
+    direction: {x: 1, y: 0}
+  - prefab: {fileID: 7951906493875139093, guid: bdb6b5feb9a93724282df9f1ab806e53, type: 3}
+    definition: {fileID: 11400000, guid: 6a5c03cfcac169f4e9aab476e9295209, type: 2}
+    column: 40
+    row: 70
+    direction: {x: 1, y: 1}
+  - prefab: {fileID: 7951906493875139093, guid: bdb6b5feb9a93724282df9f1ab806e53, type: 3}
+    definition: {fileID: 11400000, guid: 6a5c03cfcac169f4e9aab476e9295209, type: 2}
+    column: 18
+    row: 82
+    direction: {x: -1, y: 1}
+  lasers:
+  - definition: {fileID: 11400000, guid: dc9dbda3e7386db4d84954db86c673ca, type: 2}
+    line: 32
+  - definition: {fileID: 11400000, guid: a16ad04638680454aa77e8276f964334, type: 2}
+    line: 27

@@ -46,6 +46,7 @@ namespace SpaceXonix.Enemies
         public void AdvanceMovement(float deltaTime)
         {
             if (!IsActiveEnemy || movement == null || board == null) return;
+            if (game != null && game.CurrentState == GameplayState.Briefing) return;
             var lifecycleGeneration = game != null ? game.PlayerLifecycleGeneration : 0;
             var previousCell = LogicalCell;
             var before = movement.Position;

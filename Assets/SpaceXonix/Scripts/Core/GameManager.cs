@@ -50,6 +50,8 @@ namespace SpaceXonix.Core
         public event Action GameOver;
         public event Action StageCompleted;
         public event Action<bool> PausedChanged;
+        public event Action StageBriefingStarted;
+        public event Action StagePlayStarted;
 
         private void Awake()
         {
@@ -155,6 +157,44 @@ namespace SpaceXonix.Core
             ApplyState(GameplayState.StageComplete);
             TracePlayerLifecycle("StageCompleted", force: true);
             StageCompleted?.Invoke();
+            return true;
+        }
+
+        /// <summary>Resets lives, lifecycle, board, and player for a new stage and holds gameplay in Briefing.</summary>
+        public void BeginStage(int bonusLives = 0)
+        {
+            if (respawnCoroutine != null)
+            {
+                StopCoroutine(respawnCoroutine);
+                respawnCoroutine = null;
+            }
+            SetPaused(false);
+            SetShieldActive(false);
+            lifeState = new LifeStateModel(startingLives + Mathf.Max(0, bonusLives));
+            lifeState.SetState(GameplayState.Briefing);
+            failureInProgress = false;
+            playerDamageable = false;
+            failureGateReleaseFrame = -1;
+            playerLifecycleGeneration++;
+            invulnerabilityRemaining = 0f;
+            boardManager.ResetBoard();
+            playerController.ConnectBoard(boardManager);
+            var spawnCell = boardManager.WorldToGrid(boardManager.GetDefaultSpawnPosition());
+            playerController.RestoreSafeManualState(spawnCell, ResolveRespawnDirection(spawnCell, playerController.InitialDirection));
+            ApplyState(GameplayState.Briefing);
+            LivesChanged?.Invoke(Lives);
+            TracePlayerLifecycle("StageBriefingStarted", force: true);
+            StageBriefingStarted?.Invoke();
+        }
+
+        public bool StartStagePlay()
+        {
+            if (lifeState == null || lifeState.State != GameplayState.Briefing) return false;
+            lifeState.SetState(GameplayState.Playing);
+            playerDamageable = true;
+            ApplyState(GameplayState.Playing);
+            TracePlayerLifecycle("StagePlayStarted", force: true);
+            StagePlayStarted?.Invoke();
             return true;
         }
 

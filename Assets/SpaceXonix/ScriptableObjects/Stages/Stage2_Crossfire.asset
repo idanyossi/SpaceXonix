@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b455e401833ad24c9f81bf18194df78, type: 3}
+  m_Name: Stage2_Crossfire
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Campaign.StageDefinition
+  stageNumber: 2
+  stageName: Crossfire
+  briefing: Linear Aliens patrol a single axis and reverse when blocked. Laser emitters
+    warn before they fire across the arena.
+  enemySpawns:
+  - prefab: {fileID: 6461552448834079123, guid: 0cb255ada51aba94c9ba572e412bef09, type: 3}
+    definition: {fileID: 11400000, guid: c9142e5760c99b44893e01c6c842faa2, type: 2}
+    column: 15
+    row: 25
+    direction: {x: 1, y: 1}
+  - prefab: {fileID: 2198234542537271096, guid: 226502bdaf4b2b7439fac18918897532, type: 3}
+    definition: {fileID: 11400000, guid: aafc7ce75a8a6974bbce5d115e0cc72d, type: 2}
+    column: 27
+    row: 55
+    direction: {x: 1, y: 0}
+  - prefab: {fileID: 2198234542537271096, guid: 226502bdaf4b2b7439fac18918897532, type: 3}
+    definition: {fileID: 11400000, guid: 5c3bb54ddc00a354ebb908a1199b0f49, type: 2}
+    column: 40
+    row: 75
+    direction: {x: 0, y: 1}
+  lasers:
+  - definition: {fileID: 11400000, guid: 3ff4a88e64a6ca940a37886ca958d3b1, type: 2}
+    line: 48

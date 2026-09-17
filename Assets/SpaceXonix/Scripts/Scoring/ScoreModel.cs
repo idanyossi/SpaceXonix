@@ -37,6 +37,7 @@ namespace SpaceXonix.Scoring
 
         public int Score { get; private set; }
         public float LargestCapturePercentage { get; private set; }
+        public float StageLargestCapturePercentage { get; private set; }
         public float BonusMultiplier { get; private set; } = 1f;
 
         public float GetCaptureMultiplier(float percentageGained)
@@ -63,13 +64,17 @@ namespace SpaceXonix.Scoring
             var points = Mathf.RoundToInt(pointsPerPercent * percentageGained * captureMultiplier * BonusMultiplier);
             Score += points;
             if (percentageGained > LargestCapturePercentage) LargestCapturePercentage = percentageGained;
+            if (percentageGained > StageLargestCapturePercentage) StageLargestCapturePercentage = percentageGained;
             return new CaptureScoreAward(percentageGained, captureMultiplier, BonusMultiplier, points);
         }
+
+        public void ResetStageStatistics() => StageLargestCapturePercentage = 0f;
 
         public void Reset()
         {
             Score = 0;
             LargestCapturePercentage = 0f;
+            StageLargestCapturePercentage = 0f;
             BonusMultiplier = 1f;
         }
     }

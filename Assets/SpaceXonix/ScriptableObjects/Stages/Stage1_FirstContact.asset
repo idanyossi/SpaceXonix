@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b455e401833ad24c9f81bf18194df78, type: 3}
+  m_Name: Stage1_FirstContact
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Campaign.StageDefinition
+  stageNumber: 1
+  stageName: First Contact
+  briefing: Leave safe territory to draw a trail and reconnect to capture space.
+    Bouncers kill your ship and your unfinished trail. Capture 75% to clear the stage.
+  enemySpawns:
+  - prefab: {fileID: 6461552448834079123, guid: 0cb255ada51aba94c9ba572e412bef09, type: 3}
+    definition: {fileID: 11400000, guid: c9142e5760c99b44893e01c6c842faa2, type: 2}
+    column: 15
+    row: 30
+    direction: {x: 1, y: 1}
+  - prefab: {fileID: 6461552448834079123, guid: 0cb255ada51aba94c9ba572e412bef09, type: 3}
+    definition: {fileID: 11400000, guid: c9142e5760c99b44893e01c6c842faa2, type: 2}
+    column: 38
+    row: 65
+    direction: {x: -1, y: 1}
+  lasers: []

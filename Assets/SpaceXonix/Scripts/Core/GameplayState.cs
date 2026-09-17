@@ -6,6 +6,7 @@ namespace SpaceXonix.Core
         Respawning,
         Paused,
         StageComplete,
-        GameOver
+        GameOver,
+        Briefing
     }
 }

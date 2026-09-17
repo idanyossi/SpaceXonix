@@ -1,4 +1,7 @@
+using System.Collections.Generic;
 using SpaceXonix.Board;
+using SpaceXonix.Campaign;
+using SpaceXonix.Enemies;
 using SpaceXonix.Power;
 using SpaceXonix.PowerUps;
 using SpaceXonix.Scoring;
@@ -13,6 +16,7 @@ namespace SpaceXonix.Core
         [SerializeField] private BoardManager boardManager;
         [SerializeField] private PowerMeter powerMeter;
         [SerializeField] private PowerUpManager powerUpManager;
+        [SerializeField] private CampaignManager campaignManager;
         [SerializeField, Min(0f)] private float captureAwardDisplaySeconds = 2f;
 
         private GameManager game;
@@ -24,7 +28,11 @@ namespace SpaceXonix.Core
         private GUIStyle awardStyleLeft;
         private GUIStyle rightCenteredStyle;
         private GUIStyle buttonStyle;
+        private GUIStyle wrapStyle;
         private float awardShownAt = float.NegativeInfinity;
+        private readonly List<EnemyType> enemyTypes = new List<EnemyType>();
+        private float panelScale = 1f;
+        private GUIStyle panelTitleStyle;
 
         private void Awake()
         {
@@ -55,10 +63,108 @@ namespace SpaceXonix.Core
             DrawPowerMeter();
             DrawPowerUps();
             DrawLastAward();
+            if (campaignManager != null && campaignManager.Run != null)
+            {
+                DrawCampaign();
+                return;
+            }
             if (game.CurrentState == GameplayState.GameOver)
                 GUI.Label(new Rect(0f, Screen.height * .4f, Screen.width, 120f), "GAME OVER", gameOverStyle);
             else if (game.CurrentState == GameplayState.StageComplete)
                 DrawStageComplete();
+        }
+
+        private void DrawCampaign()
+        {
+            var run = campaignManager.Run;
+            var stage = campaignManager.CurrentStage;
+            GUI.Label(new Rect(0f, 20f, Screen.width, 50f), $"Stage {run.CurrentStageNumber}/{run.NormalStageCount}", rightCenteredStyle);
+            if (campaignManager.Phase == CampaignPhase.Playing) return;
+            var previousMatrix = GUI.matrix;
+            panelScale = Mathf.Clamp(Mathf.Min(Screen.width / 900f, Screen.height / 640f), .35f, 2f);
+            GUI.matrix = Matrix4x4.Scale(new Vector3(panelScale, panelScale, 1f));
+            DrawCampaignPanel(run, stage);
+            GUI.matrix = previousMatrix;
+        }
+
+        private void DrawCampaignPanel(CampaignRunModel run, StageDefinition stage)
+        {
+            switch (campaignManager.Phase)
+            {
+                case CampaignPhase.Briefing:
+                    var panel = DrawPanel(820f, 560f);
+                    GUI.Label(new Rect(panel.x, panel.y + 20f, panel.width, 80f), $"STAGE {stage.stageNumber}: {stage.stageName.ToUpperInvariant()}", panelTitleStyle);
+                    GUI.Label(new Rect(panel.x + 40f, panel.y + 110f, panel.width - 80f, 120f), stage.briefing, wrapStyle);
+                    GUI.Label(new Rect(panel.x + 40f, panel.y + 240f, panel.width - 80f, 44f), $"Enemies: {DescribeEnemies(stage)}", wrapStyle);
+                    GUI.Label(new Rect(panel.x + 40f, panel.y + 290f, panel.width - 80f, 44f), $"Lasers: {(stage.lasers != null ? stage.lasers.Length : 0)}", wrapStyle);
+                    GUI.Label(new Rect(panel.x + 40f, panel.y + 340f, panel.width - 80f, 44f), "Modifier: none   Upgrades: none", wrapStyle);
+                    if (GUI.Button(new Rect(panel.center.x - 160f, panel.yMax - 120f, 320f, 80f), "START [Enter]", buttonStyle) || EnterPressed())
+                        campaignManager.StartStage();
+                    break;
+                case CampaignPhase.StageComplete:
+                    panel = DrawPanel(820f, 500f);
+                    GUI.Label(new Rect(panel.x, panel.y + 20f, panel.width, 90f), "STAGE COMPLETE", panelTitleStyle);
+                    DrawStats(panel, $"Captured {campaignManager.StageCompletedPercentage:0.0}%",
+                        $"Largest capture {(scoreManager != null ? scoreManager.StageLargestCapturePercentage : 0f):0.0}%",
+                        "Modifier bonus x1.00");
+                    if (GUI.Button(new Rect(panel.center.x - 160f, panel.yMax - 110f, 320f, 80f), "CONTINUE [Enter]", buttonStyle) || EnterPressed())
+                        campaignManager.ContinueAfterStageComplete();
+                    break;
+                case CampaignPhase.GameOver:
+                    panel = DrawPanel(820f, 460f);
+                    GUI.Label(new Rect(panel.x, panel.y + 20f, panel.width, 90f), "GAME OVER", gameOverStyle);
+                    DrawStats(panel, $"Highest stage {run.HighestStageReached}", null, null);
+                    if (GUI.Button(new Rect(panel.center.x - 200f, panel.yMax - 110f, 400f, 80f), "RETRY CAMPAIGN [Enter]", buttonStyle) || EnterPressed())
+                        campaignManager.RetryCampaign();
+                    break;
+                case CampaignPhase.NormalStagesCleared:
+                    panel = DrawPanel(820f, 460f);
+                    GUI.Label(new Rect(panel.x, panel.y + 20f, panel.width, 90f), "STAGES 1-4 CLEARED", panelTitleStyle);
+                    DrawStats(panel, "Alien Core boss arrives in a later phase", null, null);
+                    if (GUI.Button(new Rect(panel.center.x - 200f, panel.yMax - 110f, 400f, 80f), "RETRY CAMPAIGN [Enter]", buttonStyle) || EnterPressed())
+                        campaignManager.RetryCampaign();
+                    break;
+            }
+        }
+
+        private Rect DrawPanel(float width, float height)
+        {
+            var virtualWidth = Screen.width / panelScale;
+            var virtualHeight = Screen.height / panelScale;
+            var panel = new Rect(virtualWidth * .5f - width * .5f, virtualHeight * .5f - height * .5f, width, height);
+            var previous = GUI.color;
+            GUI.color = new Color(0f, 0f, 0f, .82f);
+            GUI.DrawTexture(panel, Texture2D.whiteTexture);
+            GUI.color = previous;
+            return panel;
+        }
+
+        private void DrawStats(Rect panel, string first, string second, string third)
+        {
+            var score = scoreManager != null ? scoreManager.Score : 0;
+            GUI.Label(new Rect(panel.x, panel.y + 120f, panel.width, 50f), $"Score {score}", awardStyle);
+            var y = panel.y + 180f;
+            foreach (var line in new[] { first, second, third })
+            {
+                if (string.IsNullOrEmpty(line)) continue;
+                GUI.Label(new Rect(panel.x, y, panel.width, 44f), line, rightCenteredStyle);
+                y += 48f;
+            }
+        }
+
+        private string DescribeEnemies(StageDefinition stage)
+        {
+            stage.GetEnemyTypes(enemyTypes);
+            if (enemyTypes.Count == 0) return "none";
+            var names = new string[enemyTypes.Count];
+            for (var i = 0; i < enemyTypes.Count; i++) names[i] = enemyTypes[i] == EnemyType.BasicBouncer ? "Basic Bouncer" : enemyTypes[i] + " Alien";
+            return string.Join(", ", names);
+        }
+
+        private static bool EnterPressed()
+        {
+            var current = Event.current;
+            return current.type == EventType.KeyDown && (current.keyCode == KeyCode.Return || current.keyCode == KeyCode.KeypadEnter);
         }
 
         private void DrawPowerMeter()
@@ -161,6 +267,8 @@ namespace SpaceXonix.Core
             awardStyleLeft = new GUIStyle(livesStyle) { fontSize = 28, normal = { textColor = new Color(.6f, 1f, 1f) } };
             rightCenteredStyle = new GUIStyle(livesStyle) { alignment = TextAnchor.MiddleCenter, fontSize = 30 };
             buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 26, fontStyle = FontStyle.Bold };
+            wrapStyle = new GUIStyle(livesStyle) { fontSize = 28, fontStyle = FontStyle.Normal, wordWrap = true };
+            panelTitleStyle = new GUIStyle(stageCompleteStyle) { fontSize = 48 };
         }
     }
 }

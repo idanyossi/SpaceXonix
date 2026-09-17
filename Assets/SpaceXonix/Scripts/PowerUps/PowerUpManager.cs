@@ -214,7 +214,10 @@ namespace SpaceXonix.PowerUps
             ExpireEffect(PowerUpType.ArenaTilt);
         }
 
-        public void ResetForStage()
+        /// <summary>Ends effects and board pickups between stages; the stored ability carries over.</summary>
+        public void PrepareForStage() => EndRun();
+
+        public void ResetForCampaign()
         {
             EndRun();
             slot.Clear();

@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dee5a5faa420f5c439ad312df881a26e, type: 3}
+  m_Name: Campaign
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Campaign.CampaignDefinition
+  normalStages:
+  - {fileID: 11400000, guid: 1500d3ee7e2ffaa459e395d27f4248d4, type: 2}
+  - {fileID: 11400000, guid: b099a2a6878ea0b44b30908311fe3877, type: 2}
+  - {fileID: 11400000, guid: b2b0b17d25544ff44a77b63f4beb2ded, type: 2}
+  - {fileID: 11400000, guid: 9a2c6a7a9123ae24aa29c8fff2b17320, type: 2}

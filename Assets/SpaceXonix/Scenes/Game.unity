@@ -700,6 +700,7 @@ GameObject:
   - component: {fileID: 1599803366}
   - component: {fileID: 1599803368}
   - component: {fileID: 1599803369}
+  - component: {fileID: 1599803370}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -757,6 +758,7 @@ MonoBehaviour:
   boardManager: {fileID: 618364317}
   powerMeter: {fileID: 1823213373}
   powerUpManager: {fileID: 91987429}
+  campaignManager: {fileID: 1599803370}
   captureAwardDisplaySeconds: 2
 --- !u!114 &1599803369
 MonoBehaviour:
@@ -772,6 +774,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Scoring.ScoreManager
   boardManager: {fileID: 618364317}
   definition: {fileID: 11400000, guid: eed9d1534e6c3dc46b7b8c72b54331f0, type: 2}
+--- !u!114 &1599803370
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1599803365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6317172a9ac263449ccfb2b4e07f8df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Campaign.CampaignManager
+  campaign: {fileID: 11400000, guid: 48505f6e4dc636b4d9fb24fdf26d9c81, type: 2}
+  gameManager: {fileID: 1599803366}
+  boardManager: {fileID: 618364317}
+  enemyManager: {fileID: 2088577235}
+  laserManager: {fileID: 1884602789}
+  scoreManager: {fileID: 1599803369}
+  powerMeter: {fileID: 1823213373}
+  powerUpManager: {fileID: 91987429}
 --- !u!1 &1747002404
 GameObject:
   m_ObjectHideFlags: 0
@@ -1046,27 +1068,7 @@ MonoBehaviour:
   gameManager: {fileID: 1599803366}
   playerController: {fileID: 1987019904147353759}
   poolService: {fileID: 296692061}
-  initialSpawns:
-  - prefab: {fileID: 6461552448834079123, guid: 0cb255ada51aba94c9ba572e412bef09, type: 3}
-    definition: {fileID: 11400000, guid: c9142e5760c99b44893e01c6c842faa2, type: 2}
-    column: 15
-    row: 20
-    direction: {x: 1, y: 0}
-  - prefab: {fileID: 2198234542537271096, guid: 226502bdaf4b2b7439fac18918897532, type: 3}
-    definition: {fileID: 11400000, guid: aafc7ce75a8a6974bbce5d115e0cc72d, type: 2}
-    column: 30
-    row: 45
-    direction: {x: 0, y: 1}
-  - prefab: {fileID: 7951906493875139093, guid: bdb6b5feb9a93724282df9f1ab806e53, type: 3}
-    definition: {fileID: 11400000, guid: 6a5c03cfcac169f4e9aab476e9295209, type: 2}
-    column: 40
-    row: 70
-    direction: {x: 1, y: 1}
-  - prefab: {fileID: 46801405078460151, guid: c1e2afd0e3bcb6441ad3ca4ddf186b81, type: 3}
-    definition: {fileID: 11400000, guid: cae550ba16f44e147be39f0589e4b282, type: 2}
-    column: 22
-    row: 62
-    direction: {x: -1, y: 1}
+  initialSpawns: []
 --- !u!4 &2088577236
 Transform:
   m_ObjectHideFlags: 0

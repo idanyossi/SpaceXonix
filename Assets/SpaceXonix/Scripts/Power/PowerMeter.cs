@@ -66,6 +66,9 @@ namespace SpaceXonix.Power
 
         public void SetGainMultiplier(float multiplier) => model?.SetGainMultiplier(multiplier);
 
+        /// <summary>Clears in-flight shots between stages; stored charge carries over.</summary>
+        public void PrepareForStage() => ReleaseAllShots();
+
         public void ResetMeter()
         {
             if (model == null) return;

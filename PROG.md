@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 10 complete; Phase 11 not started
-- Latest completed feature: pickups, one-slot storage, Shield, Freeze, and Arena Tilt
+- Current phase: Phase 11 complete; Phase 12 (2.5D Presentation Foundation) not started
+- Latest completed feature: four data-driven campaign stages with briefing, stage complete, game over, and retry flow
 
 ## Phase Progress
 
@@ -22,7 +22,7 @@
 8. **COMPLETE** — Scoring + Large-Capture Multipliers
 9. **COMPLETE** — Power Meter + Power Shot
 10. **COMPLETE** — Shield + Freeze + Arena Tilt
-11. **NOT STARTED** — Campaign Stages + Progression
+11. **COMPLETE** — Campaign Stages + Progression
 12. **NOT STARTED** — 2.5D Presentation Foundation (perspective Cinemachine camera, raised territory, hovering pixel-art billboards)
 13. **NOT STARTED** — Roguelite Upgrades
 14. **NOT STARTED** — Stage Modifiers
@@ -50,11 +50,12 @@
 - `BoardCaptureResult.PercentageGained` reports the playable area made safe by one reconnection (selected region plus committed trail). `ScoreManager` listens to `BoardManager.CaptureCompleted` and delegates to the pure `ScoreModel`; tuning lives in `ScoringDefinition` (`ScriptableObjects/Balance/Scoring.asset`).
 - `PowerMeter` charges from `BoardManager.CaptureCompleted` through the pure `PowerMeterModel`, fires on `InputRouter.PowerShotRequested`, and advances pooled `PowerShotProjectile` instances that despawn the first standard enemy through `EnemyManager`. Tuning lives in `PowerDefinition` (`ScriptableObjects/Balance/Power.asset`).
 - `PowerUpManager` owns capture-driven pickup spawning, the pure `PowerUpSlotModel` (one stored ability plus a pending Keep/Replace offer), and timed Shield/Freeze/Arena Tilt effects. `GameManager` exposes `SetPaused` (time-scale pause that preserves life/control state) and `SetShieldActive`; `EnemyManager` exposes movement suspension and drift.
+- `CampaignManager` (on the GameManager object, execution order 100) drives stages 1–4 inside `Game.unity` from `CampaignDefinition`/`StageDefinition` assets, resetting board, lives, player, enemies, lasers, and per-stage statistics in place. `GameManager.BeginStage`/`StartStagePlay` own the `Briefing` → `Playing` transition; `CampaignRunModel` tracks stage progression and highest stage reached.
 
 ## Current Test State
 
-- EditMode discovered: 194
-- Passed: 194
+- EditMode discovered: 205
+- Passed: 205
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -310,6 +311,22 @@
 - Tests: 21 new EditMode tests cover spawn-chance boundaries/cap, slot store/decision/keep/replace/consume, drift movement, small-capture no-spawn, placement validity and single pickup, lifetime expiry, collection by cell, pause-based Keep/Replace (time scale, input, damage rejection, state preservation), empty-slot use, Shield blocking/not blocking and expiry, Freeze suspension/tint/restore, Tilt drift/slow/camera roll/restore, non-compounding Tilt, and Game Over cleanup. Full suite: 194 passed, 0 failed.
 - Real `Game.unity` Play Mode: pickups spawned on valid cells and rendered; collecting and using Arena Tilt slowed the ship 5 → 4, applied (-1.2, 0) enemy drift, rolled the camera, and showed a HUD timer, then restored speed/drift on expiry; Freeze stopped and tinted all 4 enemies; Shield rejected a real `EnemyContact` report without life loss and displayed the bubble around the ship. Unity Console: 0 errors/warnings.
 
+## Phase 11 — Campaign Stages + Progression
+
+- Data: `ScriptableObjects/Campaign/Campaign.asset` lists four `StageDefinition` assets in `ScriptableObjects/Stages`, each with enemy spawn requests (prefab, definition, cell, direction) and laser placements (definition plus row/column).
+  - Stage 1 First Contact: 2 Basic Bouncers, no lasers.
+  - Stage 2 Crossfire: Basic, horizontal Linear, vertical Linear (new `LinearAlienVertical.asset`); horizontal laser on row 48.
+  - Stage 3 Unstable Sector: Basic, Linear, 2 Unstable; faster horizontal (row 32, 1.4 s cooldown) and vertical (column 27, 1.6 s) lasers (`HorizontalLaserFast`/`VerticalLaserFast`).
+  - Stage 4 Volatile Zone: Basic, vertical Linear, Unstable, 2 Volatile; fast lasers on row 40 and column 20.
+- Flow: stage load → `GameplayState.Briefing` (input, damage, enemy movement, and laser cycling held; player at the default safe spawn) → Start → `Playing` → 75% capture → `StageComplete` → Continue → next stage briefing. After stage 4, Continue enters a "Stages 1-4 cleared" placeholder until the boss phase. Game Over shows the highest stage reached and Retry Campaign restarts stage 1.
+- Per stage: fresh board (`BoardManager.ResetBoard`), lives reset to `startingLives` (with a `bonusLives` hook for Reinforced Hull), enemies despawned and respawned from data, laser emitters reused/created/hidden per layout (`LaserManager.ConfigureStage`), stage largest-capture statistic reset. Carried across stages: score, Power Meter charge, and the stored ability; in-flight shots, active effects, board pickups, and pending pickup decisions are cleared. Retry resets score, power, and stored ability.
+- Temporary debug HUD panels (scaled to the Game view): briefing (stage name, description, enemy types, laser count, modifier/upgrade placeholders, Start), stage complete (score, captured %, stage largest capture, modifier bonus x1.00, Continue), game over (score, highest stage, Retry), and stages-cleared placeholder. Buttons or Enter.
+- `EnemyManager.initialSpawns` in `Game.unity` is now empty; stage data owns spawning. `GameplayState.Briefing` was appended to the enum to keep existing values stable.
+- Deferred: upgrade choice between stages (Phase 13), modifiers and their score bonus (Phase 14), boss stage and campaign complete (Phase 15), Main Menu (Phase 16).
+- Tests: 11 new EditMode tests cover run progression/reset, stage largest-capture statistics, briefing enemy-type listing, stage load state (briefing lock, fresh board, spawns, lasers, damage rejection, frozen enemies), start gating, stage completion and continue (lives/board/player reset, score carry-over, new enemies and laser placement, movement on the new stage), hidden unused emitters, final-stage clear, Game Over retry, and laser cycling held during briefing. Full suite: 205 passed, 0 failed.
+- Real `Game.unity` Play Mode: played through all four stages with real player movement (Stage 1 to 95.7%, Stage 2 to 93.6%, Stage 3 to 78.7%), verified every briefing's enemies and laser rows/columns, the Stage Complete panel (score, captured %, largest capture) with frozen enemies, carried score/power, lives reset to 3 each stage, then Game Over on stage 4 (highest stage 4, score 77711) and Retry back to stage 1 with score 0. Screenshots confirmed the briefing and stage complete panels. Unity Console: 0 errors/warnings.
+- Tooling note: the Unity editor Pause toggle was found enabled twice during Play Mode QA (not caused by project code; no `Debug.Break` exists); unpausing resumed normal stage completion.
+
 ## 2.5D Presentation Decisions
 
 - Researched AirXonix: its 3D is presentation over flat Xonix rules (diagonal-down camera, hovering craft, shadows, solid filled territory). Full notes and work breakdown: `IMPLEMENTATION_PLAN.md` section 12.
@@ -334,11 +351,12 @@
 - `Assets/SpaceXonix/Scripts/Scoring` — score model, capture multipliers, and score manager
 - `Assets/SpaceXonix/Scripts/Power` — power meter, power shot projectile, and power tuning
 - `Assets/SpaceXonix/Scripts/PowerUps` — pickups, ability slot, and Shield/Freeze/Arena Tilt effects
+- `Assets/SpaceXonix/Scripts/Campaign` — campaign/stage definitions, run progression, and stage flow
 - `Assets/SpaceXonix/Tests/EditMode` — deterministic regression suite
 - `Assets/SpaceXonix/Scenes/Game.unity` — representative gameplay scene
 
 ## Next Recommended Action
 
-**Phase 11 — Campaign Stages + Progression**
+**Phase 12 — 2.5D Presentation Foundation** (see `IMPLEMENTATION_PLAN.md` section 12)
 
 Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.
