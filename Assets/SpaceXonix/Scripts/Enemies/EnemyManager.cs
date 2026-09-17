@@ -18,6 +18,7 @@ namespace SpaceXonix.Enemies
         private readonly List<GridCoordinate> occupancy = new List<GridCoordinate>();
         private readonly Dictionary<EnemyController, GameObject> prefabByInstance = new Dictionary<EnemyController, GameObject>();
         public IReadOnlyList<EnemyController> ActiveEnemies => activeEnemies;
+        public bool IsMovementSuspended { get; private set; }
         public event Action<VolatileEnemy> DetonationStarted;
         public event Action<Vector3, int, int> ExplosionOccurred;
         private void Awake()
@@ -40,7 +41,8 @@ namespace SpaceXonix.Enemies
         }
         public void SimulateVolatileInteractions(float deltaTime)
         {
-            if (gameManager != null && gameManager.CurrentState != GameplayState.Playing) return;
+            if (gameManager != null && (gameManager.CurrentState != GameplayState.Playing || gameManager.IsPaused)) return;
+            if (IsMovementSuspended) return;
             var lifecycleGeneration = gameManager != null ? gameManager.PlayerLifecycleGeneration : 0;
             for (var i = activeEnemies.Count - 1; i >= 0; i--)
                 if (activeEnemies[i] is VolatileEnemy volatileEnemy) volatileEnemy.AdvanceSpawnProtection(deltaTime);
@@ -146,7 +148,12 @@ namespace SpaceXonix.Enemies
         }
         public void SetMovementSuspended(bool suspended)
         {
+            IsMovementSuspended = suspended;
             foreach (var enemy in activeEnemies) enemy.SetMovementSuspended(suspended);
+        }
+        public void SetDrift(Vector2 drift)
+        {
+            foreach (var enemy in activeEnemies) enemy.SetDrift(drift);
         }
         private bool IsValidSpawn(GridCoordinate cell)
         {

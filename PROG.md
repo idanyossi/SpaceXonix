@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 9 complete; Phase 10 not started
-- Latest completed feature: Power Meter + pooled Power Shot
+- Current phase: Phase 10 complete; Phase 11 not started
+- Latest completed feature: pickups, one-slot storage, Shield, Freeze, and Arena Tilt
 
 ## Phase Progress
 
@@ -21,7 +21,7 @@
 7. **COMPLETE** — Pooled horizontal/vertical Laser Hazards with warning, firing, and cooldown states
 8. **COMPLETE** — Scoring + Large-Capture Multipliers
 9. **COMPLETE** — Power Meter + Power Shot
-10. **NOT STARTED** — Shield + Freeze + Arena Tilt
+10. **COMPLETE** — Shield + Freeze + Arena Tilt
 11. **NOT STARTED** — Campaign Stages + Progression
 12. **NOT STARTED** — Roguelite Upgrades
 13. **NOT STARTED** — Stage Modifiers
@@ -48,11 +48,12 @@
 - Laser warning and beam presentations are pooled, and lasers intentionally do not affect enemies, Volatile behavior, territory, or unfinished trails.
 - `BoardCaptureResult.PercentageGained` reports the playable area made safe by one reconnection (selected region plus committed trail). `ScoreManager` listens to `BoardManager.CaptureCompleted` and delegates to the pure `ScoreModel`; tuning lives in `ScoringDefinition` (`ScriptableObjects/Balance/Scoring.asset`).
 - `PowerMeter` charges from `BoardManager.CaptureCompleted` through the pure `PowerMeterModel`, fires on `InputRouter.PowerShotRequested`, and advances pooled `PowerShotProjectile` instances that despawn the first standard enemy through `EnemyManager`. Tuning lives in `PowerDefinition` (`ScriptableObjects/Balance/Power.asset`).
+- `PowerUpManager` owns capture-driven pickup spawning, the pure `PowerUpSlotModel` (one stored ability plus a pending Keep/Replace offer), and timed Shield/Freeze/Arena Tilt effects. `GameManager` exposes `SetPaused` (time-scale pause that preserves life/control state) and `SetShieldActive`; `EnemyManager` exposes movement suspension and drift.
 
 ## Current Test State
 
-- EditMode discovered: 173
-- Passed: 173
+- EditMode discovered: 194
+- Passed: 194
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -295,6 +296,19 @@
 - Tests: 16 new EditMode tests cover gain formula, capping, full-only consumption, gain multiplier/reset, non-positive captures, nearest-hit sweep selection, capture-driven charging and single `PowerFull`, no-fire below full, first-enemy destruction on the facing axis, all four directions, board exit plus pool reuse, and disabled input. Full suite: 173 passed, 0 failed.
 - Real `Game.unity` Play Mode: captures of 2.45%, 3.70%, and 4.77% produced 12.3, 18.5, and 23.8 power; a large capture capped the meter at 100; the HUD bar rendered; the user fired a shot during live play, the meter emptied and recharged, the shot instance returned to the pool, and targeted enemies were removed. Unity Console: 0 errors/warnings.
 
+## Phase 10 — Pickups, Shield, Freeze, Arena Tilt
+
+- Spawning (`PowerUpSpawnDefinition`, `ScriptableObjects/Balance/PowerUpSpawning.asset`): a capture of at least 5% rolls `min(60%, 15% + 2% × captured percent)`. At most one pickup exists on the board; it is placed on a random uncaptured, non-player cell at least 3 Manhattan cells from every standard enemy, uses a uniformly random type, rotates for readability, and despawns after 12 seconds (tunable, 0 = never). Pickups are pooled (`Prefabs/PowerUps/PowerUpPickup.prefab`) and tinted per type (Shield green, Freeze ice blue, Arena Tilt orange).
+- Collection: entering the pickup's cell stores it immediately when the slot is empty. When occupied, gameplay pauses and the temporary HUD offers Keep (`K`/button) or Replace (`R`/button). The ability cannot be used and damage is rejected while the decision is pending.
+- Pause: `GameManager.SetPaused` sets `Time.timeScale = 0`, disables gameplay input, and rejects contact/failure reports without changing the life state, so an exposed trail and its movement direction resume unchanged. Enemy Volatile simulation and pickup lifetime also halt while paused. This is reusable for the later pause menu.
+- Use: `E` (or `InputRouter.RequestAbility()` for the future Android button) consumes the stored ability while `Playing` and not paused. Each duration runs in a coroutine; `GetEffectRemaining` feeds the HUD. Reusing a type restarts its duration without compounding.
+- Shield (4 s): `EnemyContact` and `Laser` failures are rejected; per the GDD it does not protect against enemies hitting the unfinished trail, self-intersection, or Volatile explosions. A translucent green bubble follows the ship.
+- Freeze (3 s): `EnemyManager.SetMovementSuspended(true)` stops every standard enemy (including Unstable timers and Volatile interactions) and swaps renderers to an ice-blue material, restored on expiry. Frozen enemies remain hazardous on contact; lasers keep operating. Freeze expiry does not resume enemies after Stage Complete.
+- Arena Tilt (5 s): a random left/right side is chosen; all active enemies receive a 1.2 world-unit/s drift added in `EnemyMovementModel`, the player's move speed is reduced by 20% from its pre-tilt value, and the Main Camera rolls 6 degrees (blended). Everything is restored on expiry.
+- Stage Complete and Game Over end all effects, release the board pickup, and dismiss any pending decision. Boss-stage restrictions (no Tilt pickups, Freeze immunity) are deferred to the boss phase; upgrade hooks use the definition durations/values.
+- Tests: 21 new EditMode tests cover spawn-chance boundaries/cap, slot store/decision/keep/replace/consume, drift movement, small-capture no-spawn, placement validity and single pickup, lifetime expiry, collection by cell, pause-based Keep/Replace (time scale, input, damage rejection, state preservation), empty-slot use, Shield blocking/not blocking and expiry, Freeze suspension/tint/restore, Tilt drift/slow/camera roll/restore, non-compounding Tilt, and Game Over cleanup. Full suite: 194 passed, 0 failed.
+- Real `Game.unity` Play Mode: pickups spawned on valid cells and rendered; collecting and using Arena Tilt slowed the ship 5 → 4, applied (-1.2, 0) enemy drift, rolled the camera, and showed a HUD timer, then restored speed/drift on expiry; Freeze stopped and tinted all 4 enemies; Shield rejected a real `EnemyContact` report without life loss and displayed the bubble around the ship. Unity Console: 0 errors/warnings.
+
 ## Known Issues / Tooling Noise
 
 - Unity MCP's editor-state resource can briefly continue reporting `is_changing` after Play Mode has begun. Runtime event instrumentation and advancing frame/time values conclusively verified respawn completion despite that stale status field.
@@ -312,11 +326,12 @@
 - `Assets/SpaceXonix/Scripts/Pooling` — reusable runtime object service
 - `Assets/SpaceXonix/Scripts/Scoring` — score model, capture multipliers, and score manager
 - `Assets/SpaceXonix/Scripts/Power` — power meter, power shot projectile, and power tuning
+- `Assets/SpaceXonix/Scripts/PowerUps` — pickups, ability slot, and Shield/Freeze/Arena Tilt effects
 - `Assets/SpaceXonix/Tests/EditMode` — deterministic regression suite
 - `Assets/SpaceXonix/Scenes/Game.unity` — representative gameplay scene
 
 ## Next Recommended Action
 
-**Phase 10 — Shield + Freeze + Arena Tilt**
+**Phase 11 — Campaign Stages + Progression**
 
 Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.

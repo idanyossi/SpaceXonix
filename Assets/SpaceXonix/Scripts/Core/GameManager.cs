@@ -37,6 +37,8 @@ namespace SpaceXonix.Core
         public bool IsInvulnerable => CurrentState == GameplayState.Playing && invulnerabilityRemaining > 0f;
         public int PlayerLifecycleGeneration => playerLifecycleGeneration;
         public float CaptureTargetPercentage => captureTargetPercentage;
+        public bool IsPaused { get; private set; }
+        public bool IsShieldActive { get; private set; }
         internal float InvulnerabilityRemaining => invulnerabilityRemaining;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         internal bool HasActiveRespawnOperation => respawnCoroutine != null;
@@ -47,6 +49,7 @@ namespace SpaceXonix.Core
         public event Action PlayerRespawned;
         public event Action GameOver;
         public event Action StageCompleted;
+        public event Action<bool> PausedChanged;
 
         private void Awake()
         {
@@ -82,6 +85,7 @@ namespace SpaceXonix.Core
         {
             if (boardManager != null) boardManager.TrailFailureRequested -= OnTrailFailureRequested;
             if (respawnCoroutine != null) StopCoroutine(respawnCoroutine);
+            if (IsPaused) Time.timeScale = 1f;
             if (Instance == this)
             {
                 Instance = null;
@@ -154,15 +158,41 @@ namespace SpaceXonix.Core
             return true;
         }
 
+        /// <summary>Freezes simulation time without leaving the current life state, so exposed movement resumes intact.</summary>
+        public void SetPaused(bool paused)
+        {
+            if (IsPaused == paused) return;
+            IsPaused = paused;
+            Time.timeScale = paused ? 0f : 1f;
+            inputRouter.SetGameplayInputEnabled(!paused && CurrentState == GameplayState.Playing);
+            TracePlayerLifecycle(paused ? "GamePaused" : "GameResumed", force: true);
+            PausedChanged?.Invoke(paused);
+        }
+
+        public void SetShieldActive(bool active)
+        {
+            if (IsShieldActive == active) return;
+            IsShieldActive = active;
+            TracePlayerLifecycle(active ? "ShieldActivated" : "ShieldExpired", force: true);
+        }
+
+        public static bool IsShieldableFailure(PlayerFailureReason reason) =>
+            reason == PlayerFailureReason.EnemyContact || reason == PlayerFailureReason.Laser;
+
         public bool CanProcessPlayerContact(int lifecycleGeneration)
         {
-            return lifecycleGeneration == playerLifecycleGeneration && playerDamageable && !failureInProgress && !IsInvulnerable &&
+            return !IsPaused && lifecycleGeneration == playerLifecycleGeneration && playerDamageable && !failureInProgress && !IsInvulnerable &&
                 lifeState != null && lifeState.State == GameplayState.Playing;
         }
 
         public bool ReportPlayerFailure(PlayerFailureReason reason)
         {
-            if (!playerDamageable || failureInProgress || IsInvulnerable || lifeState == null ||
+            if (IsShieldActive && IsShieldableFailure(reason))
+            {
+                TracePlayerLifecycle("FailureShielded", reason);
+                return false;
+            }
+            if (IsPaused || !playerDamageable || failureInProgress || IsInvulnerable || lifeState == null ||
                 lifeState.State != GameplayState.Playing)
             {
                 TracePlayerLifecycle("FailureRejected", reason);

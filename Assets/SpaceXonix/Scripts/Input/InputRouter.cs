@@ -11,6 +11,7 @@ namespace SpaceXonix.Input
         public event Action<CardinalDirection> DirectionChanged;
         public event Action DirectionReleased;
         public event Action PowerShotRequested;
+        public event Action AbilityRequested;
 
         public bool GameplayInputEnabled { get; private set; }
         public CardinalDirection CurrentDirection { get; private set; } = CardinalDirection.Right;
@@ -27,6 +28,12 @@ namespace SpaceXonix.Input
             {
                 TraceRawInput("Space");
                 RequestPowerShot();
+            }
+
+            if (Keyboard.current.eKey.wasPressedThisFrame)
+            {
+                TraceRawInput("E");
+                RequestAbility();
             }
 
             if (Keyboard.current.wKey.wasPressedThisFrame || Keyboard.current.upArrowKey.wasPressedThisFrame)
@@ -94,6 +101,13 @@ namespace SpaceXonix.Input
         {
             if (!GameplayInputEnabled) return false;
             PowerShotRequested?.Invoke();
+            return true;
+        }
+
+        public bool RequestAbility()
+        {
+            if (!GameplayInputEnabled) return false;
+            AbilityRequested?.Invoke();
             return true;
         }
 

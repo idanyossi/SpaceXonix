@@ -31,6 +31,8 @@ namespace SpaceXonix.Enemies
         }
         public virtual void Deactivate() { IsActiveEnemy = false; traversedCells.Clear(); LastTrailHitAccepted = false; gameObject.SetActive(false); }
         public void SetMovementSuspended(bool suspended) { if (movement != null) movement.MovementEnabled = !suspended; }
+        public void SetDrift(Vector2 drift) { if (movement != null) movement.Drift = drift; }
+        public Vector2 Drift => movement != null ? movement.Drift : Vector2.zero;
         public bool IsTrailContact(Vector2 worldPosition)
         {
             var cell = board.WorldToGrid(worldPosition);
@@ -47,7 +49,7 @@ namespace SpaceXonix.Enemies
             var lifecycleGeneration = game != null ? game.PlayerLifecycleGeneration : 0;
             var previousCell = LogicalCell;
             var before = movement.Position;
-            var intendedPosition = before + movement.Velocity * deltaTime;
+            var intendedPosition = before + movement.EffectiveVelocity * deltaTime;
             board.GetTraversedCells(before, intendedPosition, traversedCells);
             LastTrailHitAccepted = false;
             var player = game != null ? game.PlayerController : null;
