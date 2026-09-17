@@ -2,6 +2,7 @@
   "name": "SpaceXonix.Runtime",
   "rootNamespace": "SpaceXonix",
   "references": [
-    "Unity.InputSystem"
+    "Unity.InputSystem",
+    "Unity.Cinemachine"
   ]
 }

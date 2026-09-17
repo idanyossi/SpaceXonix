@@ -461,6 +461,8 @@ namespace SpaceXonix.Tests.EditMode
                 FrozenMaterial = new Material(Shader.Find("Hidden/Internal-Colored")); owned.Add(FrozenMaterial);
                 var cameraObject = new GameObject("Camera"); owned.Add(cameraObject);
                 Camera = cameraObject.transform;
+                var rig = cameraObject.AddComponent<SpaceXonix.Presentation.ArenaCameraRig>();
+                Set(rig, "pitchDegrees", 0f);
 
                 Manager = root.AddComponent<PowerUpManager>();
                 Set(Manager, "gameManager", Game); Set(Manager, "boardManager", Board); Set(Manager, "inputRouter", Input);
@@ -468,7 +470,7 @@ namespace SpaceXonix.Tests.EditMode
                 Set(Manager, "spawnDefinition", SpawnDefinition); Set(Manager, "pickupPrefab", pickupPrefab);
                 Set(Manager, "powerUps", new List<PowerUpDefinition>(definitions.Values).ToArray());
                 Set(Manager, "shieldVisual", ShieldVisual); Set(Manager, "frozenEnemyMaterial", FrozenMaterial);
-                Set(Manager, "arenaCamera", Camera); Set(Manager, "randomSeed", 1234);
+                Set(Manager, "cameraRig", rig); Set(Manager, "randomSeed", 1234);
 
                 Invoke(Game, "Awake");
                 root.SetActive(true);

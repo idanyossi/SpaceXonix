@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 11 complete; Phase 12 (2.5D Presentation Foundation) not started
-- Latest completed feature: playtest fixes — tilt direction and strength, instant pickup replacement, and Shield pass-through grace
+- Current phase: Phase 12 (2.5D Presentation Foundation) in progress — step 1 (camera) complete
+- Latest completed feature: Cinemachine perspective diagonal-down arena camera (35° tilt, FOV 30) with Dutch-based Arena Tilt roll
 
 ## Phase Progress
 
@@ -23,7 +23,7 @@
 9. **COMPLETE** — Power Meter + Power Shot
 10. **COMPLETE** — Shield + Freeze + Arena Tilt
 11. **COMPLETE** — Campaign Stages + Progression
-12. **NOT STARTED** — 2.5D Presentation Foundation (perspective Cinemachine camera, raised territory, hovering pixel-art billboards)
+12. **IN PROGRESS** — 2.5D Presentation Foundation (perspective Cinemachine camera, raised territory, hovering pixel-art billboards)
 13. **NOT STARTED** — Roguelite Upgrades
 14. **NOT STARTED** — Stage Modifiers
 15. **NOT STARTED** — Alien Core Boss
@@ -55,8 +55,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 219
-- Passed: 219
+- EditMode discovered: 225
+- Passed: 225
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -351,6 +351,19 @@
 - Instant pickup replacement (user request, supersedes the GDD/plan Keep/Replace prompt). Touching a pickup always stores it; an occupied slot is replaced immediately with no pause or prompt. Removed the pending-offer state, `ResolvePickupDecision`, `DecisionRequested`, and the HUD Keep/Replace panel. `GameManager.SetPaused` remains for the future pause menu and now has its own direct regression.
 - Shield pass-through grace (user-chosen rule). Report: with Shield, flying through an alien was safe, but the alien then touched the trail just behind the ship and killed the player. Rule: an alien that touches the shielded ship gains pass-through grace; its trail hits are ignored until its body is fully off the trail and no longer touching the ship, even if the shield expires meanwhile. Other aliens touching the trail still cost a life, and the ship-body trail cells remain protected while shielded. Grace is cleared on activation and deactivation, so pooled reuse never inherits it.
 - Tests: replaced the Keep/Replace slot and pause-decision tests with instant-replace coverage (model and manager, no pause, stored-changed event, usable immediately), added a direct pause regression, the tilt roll-direction assertion, a full pass-through grace lifecycle (granted on shielded contact, protects the trail behind the ship, outlasts shield expiry while still on the trail, ends once the body leaves, later trail hit kills), and grace not granted without Shield plus cleared on deactivation. Full suite after the tilt-strength guard: 219 passed, 0 failed. Unity Console: 0 errors/warnings.
+
+## Phase 12 — 2.5D Presentation Foundation
+
+### Step 1 — Camera (complete)
+
+- Installed Cinemachine 3.1.7 (`com.unity.cinemachine`, required by the GDD; `SpaceXonix.Runtime` now references `Unity.Cinemachine`).
+- Prototype: rendered 1080 × 1920 portrait comparisons of the current orthographic top-down view and perspective diagonal-down candidates at 25°/FOV 30, 35°/FOV 30, 45°/FOV 25, and 55°/FOV 22 (screenshots in the untracked `Temp/Screenshots/CameraCandidates`). Steeper pitches strengthen the AirXonix look but shrink the board's on-screen height (≈76%, 68%, 59%, 48%); far rows render at 77–83% of near-row width. The user selected **35° tilt, FOV 30**.
+- `ArenaFraming` (pure) solves a perspective camera pitched 35° from top-down that fits the whole 54 × 96 board plus a 0.6 hover height inside viewport margins (sides 3%, bottom 8%, top 86%) for any aspect ratio, centred between the HUD margins, as large as the margins allow.
+- `ArenaCameraRig` (on the new `ArenaCamera` object with a `CinemachineCamera`) applies that framing, re-frames when the output aspect changes (portrait device vs landscape editor), sets lens FOV/clip planes, and owns presentation roll. The Main Camera is now perspective with a `CinemachineBrain`. Gameplay objects and the board remain on the XY plane; no gameplay code reads the camera.
+- Arena Tilt roll now goes through `ArenaCameraRig.SetRoll` → Cinemachine `Lens.Dutch` (smoothly blended) instead of rotating the Main Camera transform, which the brain would overwrite. Positive roll still lowers the right side, preserving the earlier direction fix.
+- Tests: 6 new EditMode tests — framing fits within margins and is maximal for portrait, landscape, and tall-phone aspects; 35° diagonal-down orientation looking toward the far rows with 0.7–0.9 far/near row width; custom projection matches Unity's `Camera.WorldToViewportPoint`; rig roll sign and reset. Power-up tilt tests now drive the rig. Full suite: 225 passed, 0 failed.
+- Real `Game.unity` Play Mode: the brain drove the Main Camera to the rig pose (perspective, FOV 30, 35° pitch, framing fits); activating Arena Tilt with drift (+0.4, 0) produced a 6° Dutch roll on the Main Camera with the board's right edge lower on screen (viewport y 0.486 vs 0.540). Screenshot confirmed the tilted perspective view with the HUD intact. Unity Console: 0 errors/warnings.
+- Next: step 2 (chunked raised-territory board view).
 
 ## 2.5D Presentation Decisions
 

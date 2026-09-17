@@ -7,6 +7,7 @@ using SpaceXonix.Enemies;
 using SpaceXonix.Input;
 using SpaceXonix.Player;
 using SpaceXonix.Pooling;
+using SpaceXonix.Presentation;
 using UnityEngine;
 
 namespace SpaceXonix.PowerUps
@@ -28,8 +29,7 @@ namespace SpaceXonix.PowerUps
         [Header("Presentation")]
         [SerializeField] private GameObject shieldVisual;
         [SerializeField] private Material frozenEnemyMaterial;
-        [SerializeField] private Transform arenaCamera;
-        [SerializeField, Min(.01f)] private float cameraRollBlendSeconds = .25f;
+        [SerializeField] private ArenaCameraRig cameraRig;
         [Tooltip("0 uses a time-based seed.")]
         [SerializeField] private int randomSeed;
 
@@ -41,8 +41,6 @@ namespace SpaceXonix.PowerUps
         private System.Random random;
         private PowerUpPickup activePickup;
         private float tiltBaseMoveSpeed;
-        private Quaternion cameraRestRotation;
-        private Coroutine cameraRollRoutine;
 
         public PowerUpType? StoredPowerUp => slot.Stored;
         public PowerUpPickup ActivePickup => activePickup;
@@ -56,7 +54,6 @@ namespace SpaceXonix.PowerUps
         {
             random = randomSeed != 0 ? new System.Random(randomSeed) : new System.Random();
             if (shieldVisual != null) shieldVisual.SetActive(false);
-            if (arenaCamera != null) cameraRestRotation = arenaCamera.localRotation;
         }
 
         private void OnEnable()
@@ -244,28 +241,7 @@ namespace SpaceXonix.PowerUps
 
         private void BlendCameraRoll(float degrees)
         {
-            if (arenaCamera == null) return;
-            if (cameraRollRoutine != null) StopCoroutine(cameraRollRoutine);
-            var target = cameraRestRotation * Quaternion.Euler(0f, 0f, degrees);
-            if (!isActiveAndEnabled || !Application.isPlaying)
-            {
-                arenaCamera.localRotation = target;
-                cameraRollRoutine = null;
-                return;
-            }
-            cameraRollRoutine = StartCoroutine(BlendCameraRollRoutine(target));
-        }
-
-        private IEnumerator BlendCameraRollRoutine(Quaternion target)
-        {
-            var start = arenaCamera.localRotation;
-            for (var elapsed = 0f; elapsed < cameraRollBlendSeconds; elapsed += Time.deltaTime)
-            {
-                arenaCamera.localRotation = Quaternion.Slerp(start, target, elapsed / cameraRollBlendSeconds);
-                yield return null;
-            }
-            arenaCamera.localRotation = target;
-            cameraRollRoutine = null;
+            if (cameraRig != null) cameraRig.SetRoll(degrees);
         }
 
         private void ApplyFrozenMaterials()
