@@ -17,4 +17,5 @@ MonoBehaviour:
   chancePerCapturedPercent: 0.02
   maxChance: 0.6
   pickupLifetime: 12
-  minimumEnemyDistanceCells: 3
+  minimumEnemyDistanceCells: 6
+  pickupRadius: 0.25

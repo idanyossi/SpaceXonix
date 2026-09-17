@@ -14,7 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Enemies.EnemyDefinition
   type: 0
   moveSpeed: 1.2
+  collisionRadius: 0.5
   linearAxis: 0
   unstableMinSpeed: 0.8
   unstableMaxSpeed: 2
   unstableInterval: 1.5
+  volatileSpawnProtection: 0.5
+  volatileCollisionRadius: 0.2
+  volatileBlastRadius: 0.75
+  volatileTerritoryRadiusCells: 4

@@ -11,11 +11,13 @@ namespace SpaceXonix.Enemies
         protected GameManager game;
         protected EnemyDefinition definition;
         protected EnemyMovementModel movement;
+        private static readonly List<GridCoordinate> FootprintBuffer = new List<GridCoordinate>();
         private readonly List<GridCoordinate> traversedCells = new List<GridCoordinate>();
         public GridCoordinate LogicalCell => board.WorldToGrid(transform.position);
         public Vector2 Velocity => movement != null ? movement.Velocity : Vector2.zero;
         public bool MovementEnabled => movement != null && movement.MovementEnabled;
         public EnemyDefinition Definition => definition;
+        public float CollisionRadius => definition != null ? definition.collisionRadius : 0f;
         public bool IsActiveEnemy { get; private set; }
         public IReadOnlyList<GridCoordinate> LastTraversedCells => traversedCells;
         public bool LastTrailHitAccepted { get; private set; }
@@ -52,10 +54,11 @@ namespace SpaceXonix.Enemies
             var before = movement.Position;
             var intendedPosition = before + movement.EffectiveVelocity * deltaTime;
             board.GetTraversedCells(before, intendedPosition, traversedCells);
+            AddFootprint(intendedPosition, traversedCells);
             LastTrailHitAccepted = false;
             var player = game != null ? game.PlayerController : null;
             var hitsPlayer = player != null && game.CanProcessPlayerContact(lifecycleGeneration) &&
-                Vector2.Distance(intendedPosition, player.transform.position) <= board.CellWorldSize * .6f;
+                Vector2.Distance(intendedPosition, player.transform.position) <= GetPlayerContactDistance(player);
             if (hitsPlayer)
             {
                 var accepted = game.ReportPlayerFailure(PlayerFailureReason.EnemyContact);
@@ -64,21 +67,49 @@ namespace SpaceXonix.Enemies
             for (var i = 0; i < traversedCells.Count; i++)
             {
                 if (board.Model.GetCell(traversedCells[i]) != BoardCellState.Trail) continue;
-                // The trail head under a shielded ship is ship contact, which the shield blocks; the rest of the trail stays vulnerable.
-                if (game != null && game.IsShieldActive && traversedCells[i] == board.PlayerCell) continue;
+                // Trail under a shielded ship's body is ship contact, which the shield blocks; the rest of the trail stays vulnerable.
+                if (game != null && game.IsShieldActive && player != null && IsUnderShip(traversedCells[i], player)) continue;
                 if (game != null) LastTrailHitAccepted = game.ReportPlayerFailure(PlayerFailureReason.TrailHit);
                 if (LastTrailHitAccepted || game != null && !game.CanProcessPlayerContact(lifecycleGeneration)) return;
                 break;
             }
             if (game != null && game.PlayerLifecycleGeneration != lifecycleGeneration) return;
-            movement.Advance(deltaTime, IsUncapturedWorld);
+            var startsBlocked = !IsFootprintPassable(before);
+            movement.Advance(deltaTime, startsBlocked ? (System.Func<Vector2, bool>)IsUncapturedWorld : IsFootprintPassable);
             transform.position = new Vector3(movement.Position.x, movement.Position.y, transform.position.z);
             if (LogicalCell != previousCell) LogicalCellChanged?.Invoke(this);
             if (player == null || !game.CanProcessPlayerContact(lifecycleGeneration)) return;
             var distance = Vector2.Distance(transform.position, player.transform.position);
-            if (distance > board.CellWorldSize * .6f) return;
+            if (distance > GetPlayerContactDistance(player)) return;
             game.ReportPlayerFailure(PlayerFailureReason.EnemyContact);
         }
+        /// <summary>Radius-free legacy definitions keep the original 0.6-cell contact distance.</summary>
+        public float GetPlayerContactDistance(SpaceXonix.Player.PlayerController player) =>
+            Mathf.Max(board.CellWorldSize * .6f, CollisionRadius + (player != null ? player.CollisionRadius : 0f));
+
+        public void GetFootprintCells(List<GridCoordinate> cells) => board.GetCellsOverlappingCircle(transform.position, CollisionRadius, cells);
+
+        private void AddFootprint(Vector2 center, List<GridCoordinate> cells)
+        {
+            if (CollisionRadius <= 0f) return;
+            board.GetCellsOverlappingCircle(center, CollisionRadius, FootprintBuffer);
+            for (var i = 0; i < FootprintBuffer.Count; i++) if (!cells.Contains(FootprintBuffer[i])) cells.Add(FootprintBuffer[i]);
+        }
+
+        private bool IsUnderShip(GridCoordinate cell, SpaceXonix.Player.PlayerController player) =>
+            cell == board.PlayerCell || board.CellOverlapsCircle(cell, player.transform.position, player.CollisionRadius);
+
+        /// <summary>The whole alien body must stay inside uncaptured space.</summary>
+        private bool IsFootprintPassable(Vector2 world)
+        {
+            if (CollisionRadius <= 0f) return IsUncapturedWorld(world);
+            board.GetCellsOverlappingCircle(world, CollisionRadius, FootprintBuffer);
+            if (FootprintBuffer.Count == 0) return false;
+            for (var i = 0; i < FootprintBuffer.Count; i++)
+                if (board.Model.GetCell(FootprintBuffer[i]) != BoardCellState.Uncaptured) return false;
+            return IsUncapturedWorld(world);
+        }
+
         private bool IsUncapturedWorld(Vector2 world)
         {
             var cell = board.WorldToGrid(world);

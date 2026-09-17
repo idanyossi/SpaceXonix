@@ -123,5 +123,5 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e03c7c6baf978349b452334d618da7a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Enemies.UnstableEnemy

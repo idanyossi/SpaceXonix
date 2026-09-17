@@ -27,7 +27,8 @@ namespace SpaceXonix.Enemies
         public bool CanDetonateWith(EnemyController other)
         {
             if (!IsArmed || other == null || other == this || !other.IsActiveEnemy || other is VolatileEnemy) return false;
-            return Vector2.Distance(transform.position, other.transform.position) <= definition.volatileCollisionRadius;
+            var touching = Mathf.Max(definition.volatileCollisionRadius, CollisionRadius + other.CollisionRadius);
+            return Vector2.Distance(transform.position, other.transform.position) <= touching;
         }
 
         public bool BeginDetonation()

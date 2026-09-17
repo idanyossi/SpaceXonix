@@ -53,14 +53,16 @@ namespace SpaceXonix.Hazards
             cycle.Advance(deltaTime);
         }
 
-        public bool ContainsPoint(Vector3 worldPoint)
+        public bool ContainsPoint(Vector3 worldPoint) => ContainsCircle(worldPoint, 0f);
+
+        public bool ContainsCircle(Vector3 worldPoint, float radius)
         {
             var emitterCell = board.WorldToGrid(transform.position);
             var pointCell = board.WorldToGrid(worldPoint);
             if (!board.Model.IsInBounds(pointCell)) return false;
             var emitterCenter = board.GetWorldPosition(emitterCell);
             var perpendicularDistance = definition.axis == LaserAxis.Horizontal ? Mathf.Abs(worldPoint.y - emitterCenter.y) : Mathf.Abs(worldPoint.x - emitterCenter.x);
-            return perpendicularDistance <= definition.beamWidth * .5f;
+            return perpendicularDistance <= definition.beamWidth * .5f + Mathf.Max(0f, radius);
         }
 
         public void Shutdown()
@@ -95,7 +97,8 @@ namespace SpaceXonix.Hazards
             if (playerHitThisFiringPhase || game == null || game.PlayerController == null) return;
             var lifecycleGeneration = game.PlayerLifecycleGeneration;
             if (!game.CanProcessPlayerContact(lifecycleGeneration)) return;
-            if (ContainsPoint(game.PlayerController.transform.position) && game.ReportPlayerFailure(PlayerFailureReason.Laser))
+            var player = game.PlayerController;
+            if (ContainsCircle(player.transform.position, player.CollisionRadius) && game.ReportPlayerFailure(PlayerFailureReason.Laser))
                 playerHitThisFiringPhase = true;
         }
 

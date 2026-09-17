@@ -16,6 +16,7 @@ namespace SpaceXonix.Enemies
         [SerializeField] private EnemySpawnRequest[] initialSpawns;
         private readonly List<EnemyController> activeEnemies = new List<EnemyController>();
         private readonly List<GridCoordinate> occupancy = new List<GridCoordinate>();
+        private readonly List<GridCoordinate> footprint = new List<GridCoordinate>();
         private readonly Dictionary<EnemyController, GameObject> prefabByInstance = new Dictionary<EnemyController, GameObject>();
         public IReadOnlyList<EnemyController> ActiveEnemies => activeEnemies;
         public bool IsMovementSuspended { get; private set; }
@@ -68,13 +69,13 @@ namespace SpaceXonix.Enemies
             var definition = source.Definition;
             var hitsPlayer = gameManager != null && playerController != null &&
                 gameManager.CanProcessPlayerContact(lifecycleGeneration) &&
-                Vector2.Distance(position, playerController.transform.position) <= definition.volatileBlastRadius;
+                Vector2.Distance(position, playerController.transform.position) <= definition.volatileBlastRadius + playerController.CollisionRadius;
             var destroyedEnemies = 0;
             for (var i = activeEnemies.Count - 1; i >= 0; i--)
             {
                 var enemy = activeEnemies[i];
                 if (enemy == source || enemy is VolatileEnemy) continue;
-                if (Vector2.Distance(position, enemy.transform.position) > definition.volatileBlastRadius) continue;
+                if (Vector2.Distance(position, enemy.transform.position) > definition.volatileBlastRadius + enemy.CollisionRadius) continue;
                 Despawn(enemy);
                 destroyedEnemies++;
             }
@@ -111,6 +112,9 @@ namespace SpaceXonix.Enemies
                 var enemy = activeEnemies[i];
                 if (enemy == null || !enemy.IsActiveEnemy) { activeEnemies.RemoveAt(i); continue; }
                 occupancy.Add(enemy.LogicalCell);
+                if (enemy.CollisionRadius <= 0f) continue;
+                enemy.GetFootprintCells(footprint);
+                for (var j = 0; j < footprint.Count; j++) if (footprint[j] != enemy.LogicalCell) occupancy.Add(footprint[j]);
             }
             if (boardManager != null) boardManager.SetEnemyCells(occupancy);
         }

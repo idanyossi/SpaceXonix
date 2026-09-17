@@ -69,7 +69,8 @@ namespace SpaceXonix.Power
                 var point = (Vector2)enemy.transform.position;
                 var along = lengthSquared > 0f ? Mathf.Clamp01(Vector2.Dot(point - from, segment) / lengthSquared) : 0f;
                 var closest = from + segment * along;
-                if ((point - closest).sqrMagnitude > hitRadius * hitRadius) continue;
+                var reach = hitRadius + enemy.CollisionRadius;
+                if ((point - closest).sqrMagnitude > reach * reach) continue;
                 if (along >= bestAlong) continue;
                 best = enemy;
                 bestAlong = along;

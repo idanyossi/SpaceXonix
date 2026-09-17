@@ -85,6 +85,41 @@ namespace SpaceXonix.Board
             return new GridCoordinate(Mathf.FloorToInt(local.x / cellWorldSize), Mathf.FloorToInt(local.y / cellWorldSize));
         }
 
+        /// <summary>Collects in-bounds cells whose area overlaps a world-space circle. Radius 0 yields the containing cell.</summary>
+        public void GetCellsOverlappingCircle(Vector2 worldCenter, float radius, List<GridCoordinate> cells)
+        {
+            if (cells == null) throw new ArgumentNullException(nameof(cells));
+            cells.Clear();
+            var local = transform.InverseTransformPoint(worldCenter);
+            var cx = local.x / cellWorldSize;
+            var cy = local.y / cellWorldSize;
+            var r = Mathf.Max(0f, radius) / cellWorldSize;
+            var minX = Mathf.FloorToInt(cx - r);
+            var maxX = Mathf.FloorToInt(cx + r);
+            var minY = Mathf.FloorToInt(cy - r);
+            var maxY = Mathf.FloorToInt(cy + r);
+            for (var y = minY; y <= maxY; y++) for (var x = minX; x <= maxX; x++)
+            {
+                var cell = new GridCoordinate(x, y);
+                if (Model.IsInBounds(cell) && CellOverlapsCircle(cell, cx, cy, r)) cells.Add(cell);
+            }
+        }
+
+        public bool CellOverlapsCircle(GridCoordinate cell, Vector2 worldCenter, float radius)
+        {
+            var local = transform.InverseTransformPoint(worldCenter);
+            return CellOverlapsCircle(cell, local.x / cellWorldSize, local.y / cellWorldSize, Mathf.Max(0f, radius) / cellWorldSize);
+        }
+
+        private static bool CellOverlapsCircle(GridCoordinate cell, float cx, float cy, float r)
+        {
+            var dx = Mathf.Clamp(cx, cell.X, cell.X + 1f) - cx;
+            var dy = Mathf.Clamp(cy, cell.Y, cell.Y + 1f) - cy;
+            if (r <= 0f) return cx >= cell.X && cx < cell.X + 1f && cy >= cell.Y && cy < cell.Y + 1f;
+            // Strict inequality: a circle merely touching a cell edge does not occupy that cell.
+            return dx * dx + dy * dy < r * r;
+        }
+
         public Vector3 ClampToBoard(Vector3 worldPosition)
         {
             var local = transform.InverseTransformPoint(worldPosition);

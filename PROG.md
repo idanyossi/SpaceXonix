@@ -8,7 +8,7 @@
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
 - Current phase: Phase 11 complete; Phase 12 (2.5D Presentation Foundation) not started
-- Latest completed feature: four data-driven campaign stages with briefing, stage complete, game over, and retry flow
+- Latest completed feature: body-sized collision radii matching visuals (after campaign stages and a shield contact fix)
 
 ## Phase Progress
 
@@ -51,11 +51,12 @@
 - `PowerMeter` charges from `BoardManager.CaptureCompleted` through the pure `PowerMeterModel`, fires on `InputRouter.PowerShotRequested`, and advances pooled `PowerShotProjectile` instances that despawn the first standard enemy through `EnemyManager`. Tuning lives in `PowerDefinition` (`ScriptableObjects/Balance/Power.asset`).
 - `PowerUpManager` owns capture-driven pickup spawning, the pure `PowerUpSlotModel` (one stored ability plus a pending Keep/Replace offer), and timed Shield/Freeze/Arena Tilt effects. `GameManager` exposes `SetPaused` (time-scale pause that preserves life/control state) and `SetShieldActive`; `EnemyManager` exposes movement suspension and drift.
 - `CampaignManager` (on the GameManager object, execution order 100) drives stages 1–4 inside `Game.unity` from `CampaignDefinition`/`StageDefinition` assets, resetting board, lives, player, enemies, lasers, and per-stage statistics in place. `GameManager.BeginStage`/`StartStagePlay` own the `Briefing` → `Playing` transition; `CampaignRunModel` tracks stage progression and highest stage reached.
+- Collision is body-sized: `PlayerController.collisionRadius` and `EnemyDefinition.collisionRadius` drive ship contact (radius sum), trail contact and capture occupancy (all cells overlapped by the alien body via `BoardManager.GetCellsOverlappingCircle`), bouncing (the whole body must stay in uncaptured space), lasers (beam half-width + ship radius), Power Shot reach, Volatile blasts/detonation, and pickup collection. Prefab visual sizes equal the collision diameters. A radius of 0 preserves the original point/0.6-cell behaviour.
 
 ## Current Test State
 
-- EditMode discovered: 205
-- Passed: 205
+- EditMode discovered: 217
+- Passed: 217
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -326,6 +327,22 @@
 - Tests: 11 new EditMode tests cover run progression/reset, stage largest-capture statistics, briefing enemy-type listing, stage load state (briefing lock, fresh board, spawns, lasers, damage rejection, frozen enemies), start gating, stage completion and continue (lives/board/player reset, score carry-over, new enemies and laser placement, movement on the new stage), hidden unused emitters, final-stage clear, Game Over retry, and laser cycling held during briefing. Full suite: 205 passed, 0 failed.
 - Real `Game.unity` Play Mode: played through all four stages with real player movement (Stage 1 to 95.7%, Stage 2 to 93.6%, Stage 3 to 78.7%), verified every briefing's enemies and laser rows/columns, the Stage Complete panel (score, captured %, largest capture) with frozen enemies, carried score/power, lives reset to 3 each stage, then Game Over on stage 4 (highest stage 4, score 77711) and Retry back to stage 1 with score 0. Screenshots confirmed the briefing and stage complete panels. Unity Console: 0 errors/warnings.
 - Tooling note: the Unity editor Pause toggle was found enabled twice during Play Mode QA (not caused by project code; no `Debug.Break` exists); unpausing resumed normal stage completion.
+
+## Shield Contact Fix (post-Phase 11 playtest)
+
+- Report: the player died from an alien while Shield was active.
+- Root cause (reproduced in an EditMode test): while drawing a trail, the cell under the ship is itself a trail cell. An alien reaching the ship was detected as `TrailHit` on that cell before any `EnemyContact`, and Shield only blocks `EnemyContact`/`Laser`.
+- Rule confirmed by the user (GDD literal): Shield protects the ship, not the trail. Aliens touching trail cells away from the ship still cost a life.
+- Fix: `EnemyController` ignores trail cells under a shielded ship's body (initially the ship's cell; widened to the ship's collision circle by the hitbox work below). Regressions: shielded exposed ship reached by an alien survives; the unshielded case still dies; an alien touching the trail behind a shielded ship still reports `TrailHit`. Commit `da801bc`.
+
+## Collision Size Matching (post-Phase 11 playtest)
+
+- Report: hitboxes felt much smaller than the models. Measured: ship visual 0.75 (~4 cells) and Basic/Linear/Unstable 1.0 (~5.5 cells) versus a 0.108 center-distance contact check, single center-cell trail/capture checks, and center-point bouncing. Deaths were therefore decoupled from what the player saw.
+- Decision: first implemented as "match both" with shrunken visuals (ship 0.32, aliens 0.48). After review the user asked to keep the original model sizes and grow the hitboxes instead, so the final values restore the original visuals and size collision to them.
+- Final values: ship radius 0.375 (visual 0.75); Basic/Linear/Unstable radius 0.50 (visual 1.0, about 5.5 cells wide); Volatile radius 0.14 (its original 0.28 visual); pickup radius 0.25 (visual 0.5); Power Shot hit radius 0.06 (matching the 0.12 bar); shield bubble back to 1.15. Pickup minimum enemy distance raised from 3 to 6 cells so pickups cannot spawn inside an alien body.
+- Rules: ship–alien contact when centres are within the radius sum (minimum 0.6 cell); alien trail contact and capture occupancy use every cell overlapped by the alien body (strict overlap — touching an edge does not count); aliens bounce before any part of the body enters captured territory or trail (a body already overlapping blocked cells falls back to centre movement so it cannot get stuck); lasers hit when the beam overlaps the ship body; Volatile blasts reach bodies (blast radius + target radius) and Volatile detonation triggers when bodies touch; Power Shot reach adds the alien radius; pickups collect when the ship body touches them.
+- Tests: 9 new EditMode tests (circle cell overlap, radius-sum contact, trail contact one vs two columns from the body, bounce keeps the body out of captured cells, body-wide capture occupancy, laser body contact, Power Shot edge reach, and prefab visual size equals collision diameter for ship, all enemies, and pickups). Existing radius-0 fixtures keep their original semantics. Full suite: 217 passed, 0 failed.
+- Real `Game.unity` Play Mode (final sizes): ship 0.75/radius 0.375 and aliens 1.0/radius 0.5 confirmed at runtime; stage 1 captures reached 55.3% using the body-wide occupancy snapshot (74 cells for two aliens); aliens kept bouncing with 0 body cells overlapping captured territory, including inside an 8-row uncaptured strip; a pickup spawned clear of both bodies; screenshot confirmed sizes. Unity Console: 0 errors/warnings.
 
 ## 2.5D Presentation Decisions
 

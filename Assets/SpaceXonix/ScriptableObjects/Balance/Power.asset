@@ -15,4 +15,4 @@ MonoBehaviour:
   maxPower: 100
   powerPerCapturedPercent: 5
   shotSpeed: 14
-  shotHitRadius: 0.2
+  shotHitRadius: 0.06

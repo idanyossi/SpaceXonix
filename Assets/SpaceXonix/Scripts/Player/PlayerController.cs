@@ -19,6 +19,8 @@ namespace SpaceXonix.Player
     {
         [SerializeField, Min(0f)] private float moveSpeed = 5f;
         [SerializeField] private CardinalDirection initialDirection = CardinalDirection.Right;
+        [Tooltip("World-space radius of the ship body for enemy, laser, blast, and pickup contact. Keep the visual the same size.")]
+        [SerializeField, Min(0f)] private float collisionRadius;
 
         private PlayerMovementModel movementModel;
         private InputRouter connectedInputRouter;
@@ -31,6 +33,7 @@ namespace SpaceXonix.Player
         public CardinalDirection InitialDirection => initialDirection;
         public CardinalDirection FacingDirection => CurrentDirection;
         public float MoveSpeed => moveSpeed;
+        public float CollisionRadius => collisionRadius;
         public bool MovementEnabled => controlState == PlayerControlState.SafeIdle ||
             controlState == PlayerControlState.SafeMoving || controlState == PlayerControlState.ExposedMoving;
         public bool IsAwaitingDirectionInput => controlState != PlayerControlState.SafeMoving &&

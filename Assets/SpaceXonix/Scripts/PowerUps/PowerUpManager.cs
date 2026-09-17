@@ -118,7 +118,7 @@ namespace SpaceXonix.PowerUps
                 return;
             }
             if (gameManager != null && gameManager.CurrentState != GameplayState.Playing) return;
-            if (boardManager.PlayerCell == activePickup.Cell) CollectActivePickup();
+            if (IsTouchingPlayer(activePickup)) CollectActivePickup();
         }
 
         /// <summary>Rolls the capture-size spawn chance. Returns true when a pickup was placed.</summary>
@@ -317,6 +317,14 @@ namespace SpaceXonix.PowerUps
                 slot.ResolveDecision(false);
                 gameManager?.SetPaused(false);
             }
+        }
+
+        private bool IsTouchingPlayer(PowerUpPickup pickup)
+        {
+            if (boardManager.PlayerCell == pickup.Cell) return true;
+            if (playerController == null || spawnDefinition == null) return false;
+            var reach = spawnDefinition.pickupRadius + playerController.CollisionRadius;
+            return Vector2.Distance(playerController.transform.position, pickup.transform.position) <= reach;
         }
 
         private PowerUpDefinition PickRandomDefinition()

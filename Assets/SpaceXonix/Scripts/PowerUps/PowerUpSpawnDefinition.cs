@@ -12,6 +12,8 @@ namespace SpaceXonix.PowerUps
         [Tooltip("Seconds an uncollected pickup stays on the board. 0 keeps it until collected.")]
         [Min(0f)] public float pickupLifetime = 12f;
         [Min(0)] public int minimumEnemyDistanceCells = 3;
+        [Tooltip("World-space pickup radius; collected when it touches the ship's collision radius. Keep the visual the same size.")]
+        [Min(0f)] public float pickupRadius = .15f;
 
         public float GetSpawnChance(float capturedPercentage) =>
             PowerUpSpawnRules.GetSpawnChance(capturedPercentage, minimumCapturePercentage, baseChance, chancePerCapturedPercent, maxChance);

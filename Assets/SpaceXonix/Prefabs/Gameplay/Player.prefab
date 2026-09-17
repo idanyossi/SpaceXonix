@@ -105,3 +105,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Player.PlayerController
   moveSpeed: 5
   initialDirection: 3
+  collisionRadius: 0.375
