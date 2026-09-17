@@ -197,27 +197,6 @@ namespace SpaceXonix.Core
                 GUI.Label(new Rect(24f, line, 520f, 44f), $"{Name(type)} {powerUpManager.GetEffectRemaining(type):0.0}s", awardStyleLeft);
                 line += 40f;
             }
-            if (!powerUpManager.IsAwaitingDecision) return;
-            DrawPickupDecision(powerUpManager.PendingOffer.Value, stored);
-        }
-
-        private void DrawPickupDecision(PowerUpType offered, PowerUpType? stored)
-        {
-            var panel = new Rect(Screen.width * .5f - 300f, Screen.height * .5f - 130f, 600f, 260f);
-            var previous = GUI.color;
-            GUI.color = new Color(0f, 0f, 0f, .8f);
-            GUI.DrawTexture(panel, Texture2D.whiteTexture);
-            GUI.color = previous;
-            var storedName = stored.HasValue ? Name(stored.Value) : "-";
-            GUI.Label(new Rect(panel.x, panel.y + 16f, panel.width, 60f), $"Picked up {Name(offered)}", awardStyle);
-            GUI.Label(new Rect(panel.x, panel.y + 76f, panel.width, 50f), $"Stored: {storedName}", rightCenteredStyle);
-            var keep = GUI.Button(new Rect(panel.x + 40f, panel.y + 160f, 240f, 70f), $"Keep {storedName} [K]", buttonStyle);
-            var replace = GUI.Button(new Rect(panel.xMax - 280f, panel.y + 160f, 240f, 70f), $"Take {Name(offered)} [R]", buttonStyle);
-            var current = Event.current;
-            if (current.type == EventType.KeyDown && current.keyCode == KeyCode.K) keep = true;
-            if (current.type == EventType.KeyDown && current.keyCode == KeyCode.R) replace = true;
-            if (keep) powerUpManager.ResolvePickupDecision(false);
-            else if (replace) powerUpManager.ResolvePickupDecision(true);
         }
 
         private static string Name(PowerUpType type) => type == PowerUpType.ArenaTilt ? "Arena Tilt" : type.ToString();

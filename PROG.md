@@ -8,7 +8,7 @@
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
 - Current phase: Phase 11 complete; Phase 12 (2.5D Presentation Foundation) not started
-- Latest completed feature: body-sized collision radii matching visuals (after campaign stages and a shield contact fix)
+- Latest completed feature: playtest fixes — tilt direction and strength, instant pickup replacement, and Shield pass-through grace
 
 ## Phase Progress
 
@@ -49,14 +49,14 @@
 - Laser warning and beam presentations are pooled, and lasers intentionally do not affect enemies, Volatile behavior, territory, or unfinished trails.
 - `BoardCaptureResult.PercentageGained` reports the playable area made safe by one reconnection (selected region plus committed trail). `ScoreManager` listens to `BoardManager.CaptureCompleted` and delegates to the pure `ScoreModel`; tuning lives in `ScoringDefinition` (`ScriptableObjects/Balance/Scoring.asset`).
 - `PowerMeter` charges from `BoardManager.CaptureCompleted` through the pure `PowerMeterModel`, fires on `InputRouter.PowerShotRequested`, and advances pooled `PowerShotProjectile` instances that despawn the first standard enemy through `EnemyManager`. Tuning lives in `PowerDefinition` (`ScriptableObjects/Balance/Power.asset`).
-- `PowerUpManager` owns capture-driven pickup spawning, the pure `PowerUpSlotModel` (one stored ability plus a pending Keep/Replace offer), and timed Shield/Freeze/Arena Tilt effects. `GameManager` exposes `SetPaused` (time-scale pause that preserves life/control state) and `SetShieldActive`; `EnemyManager` exposes movement suspension and drift.
+- `PowerUpManager` owns capture-driven pickup spawning, the pure `PowerUpSlotModel` (one stored ability, instantly replaced by a newly touched pickup), and timed Shield/Freeze/Arena Tilt effects. `GameManager` exposes `SetPaused` (time-scale pause that preserves life/control state) and `SetShieldActive`; `EnemyManager` exposes movement suspension and drift.
 - `CampaignManager` (on the GameManager object, execution order 100) drives stages 1–4 inside `Game.unity` from `CampaignDefinition`/`StageDefinition` assets, resetting board, lives, player, enemies, lasers, and per-stage statistics in place. `GameManager.BeginStage`/`StartStagePlay` own the `Briefing` → `Playing` transition; `CampaignRunModel` tracks stage progression and highest stage reached.
 - Collision is body-sized: `PlayerController.collisionRadius` and `EnemyDefinition.collisionRadius` drive ship contact (radius sum), trail contact and capture occupancy (all cells overlapped by the alien body via `BoardManager.GetCellsOverlappingCircle`), bouncing (the whole body must stay in uncaptured space), lasers (beam half-width + ship radius), Power Shot reach, Volatile blasts/detonation, and pickup collection. Prefab visual sizes equal the collision diameters. A radius of 0 preserves the original point/0.6-cell behaviour.
 
 ## Current Test State
 
-- EditMode discovered: 217
-- Passed: 217
+- EditMode discovered: 219
+- Passed: 219
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -302,7 +302,7 @@
 ## Phase 10 — Pickups, Shield, Freeze, Arena Tilt
 
 - Spawning (`PowerUpSpawnDefinition`, `ScriptableObjects/Balance/PowerUpSpawning.asset`): a capture of at least 5% rolls `min(60%, 15% + 2% × captured percent)`. At most one pickup exists on the board; it is placed on a random uncaptured, non-player cell at least 3 Manhattan cells from every standard enemy, uses a uniformly random type, rotates for readability, and despawns after 12 seconds (tunable, 0 = never). Pickups are pooled (`Prefabs/PowerUps/PowerUpPickup.prefab`) and tinted per type (Shield green, Freeze ice blue, Arena Tilt orange).
-- Collection: entering the pickup's cell stores it immediately when the slot is empty. When occupied, gameplay pauses and the temporary HUD offers Keep (`K`/button) or Replace (`R`/button). The ability cannot be used and damage is rejected while the decision is pending.
+- Collection: entering the pickup's cell stores it immediately when the slot is empty. (Originally an occupied slot paused for a Keep/Replace prompt; superseded by instant replacement — see "Playtest Fixes: Tilt, Pickup Replace, Shield Grace".)
 - Pause: `GameManager.SetPaused` sets `Time.timeScale = 0`, disables gameplay input, and rejects contact/failure reports without changing the life state, so an exposed trail and its movement direction resume unchanged. Enemy Volatile simulation and pickup lifetime also halt while paused. This is reusable for the later pause menu.
 - Use: `E` (or `InputRouter.RequestAbility()` for the future Android button) consumes the stored ability while `Playing` and not paused. Each duration runs in a coroutine; `GetEffectRemaining` feeds the HUD. Reusing a type restarts its duration without compounding.
 - Shield (4 s): `EnemyContact` and `Laser` failures are rejected; per the GDD it does not protect against enemies hitting the unfinished trail, self-intersection, or Volatile explosions. A translucent green bubble follows the ship.
@@ -343,6 +343,14 @@
 - Rules: ship–alien contact when centres are within the radius sum (minimum 0.6 cell); alien trail contact and capture occupancy use every cell overlapped by the alien body (strict overlap — touching an edge does not count); aliens bounce before any part of the body enters captured territory or trail (a body already overlapping blocked cells falls back to centre movement so it cannot get stuck); lasers hit when the beam overlaps the ship body; Volatile blasts reach bodies (blast radius + target radius) and Volatile detonation triggers when bodies touch; Power Shot reach adds the alien radius; pickups collect when the ship body touches them.
 - Tests: 9 new EditMode tests (circle cell overlap, radius-sum contact, trail contact one vs two columns from the body, bounce keeps the body out of captured cells, body-wide capture occupancy, laser body contact, Power Shot edge reach, and prefab visual size equals collision diameter for ship, all enemies, and pickups). Existing radius-0 fixtures keep their original semantics. Full suite: 217 passed, 0 failed.
 - Real `Game.unity` Play Mode (final sizes): ship 0.75/radius 0.375 and aliens 1.0/radius 0.5 confirmed at runtime; stage 1 captures reached 55.3% using the body-wide occupancy snapshot (74 cells for two aliens); aliens kept bouncing with 0 body cells overlapping captured territory, including inside an 8-row uncaptured strip; a pickup spawned clear of both bodies; screenshot confirmed sizes. Unity Console: 0 errors/warnings.
+
+## Playtest Fixes: Tilt, Pickup Replace, Shield Grace
+
+- Arena Tilt direction. Report: when the arena tilted one way, aliens slid the other way. Root cause: `PowerUpManager` rolled the camera by `-side × degrees`; a positive camera roll lowers the right side of the arena on screen, so the drift went uphill. Fix: roll by `side × degrees`, so the side aliens drift toward is the side that tilts down. The regression asserts both the roll sign and the on-screen direction of the world right axis. Play Mode: a left drift of (-1.2, 0) produced a -5.8° to -6° roll and the aliens gathered on the lowered left side.
+- Arena Tilt strength. Report: tilted aliens looked like they were free-falling into the wall. Cause: drift 1.2 exceeded every alien's sideways speed (a 1.2-speed bouncer moves ~0.85 sideways), so no alien could move against the tilt. Fix: `tiltEnemyDrift` 1.2 → 0.4 (asset and default). Aliens moving against the tilt now progress at ~0.45/s and aliens moving with it at ~1.25/s; the slowest case (Unstable at minimum speed, ~0.57 sideways) still beats the drift. A new asset guard test keeps the configured drift below 80% of every alien's slowest sideways speed and verifies uphill progress. Play Mode: during a +0.4 tilt one alien moved uphill from x 6.93 to ~4.0 while another moved downhill from 2.79 to 8.36.
+- Instant pickup replacement (user request, supersedes the GDD/plan Keep/Replace prompt). Touching a pickup always stores it; an occupied slot is replaced immediately with no pause or prompt. Removed the pending-offer state, `ResolvePickupDecision`, `DecisionRequested`, and the HUD Keep/Replace panel. `GameManager.SetPaused` remains for the future pause menu and now has its own direct regression.
+- Shield pass-through grace (user-chosen rule). Report: with Shield, flying through an alien was safe, but the alien then touched the trail just behind the ship and killed the player. Rule: an alien that touches the shielded ship gains pass-through grace; its trail hits are ignored until its body is fully off the trail and no longer touching the ship, even if the shield expires meanwhile. Other aliens touching the trail still cost a life, and the ship-body trail cells remain protected while shielded. Grace is cleared on activation and deactivation, so pooled reuse never inherits it.
+- Tests: replaced the Keep/Replace slot and pause-decision tests with instant-replace coverage (model and manager, no pause, stored-changed event, usable immediately), added a direct pause regression, the tilt roll-direction assertion, a full pass-through grace lifecycle (granted on shielded contact, protects the trail behind the ship, outlasts shield expiry while still on the trail, ends once the body leaves, later trail hit kills), and grace not granted without Shield plus cleared on deactivation. Full suite after the tilt-strength guard: 219 passed, 0 failed. Unity Console: 0 errors/warnings.
 
 ## 2.5D Presentation Decisions
 

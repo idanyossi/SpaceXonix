@@ -21,6 +21,8 @@ namespace SpaceXonix.Enemies
         public bool IsActiveEnemy { get; private set; }
         public IReadOnlyList<GridCoordinate> LastTraversedCells => traversedCells;
         public bool LastTrailHitAccepted { get; private set; }
+        /// <summary>Set when this alien touched a shielded ship; its trail hits are ignored until its body has fully left the trail.</summary>
+        public bool HasShieldPassThroughGrace { get; private set; }
         public event Action<EnemyController> LogicalCellChanged;
         public virtual void Activate(EnemyDefinition data, BoardManager boardManager, GameManager gameManager, Vector3 position, Vector2 direction)
         {
@@ -29,9 +31,10 @@ namespace SpaceXonix.Enemies
             movement = new EnemyMovementModel(new Vector2(position.x, position.y), direction.normalized * data.moveSpeed);
             traversedCells.Clear();
             LastTrailHitAccepted = false;
+            HasShieldPassThroughGrace = false;
             IsActiveEnemy = true; gameObject.SetActive(true);
         }
-        public virtual void Deactivate() { IsActiveEnemy = false; traversedCells.Clear(); LastTrailHitAccepted = false; gameObject.SetActive(false); }
+        public virtual void Deactivate() { IsActiveEnemy = false; traversedCells.Clear(); LastTrailHitAccepted = false; HasShieldPassThroughGrace = false; gameObject.SetActive(false); }
         public void SetMovementSuspended(bool suspended) { if (movement != null) movement.MovementEnabled = !suspended; }
         public void SetDrift(Vector2 drift) { if (movement != null) movement.Drift = drift; }
         public Vector2 Drift => movement != null ? movement.Drift : Vector2.zero;
@@ -63,10 +66,12 @@ namespace SpaceXonix.Enemies
             {
                 var accepted = game.ReportPlayerFailure(PlayerFailureReason.EnemyContact);
                 if (accepted || !game.CanProcessPlayerContact(lifecycleGeneration)) return;
+                if (game.IsShieldActive) HasShieldPassThroughGrace = true;
             }
             for (var i = 0; i < traversedCells.Count; i++)
             {
                 if (board.Model.GetCell(traversedCells[i]) != BoardCellState.Trail) continue;
+                if (HasShieldPassThroughGrace) break;
                 // Trail under a shielded ship's body is ship contact, which the shield blocks; the rest of the trail stays vulnerable.
                 if (game != null && game.IsShieldActive && player != null && IsUnderShip(traversedCells[i], player)) continue;
                 if (game != null) LastTrailHitAccepted = game.ReportPlayerFailure(PlayerFailureReason.TrailHit);
@@ -80,8 +85,18 @@ namespace SpaceXonix.Enemies
             if (LogicalCell != previousCell) LogicalCellChanged?.Invoke(this);
             if (player == null || !game.CanProcessPlayerContact(lifecycleGeneration)) return;
             var distance = Vector2.Distance(transform.position, player.transform.position);
-            if (distance > GetPlayerContactDistance(player)) return;
-            game.ReportPlayerFailure(PlayerFailureReason.EnemyContact);
+            var touchingShip = distance <= GetPlayerContactDistance(player);
+            if (touchingShip && !game.ReportPlayerFailure(PlayerFailureReason.EnemyContact) && game.IsShieldActive)
+                HasShieldPassThroughGrace = true;
+            if (HasShieldPassThroughGrace && !touchingShip && !IsBodyOnTrail()) HasShieldPassThroughGrace = false;
+        }
+
+        private bool IsBodyOnTrail()
+        {
+            board.GetCellsOverlappingCircle(transform.position, CollisionRadius, FootprintBuffer);
+            for (var i = 0; i < FootprintBuffer.Count; i++)
+                if (board.Model.GetCell(FootprintBuffer[i]) == BoardCellState.Trail) return true;
+            return false;
         }
         /// <summary>Radius-free legacy definitions keep the original 0.6-cell contact distance.</summary>
         public float GetPlayerContactDistance(SpaceXonix.Player.PlayerController player) =>

@@ -16,6 +16,6 @@ MonoBehaviour:
   displayName: Shield
   duration: 4
   pickupMaterial: {fileID: 2100000, guid: 096e578c815e6074394583619bb2d150, type: 2}
-  tiltEnemyDrift: 1.2
+  tiltEnemyDrift: 0.4
   tiltPlayerSlow: 0.2
   tiltCameraRollDegrees: 6

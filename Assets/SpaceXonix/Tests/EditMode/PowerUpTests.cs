@@ -31,30 +31,15 @@ namespace SpaceXonix.Tests.EditMode
             var slot = new PowerUpSlotModel();
             Assert.That(slot.Collect(PowerUpType.Freeze), Is.EqualTo(PickupCollectResult.Stored));
             Assert.That(slot.Stored, Is.EqualTo(PowerUpType.Freeze));
-            Assert.That(slot.IsAwaitingDecision, Is.False);
         }
 
         [Test]
-        public void Slot_OccupiedRequiresDecision_KeepRetainsStored()
+        public void Slot_OccupiedSlotIsReplacedImmediately()
         {
             var slot = new PowerUpSlotModel();
             slot.Collect(PowerUpType.Shield);
-            Assert.That(slot.Collect(PowerUpType.ArenaTilt), Is.EqualTo(PickupCollectResult.DecisionRequired));
-            Assert.That(slot.TryConsume(out _), Is.False, "cannot use an ability while a decision is pending");
-            Assert.That(slot.Collect(PowerUpType.Freeze), Is.EqualTo(PickupCollectResult.Rejected));
-            Assert.That(slot.ResolveDecision(false), Is.True);
-            Assert.That(slot.Stored, Is.EqualTo(PowerUpType.Shield));
-            Assert.That(slot.IsAwaitingDecision, Is.False);
-            Assert.That(slot.ResolveDecision(true), Is.False);
-        }
-
-        [Test]
-        public void Slot_ReplaceStoresOfferAndConsumeEmptiesSlot()
-        {
-            var slot = new PowerUpSlotModel();
-            slot.Collect(PowerUpType.Shield);
-            slot.Collect(PowerUpType.Freeze);
-            slot.ResolveDecision(true);
+            Assert.That(slot.Collect(PowerUpType.Freeze), Is.EqualTo(PickupCollectResult.Replaced));
+            Assert.That(slot.Stored, Is.EqualTo(PowerUpType.Freeze));
             Assert.That(slot.TryConsume(out var type), Is.True);
             Assert.That(type, Is.EqualTo(PowerUpType.Freeze));
             Assert.That(slot.HasStored, Is.False);
@@ -97,8 +82,7 @@ namespace SpaceXonix.Tests.EditMode
                     Assert.That(fixture.Board.Model.GetCell(pickup.Cell), Is.EqualTo(BoardCellState.Uncaptured));
                     Assert.That(Mathf.Abs(pickup.Cell.X - enemy.LogicalCell.X) + Mathf.Abs(pickup.Cell.Y - enemy.LogicalCell.Y), Is.GreaterThanOrEqualTo(3));
                     Assert.That(fixture.Manager.TrySpawnFromCapture(10f), Is.False, "only one pickup may be on the board");
-                    fixture.Manager.CollectActivePickup();
-                    if (fixture.Manager.IsAwaitingDecision) fixture.Manager.ResolvePickupDecision(false);
+                    Assert.That(fixture.Manager.CollectActivePickup(), Is.True);
                 }
             }
         }
@@ -132,34 +116,44 @@ namespace SpaceXonix.Tests.EditMode
             }
         }
 
-        [TestCase(false, PowerUpType.Shield)]
-        [TestCase(true, PowerUpType.ArenaTilt)]
-        public void OccupiedSlot_PausesForKeepOrReplaceDecision(bool replace, PowerUpType expectedStored)
+        [Test]
+        public void TouchingPickupWithStoredAbility_ReplacesItInstantlyWithoutPausing()
         {
             using (var fixture = new Fixture())
             {
                 fixture.SpawnPickupAtPlayer(PowerUpType.Shield);
                 fixture.Manager.Tick(.01f);
                 fixture.SpawnPickupAtPlayer(PowerUpType.ArenaTilt);
-                PowerUpType? offered = null;
-                fixture.Manager.DecisionRequested += type => offered = type;
+                var changes = new List<PowerUpType?>();
+                fixture.Manager.StoredChanged += stored => changes.Add(stored);
                 fixture.Manager.Tick(.01f);
 
-                Assert.That(offered, Is.EqualTo(PowerUpType.ArenaTilt));
-                Assert.That(fixture.Manager.IsAwaitingDecision, Is.True);
-                Assert.That(fixture.Game.IsPaused, Is.True);
+                Assert.That(fixture.Manager.StoredPowerUp, Is.EqualTo(PowerUpType.ArenaTilt));
+                Assert.That(changes, Is.EqualTo(new PowerUpType?[] { PowerUpType.ArenaTilt }));
+                Assert.That(fixture.Manager.ActivePickup, Is.Null);
+                Assert.That(fixture.Game.IsPaused, Is.False);
+                Assert.That(Time.timeScale, Is.EqualTo(1f));
+                Assert.That(fixture.Input.GameplayInputEnabled, Is.True);
+                Assert.That(fixture.Manager.TryUseStoredAbility(), Is.True);
+                Assert.That(fixture.Manager.IsEffectActive(PowerUpType.ArenaTilt), Is.True);
+            }
+        }
+
+        [Test]
+        public void GamePause_FreezesTimeRejectsDamageAndResumesState()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Game.SetPaused(true);
                 Assert.That(Time.timeScale, Is.EqualTo(0f));
                 Assert.That(fixture.Input.GameplayInputEnabled, Is.False);
                 Assert.That(fixture.Game.ReportPlayerFailure(PlayerFailureReason.TrailHit), Is.False);
                 Assert.That(fixture.Manager.TryUseStoredAbility(), Is.False);
-
-                Assert.That(fixture.Manager.ResolvePickupDecision(replace), Is.True);
-                Assert.That(fixture.Manager.StoredPowerUp, Is.EqualTo(expectedStored));
-                Assert.That(fixture.Game.IsPaused, Is.False);
+                fixture.Game.SetPaused(false);
                 Assert.That(Time.timeScale, Is.EqualTo(1f));
                 Assert.That(fixture.Input.GameplayInputEnabled, Is.True);
-                Assert.That(fixture.Game.Lives, Is.EqualTo(3));
                 Assert.That(fixture.Game.CurrentState, Is.EqualTo(GameplayState.Playing));
+                Assert.That(fixture.Game.Lives, Is.EqualTo(3));
             }
         }
 
@@ -236,6 +230,61 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void ShieldPassThrough_AlienThatTouchedShipCannotHitTrailUntilItLeavesTheTrail()
+        {
+            using (var fixture = new Fixture())
+            {
+                var enemy = fixture.PrepareExposedShipFacingEnemy(shielded: true);
+                PlayerFailureReason? reason = null;
+                fixture.Game.PlayerFailed += r => reason = r;
+                var trailCell = fixture.Board.Model.ToCoordinate(fixture.Board.Model.ActiveTrail[0]);
+
+                fixture.Teleport(enemy, fixture.Player.transform.position, Vector2.zero);
+                enemy.AdvanceMovement(.02f);
+                Assert.That(enemy.HasShieldPassThroughGrace, Is.True);
+
+                fixture.Teleport(enemy, fixture.Board.GetWorldPosition(trailCell), Vector2.down);
+                enemy.AdvanceMovement(.02f);
+                Assert.That(reason, Is.Null, "the alien the ship passed through lands on the trail behind it");
+                Assert.That(enemy.HasShieldPassThroughGrace, Is.True, "grace lasts while its body is still on the trail");
+
+                fixture.Manager.ExpireEffect(PowerUpType.Shield);
+                enemy.AdvanceMovement(.02f);
+                Assert.That(reason, Is.Null, "grace outlasts the shield while the alien is still crossing the trail");
+
+                fixture.Teleport(enemy, fixture.Board.GetWorldPosition(new GridCoordinate(30, 60)), Vector2.down);
+                enemy.AdvanceMovement(.02f);
+                Assert.That(enemy.HasShieldPassThroughGrace, Is.False, "grace ends once the body has left the trail");
+
+                fixture.Teleport(enemy, fixture.Board.GetWorldPosition(trailCell), Vector2.down);
+                enemy.AdvanceMovement(.02f);
+                Assert.That(reason, Is.EqualTo(PlayerFailureReason.TrailHit));
+            }
+        }
+
+        [Test]
+        public void ShieldPassThrough_IsNotGrantedWithoutShieldAndIsClearedOnPoolReuse()
+        {
+            using (var fixture = new Fixture())
+            {
+                var enemy = fixture.PrepareExposedShipFacingEnemy(shielded: true);
+                fixture.Teleport(enemy, fixture.Player.transform.position, Vector2.zero);
+                enemy.AdvanceMovement(.02f);
+                Assert.That(enemy.HasShieldPassThroughGrace, Is.True);
+                enemy.Deactivate();
+                Assert.That(enemy.HasShieldPassThroughGrace, Is.False);
+            }
+            using (var fixture = new Fixture())
+            {
+                var enemy = fixture.PrepareExposedShipFacingEnemy(shielded: false);
+                fixture.Teleport(enemy, fixture.Player.transform.position, Vector2.zero);
+                enemy.AdvanceMovement(.02f);
+                Assert.That(enemy.HasShieldPassThroughGrace, Is.False);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+            }
+        }
+
+        [Test]
         public void Shield_DoesNotProtectTrailBehindShip()
         {
             using (var fixture = new Fixture())
@@ -290,14 +339,37 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Manager.TryUseStoredAbility(), Is.True);
 
                 Assert.That(fixture.Player.MoveSpeed, Is.EqualTo(baseSpeed * .8f).Within(.0001f));
-                Assert.That(Mathf.Abs(enemy.Drift.x), Is.EqualTo(1.2f).Within(.0001f));
+                Assert.That(Mathf.Abs(enemy.Drift.x), Is.EqualTo(.4f).Within(.0001f));
                 Assert.That(enemy.Drift.y, Is.Zero);
-                Assert.That(Mathf.Abs(Mathf.DeltaAngle(0f, fixture.Camera.localEulerAngles.z)), Is.EqualTo(6f).Within(.01f));
+                var roll = Mathf.DeltaAngle(0f, fixture.Camera.localEulerAngles.z);
+                Assert.That(Mathf.Abs(roll), Is.EqualTo(6f).Within(.01f));
+                Assert.That(Mathf.Sign(roll), Is.EqualTo(Mathf.Sign(enemy.Drift.x)), "the side the aliens drift toward is the side that tilts down");
+                var rightSideOnScreen = Quaternion.Inverse(fixture.Camera.localRotation) * Vector3.right;
+                Assert.That(Mathf.Sign(rightSideOnScreen.y), Is.EqualTo(-Mathf.Sign(enemy.Drift.x)), "a rightward drift lowers the right side on screen");
 
                 fixture.Manager.ExpireEffect(PowerUpType.ArenaTilt);
                 Assert.That(fixture.Player.MoveSpeed, Is.EqualTo(baseSpeed));
                 Assert.That(enemy.Drift, Is.EqualTo(Vector2.zero));
                 Assert.That(fixture.Camera.localRotation, Is.EqualTo(Quaternion.identity));
+            }
+        }
+
+        [Test]
+        public void ConfiguredTiltDrift_LeavesEveryAlienAbleToMoveAgainstTheTilt()
+        {
+            var tilt = UnityEditor.AssetDatabase.LoadAssetAtPath<PowerUpDefinition>("Assets/SpaceXonix/ScriptableObjects/PowerUps/ArenaTilt.asset");
+            Assert.That(tilt, Is.Not.Null);
+            foreach (var name in new[] { "BasicBouncer", "LinearAlien", "UnstableAlien", "VolatileAlien" })
+            {
+                var alien = UnityEditor.AssetDatabase.LoadAssetAtPath<EnemyDefinition>($"Assets/SpaceXonix/ScriptableObjects/Enemies/{name}.asset");
+                var slowest = alien.type == EnemyType.Unstable ? alien.unstableMinSpeed : alien.moveSpeed;
+                // Bouncers move diagonally; horizontal Linear aliens move along X at full speed.
+                var sideways = alien.type == EnemyType.Linear ? slowest : slowest * Mathf.Sqrt(.5f);
+                Assert.That(tilt.tiltEnemyDrift, Is.LessThan(sideways * .8f), $"{name} would free-fall toward the tilted wall");
+
+                var model = new EnemyMovementModel(Vector2.zero, new Vector2(-sideways, 0f)) { Drift = new Vector2(tilt.tiltEnemyDrift, 0f) };
+                model.Advance(1f, p => true);
+                Assert.That(model.Position.x, Is.LessThan(0f), $"{name} still makes progress against the tilt");
             }
         }
 
@@ -428,6 +500,13 @@ namespace SpaceXonix.Tests.EditMode
                 return SpawnEnemyAt(start, Vector2.left);
             }
 
+            public void Teleport(EnemyController enemy, Vector3 worldPosition, Vector2 velocity)
+            {
+                enemy.transform.position = worldPosition;
+                typeof(EnemyController).GetField("movement", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .SetValue(enemy, new EnemyMovementModel(worldPosition, velocity));
+            }
+
             public EnemyController SpawnEnemyAt(Vector3 worldPosition, Vector2 direction)
             {
                 var enemy = SpawnEnemy(new GridCoordinate(30, 60));
@@ -447,7 +526,7 @@ namespace SpaceXonix.Tests.EditMode
             public void Store(PowerUpType type)
             {
                 SpawnPickupAtPlayer(type);
-                Assert.That(Manager.CollectActivePickup(), Is.EqualTo(PickupCollectResult.Stored));
+                Assert.That(Manager.CollectActivePickup(), Is.True);
             }
 
             public void Dispose()

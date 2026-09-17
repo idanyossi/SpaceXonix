@@ -89,10 +89,9 @@ Normal stages use Basic Bouncer, Linear, Unstable, and Volatile enemies plus
 horizontal/vertical lasers. Volatile explosions remove captured territory as
 well as affecting enemies/player. Captures award score with large-capture
 multipliers, charge a Power Meter, and may spawn a one-slot temporary ability:
-Shield, Freeze, or Arena Tilt. Touching a pickup stores it immediately when the
-slot is empty. When occupied, touching another pickup pauses gameplay for an
-explicit Keep / Replace decision; Keep retains the stored ability and Replace
-stores the new one. Power at 100 produces a pooled directional Power Shot that
+Shield, Freeze, or Arena Tilt. Touching a pickup stores it immediately; when the
+slot is occupied the new pickup replaces the stored ability instantly without
+pausing (approved playtest change, 2026-09-17). Power at 100 produces a pooled directional Power Shot that
 destroys the first standard alien and only interrupts the boss.
 
 The campaign has four data-driven normal stages in one Game scene, a fifth
@@ -158,7 +157,7 @@ gates; it does not implement board simulation or enemy movement.
 | VolatileEnemy | Standard motion, delayed collision-safe arming, explosion | Requests BoardManager territory removal; never owns board data. |
 | LaserManager | Emits warning/firing/cooldown cycles for cardinal lasers | Uses PoolService; reports player/trail hit without affecting enemies. |
 | PowerMeter | Capture-to-power conversion and pooled directional Power Shot | Listens to TerritoryCaptured; targets standard enemies/boss interrupt. |
-| PowerUpManager | Capture-triggered pickup chance, one stored ability, active effects | Stores immediately when empty; when occupied, requests a Keep/Replace UI decision while gameplay is paused. |
+| PowerUpManager | Capture-triggered pickup chance, one stored ability, active effects | Stores immediately; an occupied slot is replaced instantly by the newly touched pickup. |
 | UpgradeManager | Random three-option run upgrade selection/application | Provides effective stats to later stage initialization. |
 | StageModifierManager | Selects compatible stage modifier and exposes its effects | Modifies stage spawn/hazard/balance setup, not ad-hoc scripts. |
 | BossController | Boss-only attack loop, pooled projectiles, capture-damage feedback | Listens to board capture; completed at 75% capture. |
@@ -340,8 +339,8 @@ state transitions. Use deterministic seeds for random selection tests.
 
 PlayMode tests should verify input-to-grid motion, player death/respawn gating,
 enemy movement contracts, pooled object reset/reuse, laser state sequence,
-abilities' timed effects, immediate empty-slot pickup storage, occupied-slot
-Keep/Replace pause flow, normal-stage progression, boss interruption/capture
+abilities' timed effects, immediate pickup storage and instant replacement,
+shield pass-through grace, normal-stage progression, boss interruption/capture
 completion, UI state binding, and scene persistence. Manual acceptance tests
 should exercise portrait safe area, swipe threshold/UI-touch exclusion, PC
 keyboard controls, Android build/device performance, and visual telegraphing.

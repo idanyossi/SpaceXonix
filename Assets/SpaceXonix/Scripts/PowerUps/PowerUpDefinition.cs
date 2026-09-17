@@ -12,7 +12,8 @@ namespace SpaceXonix.PowerUps
         public Material pickupMaterial;
 
         [Header("Arena Tilt")]
-        [Min(0f)] public float tiltEnemyDrift = 1.2f;
+        [Tooltip("Sideways drift added to aliens. Keep it below every alien's sideways speed so they can still move against the tilt.")]
+        [Min(0f)] public float tiltEnemyDrift = .4f;
         [Range(0f, .9f)] public float tiltPlayerSlow = .2f;
         [Range(0f, 30f)] public float tiltCameraRollDegrees = 6f;
     }

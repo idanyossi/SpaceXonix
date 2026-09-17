@@ -45,13 +45,10 @@ namespace SpaceXonix.PowerUps
         private Coroutine cameraRollRoutine;
 
         public PowerUpType? StoredPowerUp => slot.Stored;
-        public PowerUpType? PendingOffer => slot.PendingOffer;
-        public bool IsAwaitingDecision => slot.IsAwaitingDecision;
         public PowerUpPickup ActivePickup => activePickup;
         public Vector2 TiltDrift { get; private set; }
         public event Action<PowerUpPickup> PickupSpawned;
         public event Action<PowerUpType?> StoredChanged;
-        public event Action<PowerUpType> DecisionRequested;
         public event Action<PowerUpType> EffectStarted;
         public event Action<PowerUpType> EffectEnded;
 
@@ -146,28 +143,13 @@ namespace SpaceXonix.PowerUps
             return true;
         }
 
-        public PickupCollectResult CollectActivePickup()
+        /// <summary>Stores the board pickup, immediately replacing any held ability. Returns false when no pickup exists.</summary>
+        public bool CollectActivePickup()
         {
-            if (activePickup == null) return PickupCollectResult.Rejected;
-            var offered = activePickup.Definition.type;
-            var result = slot.Collect(offered);
-            if (result == PickupCollectResult.Rejected) return result;
+            if (activePickup == null) return false;
+            slot.Collect(activePickup.Definition.type);
             ReleasePickup();
-            if (result == PickupCollectResult.Stored)
-            {
-                StoredChanged?.Invoke(slot.Stored);
-                return result;
-            }
-            gameManager?.SetPaused(true);
-            DecisionRequested?.Invoke(offered);
-            return result;
-        }
-
-        public bool ResolvePickupDecision(bool replace)
-        {
-            if (!slot.ResolveDecision(replace)) return false;
-            if (replace) StoredChanged?.Invoke(slot.Stored);
-            gameManager?.SetPaused(false);
+            StoredChanged?.Invoke(slot.Stored);
             return true;
         }
 
@@ -244,7 +226,8 @@ namespace SpaceXonix.PowerUps
                     TiltDrift = new Vector2(side * definition.tiltEnemyDrift, 0f);
                     enemyManager?.SetDrift(TiltDrift);
                     playerController?.SetMoveSpeed(tiltBaseMoveSpeed * (1f - definition.tiltPlayerSlow));
-                    BlendCameraRoll(-side * definition.tiltCameraRollDegrees);
+                    // A positive camera roll lowers the right side of the arena on screen, so aliens drift downhill.
+                    BlendCameraRoll(side * definition.tiltCameraRollDegrees);
                     break;
             }
             effectEndTimes[type] = Time.time + definition.duration;
@@ -312,11 +295,6 @@ namespace SpaceXonix.PowerUps
         {
             EndAllEffects();
             ReleasePickup();
-            if (slot.IsAwaitingDecision)
-            {
-                slot.ResolveDecision(false);
-                gameManager?.SetPaused(false);
-            }
         }
 
         private bool IsTouchingPlayer(PowerUpPickup pickup)

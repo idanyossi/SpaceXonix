@@ -16,6 +16,6 @@ MonoBehaviour:
   displayName: Freeze
   duration: 3
   pickupMaterial: {fileID: 2100000, guid: 8cb8fe98ef8cb324c81ab2de54237d5d, type: 2}
-  tiltEnemyDrift: 1.2
+  tiltEnemyDrift: 0.4
   tiltPlayerSlow: 0.2
   tiltCameraRollDegrees: 6
