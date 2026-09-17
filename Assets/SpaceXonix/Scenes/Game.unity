@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7be2d6573aaf5fc4fac00ee15e694503, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Board.BoardRenderer
   uncapturedColor: {r: 0.025, g: 0.04, b: 0.1, a: 1}
   capturedColor: {r: 0.08, g: 0.55, b: 0.78, a: 1}
@@ -252,7 +252,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7c652ea7f852d944961bcbc64077f9d, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Pooling.PoolService
 --- !u!4 &296692062
 Transform:
@@ -296,7 +296,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 23bda4d996c46ab43a0054a55768a963, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Input.InputRouter
 --- !u!4 &448994549
 Transform:
@@ -432,7 +432,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98bb629dbc1a8354ba189f4dbf21010e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Board.BoardManager
   columns: 54
   rows: 96
@@ -482,7 +482,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
   m_UsePipelineSettings: 1
   m_AdditionalLightsShadowResolutionTier: 2
@@ -608,7 +608,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7d816a8b1fc203340897304cc4022df8, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Hazards.LaserEmitter
   definition: {fileID: 11400000, guid: 3ff4a88e64a6ca940a37886ca958d3b1, type: 2}
 --- !u!4 &1078973438
@@ -637,6 +637,7 @@ GameObject:
   - component: {fileID: 1599803367}
   - component: {fileID: 1599803366}
   - component: {fileID: 1599803368}
+  - component: {fileID: 1599803369}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -654,13 +655,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c404b4becec77f04aa51006d2e4229f6, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Core.GameManager
   inputRouter: {fileID: 448994548}
   playerController: {fileID: 1987019904147353759}
   boardManager: {fileID: 618364317}
   startingLives: 3
   respawnDelay: 1.25
+  postRespawnInvulnerabilityDuration: 2
 --- !u!4 &1599803367
 Transform:
   m_ObjectHideFlags: 0
@@ -686,8 +688,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fccded5e60e59da4aa46c7755a75c5a0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Core.LifeStateDebugHud
+  scoreManager: {fileID: 1599803369}
+  boardManager: {fileID: 618364317}
+  captureAwardDisplaySeconds: 2
+--- !u!114 &1599803369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1599803365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c50cb27b1a7dae541acf7d5f88ba0e57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Scoring.ScoreManager
+  boardManager: {fileID: 618364317}
+  definition: {fileID: 11400000, guid: eed9d1534e6c3dc46b7b8c72b54331f0, type: 2}
 --- !u!1 &1786466341
 GameObject:
   m_ObjectHideFlags: 0
@@ -715,7 +734,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7d816a8b1fc203340897304cc4022df8, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Hazards.LaserEmitter
   definition: {fileID: 11400000, guid: 892521462e2ed6f4bb957ce24846d62f, type: 2}
 --- !u!4 &1786466343
@@ -760,7 +779,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5249b31727132cb42840e6ef950c3a1a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Hazards.LaserManager
   boardManager: {fileID: 618364317}
   gameManager: {fileID: 1599803366}
@@ -814,7 +833,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2fa48afaadc0e994d91de5750c847af8, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Enemies.EnemyManager
   boardManager: {fileID: 618364317}
   gameManager: {fileID: 1599803366}
@@ -922,7 +941,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 60a20dd71444aa14d92b85de870873ad, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Player.PlayerController
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

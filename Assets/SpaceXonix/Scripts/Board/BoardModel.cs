@@ -121,7 +121,9 @@ namespace SpaceXonix.Board
             foreach (var index in trail) { cells[index] = BoardCellState.Captured; trailMarks[index] = false; capturedPlayableCells++; }
             trail.Clear();
             if (selected != null) foreach (var index in selected) { cells[index] = BoardCellState.Captured; capturedPlayableCells++; }
-            var result = new BoardCaptureResult(selected?.Count ?? 0, committedTrailCount, selected != null, CapturedPercentage);
+            var regionCount = selected?.Count ?? 0;
+            var percentageGained = TotalPlayableCells == 0 ? 0f : (regionCount + committedTrailCount) * 100f / TotalPlayableCells;
+            var result = new BoardCaptureResult(regionCount, committedTrailCount, selected != null, CapturedPercentage, percentageGained);
             CaptureCompleted?.Invoke(result);
             CapturedPercentageChanged?.Invoke(CapturedPercentage);
             TrailStateChanged?.Invoke(BoardMoveResult.Reconnected);

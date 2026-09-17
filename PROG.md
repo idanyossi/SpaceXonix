@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 7 complete; Phase 8 not started
-- Latest completed feature: laser hazards
+- Current phase: Phase 8 complete; Phase 9 not started
+- Latest completed feature: scoring + large-capture multipliers
 
 ## Phase Progress
 
@@ -19,7 +19,7 @@
 5. **COMPLETE** — Pooled Basic, Linear, and Unstable standard enemy framework (`aa9fd91`)
 6. **COMPLETE** — Pooled Volatile Alien, protected detonation, enemy/player blast effects, and territory destruction (`84391c1`)
 7. **COMPLETE** — Pooled horizontal/vertical Laser Hazards with warning, firing, and cooldown states
-8. **NOT STARTED** — Scoring + Large-Capture Multipliers
+8. **COMPLETE** — Scoring + Large-Capture Multipliers
 9. **NOT STARTED** — Power Meter + Power Shot
 10. **NOT STARTED** — Shield + Freeze + Arena Tilt
 11. **NOT STARTED** — Campaign Stages + Progression
@@ -46,11 +46,12 @@
 - Volatile collision/explosion orchestration stays in `EnemyManager`; territory removal stays authoritative in `BoardManager`/`BoardModel` and never directly changes an active trail.
 - `LaserManager` advances independent axis-aligned emitters; `LaserEmitter` routes firing contact through the authoritative `GameManager` failure pipeline.
 - Laser warning and beam presentations are pooled, and lasers intentionally do not affect enemies, Volatile behavior, territory, or unfinished trails.
+- `BoardCaptureResult.PercentageGained` reports the playable area made safe by one reconnection (selected region plus committed trail). `ScoreManager` listens to `BoardManager.CaptureCompleted` and delegates to the pure `ScoreModel`; tuning lives in `ScoringDefinition` (`ScriptableObjects/Balance/Scoring.asset`).
 
 ## Current Test State
 
-- EditMode discovered: 130
-- Passed: 130
+- EditMode discovered: 150
+- Passed: 150
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -267,6 +268,15 @@
 - Retained Unity MCP, URP and its referenced profiles/renderers, Input System, Test Framework, uGUI, Timeline, and Rider/Visual Studio integrations.
 - The Console is clean; the former Unity AI Assistant `NoSubscription` noise is resolved.
 
+## Phase 8 — Scoring + Large-Capture Multipliers
+
+- Formula: `pointsPerCapturedPercent (100) × percentage gained in one capture × large-capture multiplier × stage bonus`, rounded to an integer per capture. Tiers are data-driven: under 5% ×1.0, 5–9.99% ×1.5, 10–14.99% ×2.0, 15%+ ×3.0.
+- "Percentage gained" includes committed trail cells, so a trail-only reconnection (both sides contain aliens) still awards its small trail area at ×1. Captured territory later removed by Volatile explosions does not deduct score.
+- `ScoreModel` also tracks `LargestCapturePercentage` (for the future Stage Complete screen) and exposes `SetBonusMultiplier` as the hook for Phase 13 stage-modifier score bonuses. `ScoreManager.ResetScore` is the hook for campaign reset in Phase 11.
+- `ScoreManager` publishes `CaptureScored(CaptureScoreAward)` and `ScoreChanged(int)`. The temporary `LifeStateDebugHud` now also shows score, capture percentage, and a 2-second `+points xN` capture popup; it remains a placeholder until the UI phase.
+- Tests: 20 new EditMode tests cover every tier boundary, formula examples, accumulation, largest-capture tracking, risk/reward ordering, bonus stacking, non-positive captures, reset, empty tier data, and `PercentageGained` for region and trail-only captures. Full EditMode suite: 150 passed, 0 failed.
+- Real `Game.unity` Play Mode QA drove actual PlayerController/InputRouter captures: 6.38% → ×1.5 → 957; 12.77% → ×2 → 2553; 1.06% trail-only → ×1 → 106 (twice, one due to aliens on both sides); 25.53% → ×3 → 7660. Final score 11488 at 47.87% board capture, largest capture 25.53%, lives unchanged, HUD verified by screenshot. Unity Console: 0 errors/warnings.
+
 ## Known Issues / Tooling Noise
 
 - Unity MCP's editor-state resource can briefly continue reporting `is_changing` after Play Mode has begun. Runtime event instrumentation and advancing frame/time values conclusively verified respawn completion despite that stale status field.
@@ -282,11 +292,12 @@
 - `Assets/SpaceXonix/Scripts/Enemies` — standard enemy framework and configurations
 - `Assets/SpaceXonix/Scripts/Hazards` — laser cycle, emitter, manager, and presentation behavior
 - `Assets/SpaceXonix/Scripts/Pooling` — reusable runtime object service
+- `Assets/SpaceXonix/Scripts/Scoring` — score model, capture multipliers, and score manager
 - `Assets/SpaceXonix/Tests/EditMode` — deterministic regression suite
 - `Assets/SpaceXonix/Scenes/Game.unity` — representative gameplay scene
 
 ## Next Recommended Action
 
-**Phase 8 — Scoring + Large-Capture Multipliers**
+**Phase 9 — Power Meter + Power Shot**
 
 Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.
