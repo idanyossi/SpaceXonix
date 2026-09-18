@@ -55,8 +55,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 245
-- Passed: 245
+- EditMode discovered: 246
+- Passed: 246
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -395,10 +395,11 @@
 ### Step 5 — Camera feel (complete)
 
 - `ArenaShaker` (on the GameManager object with a `CinemachineImpulseSource`) converts gameplay events into Cinemachine impulses, and the arena camera carries a `CinemachineImpulseListener`. Impulse: 0.35 s Bump, uniform, default velocity (0, 0.25, 0).
-- Forces come from the pure `ShakeStrength` mapping: captures scale from a 0.12 tap up to a 0.5 punch at the 15% large-capture threshold (clamped above it), explosions scale with blast radius against a 0.75 reference and are clamped to half/double, and player death is a flat 0.45. `SetShakeEnabled(false)` suppresses everything for the future camera-shake setting; `LastForce` exposes what was requested.
+- Tuned after playtest feedback and AirXonix research (below): **ordinary captures never shake**. `ShakeStrength.ForCapture` returns 0 below 15% and ramps from half to full force (0.25) between 15% and 30%. Explosions scale with blast radius against a 0.75 reference, clamped to half/double, at 0.3. **Death is the strongest and deliberately varied**: a random in-plane direction with a random magnitude between 0.6 and 1.0 (`ShakeStrength.ForDeath`, seedable `System.Random`), sent through `GenerateImpulseWithVelocity`, so repeated deaths never feel canned. Impulse shape is Rumble over 0.28 s. `SetShakeEnabled(false)` suppresses everything for the future camera-shake setting; `LastForce`/`LastVelocity` expose what was requested.
+- AirXonix research (2026-09-18): no source describes any camera movement, rotation, zoom, or shake — MobyGames classifies the view as fixed diagonal-down and Old-Games.ru as isometric, and reviews attribute all "stunning special effects" to the field itself (explosions, fills, enemy destruction). Shake on every capture was therefore both unfaithful and disruptive, since capturing is the core repeated action. Unverified detail: gameplay footage was not watched, so a subtle shake in the original cannot be ruled out.
 - Arena Tilt keeps using the Cinemachine Dutch roll from step 1; the optional visual-only board pivot was deliberately skipped because tilting the board view alone would desynchronise it from the hovering actors, which stay on the XY plane.
-- Tests: 3 new EditMode tests — capture force curve (zero, growth, clamp at the large-capture force), explosion force scaling with clamps, and the shaker recording capture/death forces while honouring the shake setting. Full suite: 245 passed, 0 failed.
-- Real `Game.unity` Play Mode: a real capture requested force 0.443, and with an impulse active the Main Camera was displaced 0.24 from the rig pose (mostly along the camera's up axis), confirming source → listener → brain wiring. The long test durations used for sampling were runtime-only; the saved scene keeps 0.35 s Bump. Unity Console: 0 errors/warnings.
+- Tests: 4 new EditMode tests — routine captures produce zero force while large captures ramp and clamp, the death kick varies in direction and magnitude within its range and stays in the arena plane, explosion scaling with clamps, and the shaker staying silent on a routine capture, varying between two real deaths, and honouring the shake setting. Full suite: 246 passed, 0 failed.
+- Real `Game.unity` Play Mode: with an impulse active the Main Camera was displaced 0.24 from the rig pose, confirming source → listener → brain wiring. After tuning: 4.3% and 1.1% captures requested force 0.000, a 31.9% capture requested the full 0.250, and a death produced a random-direction kick of magnitude 0.795. The long test durations used for sampling were runtime-only; the saved scene keeps 0.35 s Bump. Unity Console: 0 errors/warnings.
 - Next: step 6 (full regression, portrait framing check, and Android draw-call/allocation profiling).
 
 ## 2.5D Presentation Decisions

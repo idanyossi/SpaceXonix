@@ -972,14 +972,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineImpulseSource
   ImpulseDefinition:
     ImpulseChannel: 1
-    ImpulseShape: 2
+    ImpulseShape: 4
     CustomImpulseShape:
       serializedVersion: 2
       m_Curve: []
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    ImpulseDuration: 0.35
+    ImpulseDuration: 0.28
     ImpulseType: 0
     DissipationRate: 0.25
     RawSignal: {fileID: 0}
@@ -1027,12 +1027,14 @@ MonoBehaviour:
   boardManager: {fileID: 618364317}
   enemyManager: {fileID: 2088577235}
   gameManager: {fileID: 1599803366}
-  captureForce: 0.12
-  largeCaptureForce: 0.5
-  largeCapturePercentage: 15
-  explosionForce: 0.6
+  captureMinimumPercentage: 15
+  captureFullPercentage: 30
+  largeCaptureForce: 0.25
+  explosionForce: 0.3
   explosionReferenceRadius: 0.75
-  playerDeathForce: 0.45
+  deathMinForce: 0.6
+  deathMaxForce: 1
+  randomSeed: 0
 --- !u!1 &1747002404
 GameObject:
   m_ObjectHideFlags: 0
