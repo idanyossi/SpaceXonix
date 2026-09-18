@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 12 (2.5D Presentation Foundation) in progress — steps 1-4 (camera, 3D board, hovering actors, hazards in 3D) complete
-- Latest completed feature: hazards and effects placed in the 3D arena (floor warnings, hover-height beams, blast rings)
+- Current phase: Phase 12 (2.5D Presentation Foundation) in progress — steps 1-5 complete; step 6 (verification and Android profiling) remains
+- Latest completed feature: Cinemachine impulse camera shake for captures, explosions, and deaths
 
 ## Phase Progress
 
@@ -55,8 +55,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 242
-- Passed: 242
+- EditMode discovered: 245
+- Passed: 245
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -391,7 +391,15 @@
 - Shield bubble follows the ship's `ActorVisual.HoverHeight` instead of a hard-coded offset; the Power Shot already hovers through its own `ActorVisual`. The bubble was a flattened disc left over from the flat board and read as a 2D card against the 3D models; a translucent sphere then swallowed the ship, so the shield is now a bright green **ring** encircling the ship at hover height (procedural annulus mesh, inner 0.72 / outer 0.88, 48 segments, `Meshes/ShieldRing.asset`). The ship stays fully readable inside it. `RingMeshBuilder` is covered by 2 EditMode tests (radii, flatness, camera-facing winding, argument validation, segment clamping).
 - Tests: 4 new EditMode tests — laser presentation lifts toward the camera and keeps axis orientation/scale; the emitter puts the warning on the floor and the beam at hover height across a real cycle; the blast ring lies on the floor at blast diameter and fades to finished; the presenter spawns on explosions, releases finished rings, and reuses pooled instances. Full suite: 240 passed, 0 failed.
 - Real `Game.unity` Play Mode (stage 4): a detonated Volatile produced a floor blast disc at the blast position, a vertical laser beam fired at hover height across the arena, and the shield bubble sat at -0.55 with the ship. Screenshot: untracked `Temp/Screenshots/hazards_3d.png`. Unity Console: 0 errors/warnings.
-- Next: step 5 (Cinemachine impulse shake for captures/explosions, plus the visual-only board tilt pivot).
+
+### Step 5 — Camera feel (complete)
+
+- `ArenaShaker` (on the GameManager object with a `CinemachineImpulseSource`) converts gameplay events into Cinemachine impulses, and the arena camera carries a `CinemachineImpulseListener`. Impulse: 0.35 s Bump, uniform, default velocity (0, 0.25, 0).
+- Forces come from the pure `ShakeStrength` mapping: captures scale from a 0.12 tap up to a 0.5 punch at the 15% large-capture threshold (clamped above it), explosions scale with blast radius against a 0.75 reference and are clamped to half/double, and player death is a flat 0.45. `SetShakeEnabled(false)` suppresses everything for the future camera-shake setting; `LastForce` exposes what was requested.
+- Arena Tilt keeps using the Cinemachine Dutch roll from step 1; the optional visual-only board pivot was deliberately skipped because tilting the board view alone would desynchronise it from the hovering actors, which stay on the XY plane.
+- Tests: 3 new EditMode tests — capture force curve (zero, growth, clamp at the large-capture force), explosion force scaling with clamps, and the shaker recording capture/death forces while honouring the shake setting. Full suite: 245 passed, 0 failed.
+- Real `Game.unity` Play Mode: a real capture requested force 0.443, and with an impulse active the Main Camera was displaced 0.24 from the rig pose (mostly along the camera's up axis), confirming source → listener → brain wiring. The long test durations used for sampling were runtime-only; the saved scene keeps 0.35 s Bump. Unity Console: 0 errors/warnings.
+- Next: step 6 (full regression, portrait framing check, and Android draw-call/allocation profiling).
 
 ## 2.5D Presentation Decisions
 
