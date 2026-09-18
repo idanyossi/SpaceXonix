@@ -16,4 +16,4 @@ MonoBehaviour:
   warningDuration: 0.75
   firingDuration: 0.35
   cooldownDuration: 2
-  beamWidth: 0.12
+  beamWidth: 0.2

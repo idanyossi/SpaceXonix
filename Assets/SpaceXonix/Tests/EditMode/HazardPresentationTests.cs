@@ -35,19 +35,20 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
-        public void LaserEmitter_PutsTheWarningOnTheFloorAndTheBeamAtHoverHeight()
+        public void LaserEmitter_ShowsTheWarningExactlyWhereTheBeamWillFire()
         {
             using (var fixture = new Fixture())
             {
                 fixture.Emitter.Tick(fixture.Definition.cooldownDuration + .01f);
                 var warning = fixture.ActivePresentation("activeWarning");
                 Assert.That(warning, Is.Not.Null, "warning is showing");
-                Assert.That(warning.transform.position.z, Is.EqualTo(-.02f).Within(.0001f), "warning line stays on the pit floor");
+                Assert.That(warning.transform.position.z, Is.EqualTo(-.55f).Within(.0001f), "the warning marks the beam's own height");
 
                 fixture.Emitter.Tick(fixture.Definition.warningDuration + .01f);
                 var beam = fixture.ActivePresentation("activeBeam");
                 Assert.That(beam, Is.Not.Null, "beam is firing");
                 Assert.That(beam.transform.position.z, Is.EqualTo(-.55f).Within(.0001f), "beam fires at hover height");
+                Assert.That(beam.transform.position, Is.EqualTo(warning.transform.position), "beam and warning share a position");
             }
         }
 

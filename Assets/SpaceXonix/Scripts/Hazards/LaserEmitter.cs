@@ -9,9 +9,9 @@ namespace SpaceXonix.Hazards
     public sealed class LaserEmitter : MonoBehaviour
     {
         [SerializeField] private LaserDefinition definition;
-        [Tooltip("Height of the firing beam above the board floor; the warning line stays on the floor.")]
+        [Tooltip("Height of the firing beam above the board floor. The warning previews the beam, so it uses the same height.")]
         [SerializeField, Min(0f)] private float beamHeight = .55f;
-        [SerializeField, Min(0f)] private float warningLift = .02f;
+        [SerializeField, Min(0f)] private float warningHeight = .55f;
         private BoardManager board;
         private GameManager game;
         private PoolService pool;
@@ -81,7 +81,7 @@ namespace SpaceXonix.Hazards
         {
             if (state == LaserState.Warning)
             {
-                ReleaseBeam(); activeWarning = Acquire(warningPrefab); Configure(activeWarning, warningLift); WarningStarted?.Invoke();
+                ReleaseBeam(); activeWarning = Acquire(warningPrefab); Configure(activeWarning, warningHeight); WarningStarted?.Invoke();
             }
             else if (state == LaserState.Firing)
             {
