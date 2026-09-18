@@ -128,6 +128,14 @@ namespace SpaceXonix.Board
             return transform.TransformPoint(local);
         }
 
+        /// <summary>Presentation helper: the current visual height of the surface under a world position (slab top or floor).</summary>
+        public float GetVisualSurfaceHeight(Vector3 worldPosition)
+        {
+            if (boardRenderer == null || Model == null) return 0f;
+            var cell = WorldToGrid(ClampToBoard(worldPosition));
+            return Model.IsInBounds(cell) ? boardRenderer.GetVisualHeight(cell) : 0f;
+        }
+
         public Vector3 GetDefaultSpawnPosition() => GetWorldPosition(new GridCoordinate(0, 1));
 
         public void CancelActiveTrail()

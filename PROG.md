@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 12 (2.5D Presentation Foundation) in progress — steps 1 (camera) and 2 (3D board) complete
-- Latest completed feature: raised 3D territory board with chunked meshes, recessed space floor, lifted trail, and rise/sink animation
+- Current phase: Phase 12 (2.5D Presentation Foundation) in progress — steps 1-3 (camera, 3D board, hovering actors) complete
+- Latest completed feature: hovering actor visuals with surface-following shadow blobs
 
 ## Phase Progress
 
@@ -55,8 +55,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 231
-- Passed: 231
+- EditMode discovered: 236
+- Passed: 236
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -374,7 +374,16 @@
 - Tests: 6 new EditMode tests — a single raised cell produces one top and four outward walls with correct winding and −Z height; adjacent cells share no inner wall and partial walls start at the lower neighbour's height; a flat board emits no territory geometry; the renderer snaps the initial perimeter, keeps the capture committed in the model while the view rises and completes the rise; destroyed territory sinks and a stage reset snaps flat; the trail mesh follows the active trail and clears on cancellation. Full suite: 231 passed, 0 failed.
 - Real `Game.unity` Play Mode: captures raised territory with visible pit walls, an active 20-cell trail rendered on the pit floor, and animations completed; 1080 × 1920 renders confirmed the look (untracked `Temp/Screenshots/board3d_*.png`). Unity Console: 0 errors/warnings.
 - Known and expected until step 3: ship, aliens, and pickups are still centred on the board plane, so they appear partly sunk into the floor and can be hidden behind nearby raised territory.
-- Next: step 3 (hovering billboard actors with floor shadows).
+
+### Step 3 — Hovering actors with shadows (complete)
+
+- `ActorVisual` splits every actor into a logical root that never leaves the board plane and child visuals: the mesh hovers 0.55 toward the camera (pickups 0.45) and a shadow blob sits on whatever surface is under the actor — the pit floor or the top of raised territory, following the rise/sink animation via the new `BoardManager.GetVisualSurfaceHeight`.
+- Player, all four enemy prefabs, the pickup, and the Power Shot were restructured: root keeps unit scale and logic only (no MeshRenderer), a `Visual` child carries the old mesh/material/scale, and a `Shadow` child uses a flattened sphere with the translucent `ShadowBlob` material. Pickups spin their visual instead of the root; the Power Shot shapes its visual child so its logical root stays unscaled.
+- Billboarding: visuals rotate to the camera each frame (ready for the pixel-art sprites), except pickups, which keep spinning. The board is found once per actor and can be injected with `ConnectBoard`.
+- Fixes found while verifying in Play Mode: the built-in quad lookup returned no mesh (shadows were invisible), Unity's quad already faces the camera so an added 180° flip was removed, pure black blobs were invisible on the near-black pit floor (now a dark blue-grey), and square blobs were replaced by flattened spheres so shadows read as discs.
+- Tests: 5 new EditMode tests — the visual hovers toward -Z while the logical root stays put; billboarding follows the camera and non-billboarded visuals keep their rotation; the shadow rests on the pit floor and climbs onto raised territory; the shadow follows the rising capture animation; all configured prefabs have hovering visuals, shadows, logic-only roots, and unit scale. Full suite: 236 passed, 0 failed.
+- Real `Game.unity` Play Mode: aliens, ship, and pickup hover fully above the board with round shadows beneath them on both the floor and captured territory; 1080 × 1920 renders confirmed (untracked `Temp/Screenshots/actors_hover*.png`). Unity Console: 0 errors/warnings.
+- Next: step 4 (lasers, explosions, power shot, and shield placed in the 3D space).
 
 ## 2.5D Presentation Decisions
 

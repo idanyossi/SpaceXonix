@@ -20,7 +20,6 @@ namespace SpaceXonix.PowerUps
             Expires = lifetime > 0f;
             LifetimeRemaining = lifetime;
             transform.position = worldPosition;
-            transform.rotation = Quaternion.Euler(0f, 0f, 45f);
             if (pickupRenderer == null) pickupRenderer = GetComponentInChildren<Renderer>();
             if (pickupRenderer != null && definition.pickupMaterial != null) pickupRenderer.sharedMaterial = definition.pickupMaterial;
         }
@@ -28,7 +27,9 @@ namespace SpaceXonix.PowerUps
         /// <summary>Returns false once the pickup's lifetime has run out.</summary>
         public bool Tick(float deltaTime)
         {
-            transform.Rotate(0f, 0f, spinDegreesPerSecond * deltaTime);
+            // Spin the visual only; the logical root stays axis-aligned on the board plane.
+            var spinTarget = pickupRenderer != null ? pickupRenderer.transform : transform;
+            spinTarget.Rotate(0f, 0f, spinDegreesPerSecond * deltaTime, Space.Self);
             if (!Expires) return true;
             LifetimeRemaining -= deltaTime;
             return LifetimeRemaining > 0f;

@@ -36,7 +36,7 @@ namespace SpaceXonix.Board
         public int ChunkCount => chunkMeshes?.Length ?? 0;
         public bool IsAnimating { get; private set; }
 
-        public float GetVisualHeight(GridCoordinate cell) => heights[cell.X + cell.Y * width];
+        public float GetVisualHeight(GridCoordinate cell) => heights == null ? 0f : heights[cell.X + cell.Y * width];
 
         public void Initialize(BoardManager boardManager)
         {

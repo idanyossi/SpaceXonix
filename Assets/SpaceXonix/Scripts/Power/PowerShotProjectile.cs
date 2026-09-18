@@ -28,8 +28,10 @@ namespace SpaceXonix.Power
             IsFlying = true;
             transform.position = origin;
             var horizontal = direction == CardinalDirection.Left || direction == CardinalDirection.Right;
-            transform.rotation = Quaternion.identity;
-            transform.localScale = horizontal ? new Vector3(length, thickness, thickness) : new Vector3(thickness, length, thickness);
+            // Shape the visual child when present so the logical root keeps unit scale.
+            var shaped = transform.childCount > 0 ? transform.GetChild(0) : transform;
+            shaped.rotation = Quaternion.identity;
+            shaped.localScale = horizontal ? new Vector3(length, thickness, thickness) : new Vector3(thickness, length, thickness);
         }
 
         public void Stop() => IsFlying = false;
