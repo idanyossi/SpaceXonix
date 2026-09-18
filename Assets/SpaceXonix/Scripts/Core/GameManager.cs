@@ -160,8 +160,11 @@ namespace SpaceXonix.Core
             return true;
         }
 
-        /// <summary>Resets lives, lifecycle, board, and player for a new stage and holds gameplay in Briefing.</summary>
-        public void BeginStage(int bonusLives = 0)
+        /// <summary>
+        /// Resets lifecycle, board, and player for a new stage and holds gameplay in Briefing.
+        /// Lives carry across stages: pass the run's current lives, or a value below 1 to start from the configured total.
+        /// </summary>
+        public void BeginStage(int lives = 0)
         {
             if (respawnCoroutine != null)
             {
@@ -170,7 +173,7 @@ namespace SpaceXonix.Core
             }
             SetPaused(false);
             SetShieldActive(false);
-            lifeState = new LifeStateModel(startingLives + Mathf.Max(0, bonusLives));
+            lifeState = new LifeStateModel(lives > 0 ? lives : startingLives);
             lifeState.SetState(GameplayState.Briefing);
             failureInProgress = false;
             playerDamageable = false;
@@ -185,6 +188,15 @@ namespace SpaceXonix.Core
             LivesChanged?.Invoke(Lives);
             TracePlayerLifecycle("StageBriefingStarted", force: true);
             StageBriefingStarted?.Invoke();
+        }
+
+        /// <summary>Adds lives to the run immediately (Reinforced Hull).</summary>
+        public bool AddLives(int amount)
+        {
+            if (lifeState == null || !lifeState.AddLives(amount)) return false;
+            LivesChanged?.Invoke(Lives);
+            TracePlayerLifecycle($"LivesGranted:{amount}", force: true);
+            return true;
         }
 
         public bool StartStagePlay()

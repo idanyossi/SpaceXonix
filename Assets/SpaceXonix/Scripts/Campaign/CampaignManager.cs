@@ -35,6 +35,7 @@ namespace SpaceXonix.Campaign
         [SerializeField] private UpgradeManager upgradeManager;
 
         private CampaignRunModel run;
+        private bool runStarted;
 
         public CampaignRunModel Run => run;
         public StageDefinition CurrentStage => run != null ? campaign.normalStages[run.CurrentStageIndex] : null;
@@ -90,7 +91,9 @@ namespace SpaceXonix.Campaign
             if (powerUpManager != null) powerUpManager.PrepareForStage();
             if (powerMeter != null) powerMeter.PrepareForStage();
             if (enemyManager != null) enemyManager.DespawnAll();
-            gameManager.BeginStage(upgradeManager != null ? upgradeManager.Run.BonusLives : 0);
+            // Lives carry across stages; only the first stage of a run starts from the configured total.
+            gameManager.BeginStage(runStarted ? Mathf.Max(1, gameManager.Lives) : 0);
+            runStarted = true;
             if (laserManager != null) laserManager.ConfigureStage(stage.lasers);
             if (enemyManager != null) enemyManager.SpawnAll(stage.enemySpawns);
             if (upgradeManager != null) upgradeManager.ApplyToSystems();
@@ -131,6 +134,7 @@ namespace SpaceXonix.Campaign
         {
             if (run == null) return;
             run.Reset();
+            runStarted = false;
             if (upgradeManager != null) upgradeManager.ResetRun();
             if (scoreManager != null) scoreManager.ResetScore();
             if (powerMeter != null) powerMeter.ResetMeter();

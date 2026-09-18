@@ -125,7 +125,7 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Campaign.Run.CurrentStageNumber, Is.EqualTo(2));
                 Assert.That(fixture.Campaign.CurrentStage, Is.SameAs(fixture.Stages[1]));
                 Assert.That(fixture.Campaign.Phase, Is.EqualTo(CampaignPhase.Briefing));
-                Assert.That(fixture.Game.Lives, Is.EqualTo(3));
+                Assert.That(fixture.Game.Lives, Is.EqualTo(2), "lives carry across stages");
                 Assert.That(fixture.Board.CapturedPercentage, Is.Zero);
                 Assert.That(fixture.Board.Model.ActiveTrail, Is.Empty);
                 Assert.That(fixture.Board.PlayerCell, Is.EqualTo(new GridCoordinate(0, 1)));

@@ -126,6 +126,7 @@ namespace SpaceXonix.Tests.EditMode
 
                 fixture.TakeByType(UpgradeType.ReinforcedHull);
                 Assert.That(fixture.Manager.Run.BonusLives, Is.EqualTo(1));
+                Assert.That(fixture.Game.Lives, Is.EqualTo(4), "the extra life lands immediately, on top of the carried lives");
                 Assert.That(fixture.Manager.Describe(), Does.Contain("Improved Thrusters").And.Contain("Reinforced Hull"));
 
                 fixture.Manager.ResetRun();
@@ -150,6 +151,7 @@ namespace SpaceXonix.Tests.EditMode
             private readonly GameObject root = new GameObject("UpgradeFixture");
             private readonly List<UnityEngine.Object> owned = new List<UnityEngine.Object>();
             public readonly PlayerController Player;
+            public readonly SpaceXonix.Core.GameManager Game;
             public readonly PowerUpManager PowerUps;
             public readonly UpgradeManager Manager;
             public readonly PowerUpDefinition ShieldDefinition;
@@ -161,6 +163,13 @@ namespace SpaceXonix.Tests.EditMode
                 Player = playerObject.AddComponent<PlayerController>();
                 Set(Player, "moveSpeed", 5f);
                 Invoke(Player, "Awake");
+                var input = root.AddComponent<SpaceXonix.Input.InputRouter>();
+                var boardObject = Own(new GameObject("Board"));
+                var board = boardObject.AddComponent<SpaceXonix.Board.BoardManager>();
+                board.Initialize();
+                Game = root.AddComponent<SpaceXonix.Core.GameManager>();
+                Set(Game, "inputRouter", input); Set(Game, "playerController", Player); Set(Game, "boardManager", board);
+                Invoke(Game, "Awake");
                 PowerUps = root.AddComponent<PowerUpManager>();
                 var meter = root.AddComponent<PowerMeter>();
                 var powerDefinition = Own(ScriptableObject.CreateInstance<PowerDefinition>());
@@ -189,10 +198,12 @@ namespace SpaceXonix.Tests.EditMode
 
                 Manager = root.AddComponent<UpgradeManager>();
                 Set(Manager, "upgradeSet", set);
+                Set(Manager, "gameManager", Game);
                 Set(Manager, "playerController", Player);
                 Set(Manager, "powerMeter", meter);
                 Set(Manager, "powerUpManager", PowerUps);
                 root.SetActive(true);
+                Invoke(Game, "Start");
                 Invoke(Manager, "Awake");
             }
 

@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Campaign.UpgradeDefinition
   type: 0
   displayName: Reinforced Hull
-  effectText: +1 life at the start of each following stage
+  effectText: +1 life right now
   maxStacks: 3
   perStack: 1

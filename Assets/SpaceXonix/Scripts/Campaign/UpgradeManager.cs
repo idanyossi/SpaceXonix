@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SpaceXonix.Core;
 using SpaceXonix.Player;
 using SpaceXonix.Power;
 using SpaceXonix.PowerUps;
@@ -14,6 +15,7 @@ namespace SpaceXonix.Campaign
     public sealed class UpgradeManager : MonoBehaviour
     {
         [SerializeField] private UpgradeSetDefinition upgradeSet;
+        [SerializeField] private GameManager gameManager;
         [SerializeField] private PlayerController playerController;
         [SerializeField] private PowerMeter powerMeter;
         [SerializeField] private PowerUpManager powerUpManager;
@@ -49,6 +51,9 @@ namespace SpaceXonix.Campaign
             var definition = offer[index];
             if (!run.Take(definition)) return false;
             offer.Clear();
+            // Reinforced Hull is felt immediately rather than at the next stage, because lives carry across stages.
+            if (definition.type == UpgradeType.ReinforcedHull && gameManager != null)
+                gameManager.AddLives(Mathf.RoundToInt(definition.perStack));
             ApplyToSystems();
             UpgradeTaken?.Invoke(definition);
             return true;

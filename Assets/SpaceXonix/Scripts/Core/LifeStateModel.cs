@@ -22,6 +22,14 @@ namespace SpaceXonix.Core
             return true;
         }
 
+        /// <summary>Grants extra lives mid-run (Reinforced Hull). Ignored once the run is over.</summary>
+        public bool AddLives(int amount)
+        {
+            if (amount <= 0 || State == GameplayState.GameOver) return false;
+            Lives += amount;
+            return true;
+        }
+
         public bool TryCompleteStage()
         {
             if (State != GameplayState.Playing) return false;
