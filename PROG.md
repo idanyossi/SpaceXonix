@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 12 (2.5D Presentation Foundation) in progress — steps 1-5 complete; step 6 (verification and Android profiling) remains
-- Latest completed feature: Cinemachine impulse camera shake for captures, explosions, and deaths
+- Current phase: Phase 12 complete; Phase 13 (Roguelite Upgrades) not started
+- Latest completed feature: 2.5D presentation foundation (perspective camera, raised 3D board, hovering actors, 3D hazards, camera feel) verified and profiled
 
 ## Phase Progress
 
@@ -23,7 +23,7 @@
 9. **COMPLETE** — Power Meter + Power Shot
 10. **COMPLETE** — Shield + Freeze + Arena Tilt
 11. **COMPLETE** — Campaign Stages + Progression
-12. **IN PROGRESS** — 2.5D Presentation Foundation (perspective Cinemachine camera, raised territory, hovering pixel-art billboards)
+12. **COMPLETE** — 2.5D Presentation Foundation (perspective Cinemachine camera, raised territory, hovering pixel-art billboards)
 13. **NOT STARTED** — Roguelite Upgrades
 14. **NOT STARTED** — Stage Modifiers
 15. **NOT STARTED** — Alien Core Boss
@@ -55,8 +55,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 248
-- Passed: 248
+- EditMode discovered: 249
+- Passed: 249
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -401,7 +401,18 @@
 - Tests: 4 new EditMode tests — routine captures produce zero force while large captures ramp and clamp, the death kick varies in direction and magnitude within its range and stays in the arena plane, explosion scaling with clamps, and the shaker staying silent on a routine capture, varying between two real deaths, and honouring the shake setting. Full suite: 246 passed, 0 failed.
 - Real `Game.unity` Play Mode: with an impulse active the Main Camera was displaced 0.24 from the rig pose, confirming source → listener → brain wiring. After tuning: 4.3% and 1.1% captures requested force 0.000, a 31.9% capture requested the full 0.250, and a death produced a random-direction kick of magnitude 0.795. The long test durations used for sampling were runtime-only; the saved scene keeps 0.35 s Bump. Unity Console: 0 errors/warnings.
 - Death readability fix (playtest feedback: "everything stops for a sec and it looks like it's lagging" before the shake). Measured: the failure call itself takes 0.33 ms and the Console is clean, so the pause was not a stall — it was the 1.25 s `respawnDelay` during which the ship sat motionless at the death position with input disabled and no death feedback. Fixes: `PlayerDeathPresenter` spawns a burst ring at the ship and hides the ship's visual and shadow on the accepted failure, restoring them on `PlayerRespawned`/`StageBriefingStarted`; `respawnDelay` 1.25 s → 0.7 s. 2 new EditMode tests cover the burst/hide/restore cycle and guard the configured delay (0.2 s–0.8 s). Real `Game.unity`: death hid the ship, spawned one burst, shook 0.91, and the ship returned at a safe cell with the burst expired.
-- Next: step 6 (full regression, portrait framing check, and Android draw-call/allocation profiling).
+
+### Step 6 — Verification and profiling (complete)
+
+- Full regression: 249 EditMode tests pass, 0 failed. Unity Console: 0 errors/warnings.
+- Play Mode sweep under the new presentation: a complete stage 1 run reached 84% and Stage Complete, with captures, trail, rise/sink animation, hovering actors and shadows, lasers, Volatile blast rings, pickups, shield ring, death burst and respawn all behaving.
+- Costs measured in the editor (54 × 96 board):
+  - Steady gameplay simulation (player + enemies + lasers + board view + occupancy refresh) ≈ **0.051 ms/frame with 0 bytes allocated per frame** — no per-frame GC churn.
+  - Board rise animation during a 26.6% capture ≈ **0.34–0.38 ms/frame** for ~19 frames, then idle.
+  - A 20-capture stage run allocated ~176 KB total (transient mesh buffers), not per frame.
+- Draw-call reduction: empty chunks (all-uncaptured regions) now disable their renderer, and the chunk size was raised from 9 to 18 cells (66 → 18 chunks). Stage start went **178 → 154 → 90 draw calls**; a fully captured board draws ~86 with ~15.8 k triangles and 30 set-pass calls. Rebuild cost per animated frame stayed the same; transient allocation during the animation rose (16 KB → 108 KB per capture burst) because chunk meshes are larger, which is an acceptable trade for halving draw calls. 1 new EditMode test guards that empty chunks are not drawn and captured chunks start drawing.
+- Portrait framing verified by 1080 × 1920 renders throughout the phase; the rig re-frames automatically for the editor's landscape Game view and for phone aspects.
+- Deferred to the final QA phase: profiling on a real Android device (frame time, thermal, GPU) and a device build. Editor numbers above are the baseline to compare against.
 
 ## 2.5D Presentation Decisions
 

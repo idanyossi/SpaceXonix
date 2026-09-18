@@ -30,6 +30,7 @@ namespace SpaceXonix.Board
         private bool[] chunkDirty;
         private bool[] chunkAnimating;
         private Mesh[] chunkMeshes;
+        private MeshRenderer[] chunkRenderers;
         private Mesh trailMesh;
 
         public float TerritoryHeight => territoryHeight;
@@ -138,6 +139,18 @@ namespace SpaceXonix.Board
                 BoardMeshBuilder.BuildRaisedCells(heights, width, height, cellSize, xMin, yMin,
                     Mathf.Min(width, xMin + chunkSize), Mathf.Min(height, yMin + chunkSize), buffers);
                 BoardMeshBuilder.Apply(chunkMeshes[chunk], buffers);
+                // An empty chunk (all-uncaptured region) costs nothing to draw.
+                if (chunkRenderers[chunk] != null) chunkRenderers[chunk].enabled = buffers.Vertices.Count > 0;
+            }
+        }
+
+        public int VisibleChunkCount
+        {
+            get
+            {
+                var count = 0;
+                if (chunkRenderers != null) foreach (var renderer in chunkRenderers) if (renderer != null && renderer.enabled) count++;
+                return count;
             }
         }
 
@@ -175,6 +188,7 @@ namespace SpaceXonix.Board
         private void BuildChunkObjects()
         {
             chunkMeshes = new Mesh[chunksX * chunksY];
+            chunkRenderers = new MeshRenderer[chunkMeshes.Length];
             var top = territoryTopMaterial != null ? territoryTopMaterial : RuntimeMaterial(new Color(.08f, .55f, .78f));
             var wall = territoryWallMaterial != null ? territoryWallMaterial : RuntimeMaterial(new Color(.03f, .28f, .42f));
             for (var i = 0; i < chunkMeshes.Length; i++)
@@ -183,7 +197,11 @@ namespace SpaceXonix.Board
                 chunk.transform.SetParent(transform, false);
                 chunkMeshes[i] = new Mesh { name = chunk.name, hideFlags = HideFlags.DontSave };
                 chunk.AddComponent<MeshFilter>().sharedMesh = chunkMeshes[i];
-                chunk.AddComponent<MeshRenderer>().sharedMaterials = new[] { top, wall };
+                var chunkRenderer = chunk.AddComponent<MeshRenderer>();
+                chunkRenderer.sharedMaterials = new[] { top, wall };
+                chunkRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                chunkRenderer.receiveShadows = false;
+                chunkRenderers[i] = chunkRenderer;
             }
             var trailObject = new GameObject("Trail") { hideFlags = HideFlags.DontSave };
             trailObject.transform.SetParent(transform, false);

@@ -218,7 +218,7 @@ MonoBehaviour:
   territoryHeight: 0.35
   trailLift: 0.02
   riseSeconds: 0.3
-  chunkSize: 9
+  chunkSize: 18
 --- !u!33 &126476022
 MeshFilter:
   m_ObjectHideFlags: 0

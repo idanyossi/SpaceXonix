@@ -93,6 +93,22 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void Renderer_SkipsDrawingChunksWithNoTerritory()
+        {
+            using (var fixture = new Fixture())
+            {
+                var perimeterOnly = fixture.Renderer.VisibleChunkCount;
+                Assert.That(perimeterOnly, Is.LessThan(fixture.Renderer.ChunkCount), "interior chunks start empty and are not drawn");
+
+                for (var x = 1; x < 53; x++) fixture.Board.Model.MoveTo(new GridCoordinate(x, 40));
+                fixture.Board.Model.MoveTo(new GridCoordinate(53, 40));
+                fixture.Renderer.Tick(1f);
+                Assert.That(fixture.Renderer.VisibleChunkCount, Is.GreaterThan(perimeterOnly), "captured chunks start drawing");
+                Assert.That(fixture.Renderer.VisibleChunkCount, Is.LessThanOrEqualTo(fixture.Renderer.ChunkCount));
+            }
+        }
+
+        [Test]
         public void Renderer_TrailMeshFollowsActiveTrail()
         {
             using (var fixture = new Fixture())
