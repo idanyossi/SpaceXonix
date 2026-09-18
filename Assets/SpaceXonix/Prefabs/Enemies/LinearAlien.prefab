@@ -85,7 +85,7 @@ MonoBehaviour:
   shadow: {fileID: 8897340656287634535}
   boardManager: {fileID: 0}
   hoverHeight: 0.55
-  faceCamera: 1
+  faceCamera: 0
   shadowLift: 0.01
   shadowScale: 0.8
 --- !u!1 &3075689338915623996
