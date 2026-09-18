@@ -211,9 +211,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7be2d6573aaf5fc4fac00ee15e694503, type: 3}
   m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Board.BoardRenderer
-  uncapturedColor: {r: 0.025, g: 0.04, b: 0.1, a: 1}
-  capturedColor: {r: 0.08, g: 0.55, b: 0.78, a: 1}
-  trailColor: {r: 1, g: 0.67, b: 0.12, a: 1}
+  floorMaterial: {fileID: 2100000, guid: f8bb03a5dce2bab4399f2466630acdb7, type: 2}
+  territoryTopMaterial: {fileID: 2100000, guid: 3d03e67534b6ec94a9c578e473e758a7, type: 2}
+  territoryWallMaterial: {fileID: 2100000, guid: 7ed710cfaf0c75a4ca26ab2253b431cd, type: 2}
+  trailMaterial: {fileID: 2100000, guid: b4740bee8a261fb42be68c6e4fe4c1ce, type: 2}
+  territoryHeight: 0.35
+  trailLift: 0.02
+  riseSeconds: 0.3
+  chunkSize: 9
 --- !u!33 &126476022
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -431,7 +436,7 @@ MonoBehaviour:
     m_Value: 0
   OutputChannel: 1
   StandbyUpdate: 2
-  m_StreamingVersion: 0
+  m_StreamingVersion: 20241001
   m_LegacyPriority: 0
   Target:
     TrackingTarget: {fileID: 0}
@@ -531,10 +536,10 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.1
-  far clip plane: 200
+  far clip plane: 105.88446
   field of view: 30
   orthographic: 0
-  orthographic size: 9.6
+  orthographic size: 10
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -558,8 +563,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 585435783}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.86, y: 8.64, z: -10}
+  m_LocalRotation: {x: -0.3007058, y: 0, z: 0, w: 0.95371693}
+  m_LocalPosition: {x: 4.86, y: -11.808102, z: -28.769102}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

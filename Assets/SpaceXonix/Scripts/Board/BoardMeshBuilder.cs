@@ -1,0 +1,94 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace SpaceXonix.Board
+{
+    /// <summary>
+    /// Builds board presentation geometry in board-local space. The board lies on XY; height rises toward -Z (the camera).
+    /// Submesh 0 holds slab tops, submesh 1 holds side walls.
+    /// </summary>
+    public static class BoardMeshBuilder
+    {
+        public sealed class Buffers
+        {
+            public readonly List<Vector3> Vertices = new List<Vector3>();
+            public readonly List<Vector3> Normals = new List<Vector3>();
+            public readonly List<int> Tops = new List<int>();
+            public readonly List<int> Walls = new List<int>();
+
+            public void Clear()
+            {
+                Vertices.Clear(); Normals.Clear(); Tops.Clear(); Walls.Clear();
+            }
+        }
+
+        /// <summary>Adds raised-cell geometry for cells in [xMin, xMax) × [yMin, yMax). Walls appear only where a neighbour is lower.</summary>
+        public static void BuildRaisedCells(float[] heights, int width, int height, float cellSize, int xMin, int yMin, int xMax, int yMax, Buffers buffers)
+        {
+            buffers.Clear();
+            for (var y = yMin; y < yMax; y++) for (var x = xMin; x < xMax; x++)
+            {
+                var h = heights[x + y * width];
+                if (h <= 0f) continue;
+                float x0 = x * cellSize, x1 = (x + 1) * cellSize, y0 = y * cellSize, y1 = (y + 1) * cellSize;
+                var top = -h;
+                AddQuad(buffers, buffers.Tops, new Vector3(x0, y0, top), new Vector3(x1, y0, top), new Vector3(x0, y1, top), new Vector3(x1, y1, top), Vector3.back);
+
+                var left = HeightAt(heights, width, height, x - 1, y);
+                if (left < h) AddQuad(buffers, buffers.Walls, new Vector3(x0, y1, -left), new Vector3(x0, y0, -left), new Vector3(x0, y1, top), new Vector3(x0, y0, top), Vector3.left);
+                var right = HeightAt(heights, width, height, x + 1, y);
+                if (right < h) AddQuad(buffers, buffers.Walls, new Vector3(x1, y0, -right), new Vector3(x1, y1, -right), new Vector3(x1, y0, top), new Vector3(x1, y1, top), Vector3.right);
+                var down = HeightAt(heights, width, height, x, y - 1);
+                if (down < h) AddQuad(buffers, buffers.Walls, new Vector3(x0, y0, -down), new Vector3(x1, y0, -down), new Vector3(x0, y0, top), new Vector3(x1, y0, top), Vector3.down);
+                var up = HeightAt(heights, width, height, x, y + 1);
+                if (up < h) AddQuad(buffers, buffers.Walls, new Vector3(x1, y1, -up), new Vector3(x0, y1, -up), new Vector3(x1, y1, top), new Vector3(x0, y1, top), Vector3.up);
+            }
+        }
+
+        /// <summary>Adds flat quads for the given cells at a fixed lift above the floor.</summary>
+        public static void BuildFlatCells(IReadOnlyList<int> cellIndices, int width, float cellSize, float lift, Buffers buffers)
+        {
+            buffers.Clear();
+            for (var i = 0; i < cellIndices.Count; i++)
+            {
+                var index = cellIndices[i];
+                int x = index % width, y = index / width;
+                float x0 = x * cellSize, x1 = (x + 1) * cellSize, y0 = y * cellSize, y1 = (y + 1) * cellSize;
+                AddQuad(buffers, buffers.Tops, new Vector3(x0, y0, -lift), new Vector3(x1, y0, -lift), new Vector3(x0, y1, -lift), new Vector3(x1, y1, -lift), Vector3.back);
+            }
+        }
+
+        public static void Apply(Mesh mesh, Buffers buffers)
+        {
+            mesh.Clear();
+            mesh.subMeshCount = 2;
+            mesh.SetVertices(buffers.Vertices);
+            mesh.SetNormals(buffers.Normals);
+            mesh.SetTriangles(buffers.Tops, 0, false);
+            mesh.SetTriangles(buffers.Walls, 1, false);
+            mesh.RecalculateBounds();
+        }
+
+        private static float HeightAt(float[] heights, int width, int height, int x, int y) =>
+            x < 0 || y < 0 || x >= width || y >= height ? 0f : heights[x + y * width];
+
+        /// <summary>Corners are given as seen from outside the face: bottom-left, bottom-right, top-left, top-right.</summary>
+        private static void AddQuad(Buffers buffers, List<int> indices, Vector3 bl, Vector3 br, Vector3 tl, Vector3 tr, Vector3 outward)
+        {
+            var start = buffers.Vertices.Count;
+            buffers.Vertices.Add(bl); buffers.Vertices.Add(br); buffers.Vertices.Add(tl); buffers.Vertices.Add(tr);
+            for (var i = 0; i < 4; i++) buffers.Normals.Add(outward);
+            // Unity front faces satisfy cross(b - a, c - a) pointing toward the viewer (outward).
+            if (Vector3.Dot(Vector3.Cross(tl - bl, br - bl), outward) > 0f)
+            {
+                indices.Add(start); indices.Add(start + 2); indices.Add(start + 1);
+                indices.Add(start + 2); indices.Add(start + 3); indices.Add(start + 1);
+            }
+            else
+            {
+                indices.Add(start); indices.Add(start + 1); indices.Add(start + 2);
+                indices.Add(start + 2); indices.Add(start + 1); indices.Add(start + 3);
+            }
+        }
+    }
+}

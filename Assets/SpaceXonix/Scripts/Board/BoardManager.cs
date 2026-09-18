@@ -55,7 +55,7 @@ namespace SpaceXonix.Board
             hasPlayerCell = false;
             hasLastSafeCell = false;
             enemySnapshot.Clear();
-            boardRenderer?.Refresh(Model);
+            if (boardRenderer != null) boardRenderer.Rebuild(Model);
             CapturedPercentageChanged?.Invoke(Model.CapturedPercentage);
         }
 

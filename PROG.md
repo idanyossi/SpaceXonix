@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 12 (2.5D Presentation Foundation) in progress — step 1 (camera) complete
-- Latest completed feature: Cinemachine perspective diagonal-down arena camera (35° tilt, FOV 30) with Dutch-based Arena Tilt roll
+- Current phase: Phase 12 (2.5D Presentation Foundation) in progress — steps 1 (camera) and 2 (3D board) complete
+- Latest completed feature: raised 3D territory board with chunked meshes, recessed space floor, lifted trail, and rise/sink animation
 
 ## Phase Progress
 
@@ -55,8 +55,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 225
-- Passed: 225
+- EditMode discovered: 231
+- Passed: 231
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -363,7 +363,18 @@
 - Arena Tilt roll now goes through `ArenaCameraRig.SetRoll` → Cinemachine `Lens.Dutch` (smoothly blended) instead of rotating the Main Camera transform, which the brain would overwrite. Positive roll still lowers the right side, preserving the earlier direction fix.
 - Tests: 6 new EditMode tests — framing fits within margins and is maximal for portrait, landscape, and tall-phone aspects; 35° diagonal-down orientation looking toward the far rows with 0.7–0.9 far/near row width; custom projection matches Unity's `Camera.WorldToViewportPoint`; rig roll sign and reset. Power-up tilt tests now drive the rig. Full suite: 225 passed, 0 failed.
 - Real `Game.unity` Play Mode: the brain drove the Main Camera to the rig pose (perspective, FOV 30, 35° pitch, framing fits); activating Arena Tilt with drift (+0.4, 0) produced a 6° Dutch roll on the Main Camera with the board's right edge lower on screen (viewport y 0.486 vs 0.540). Screenshot confirmed the tilted perspective view with the HUD intact. Unity Console: 0 errors/warnings.
-- Next: step 2 (chunked raised-territory board view).
+
+### Step 2 — Raised 3D territory board (complete)
+
+- `BoardRenderer` was rewritten from a flat state texture into a 2.5D board view: a recessed dark space floor at z = 0; captured territory (including the structural perimeter/arena rim) as a raised slab (`territoryHeight` 0.35, rising toward the camera along −Z) with side walls only where a neighbour is lower; and the active trail as an orange strip lifted 0.02 above the floor.
+- Territory geometry is split into 66 chunk meshes (9 × 9 cells) with separate top and wall submeshes (`TerritoryTop`, `TerritoryWall` URP Unlit materials in `Materials/Board`, plus `SpaceFloor` and `Trail`). `BoardMeshBuilder` is the pure geometry builder; it reuses list buffers and emits correctly outward-facing quads.
+- Changes are detected by diffing the model against cached target heights when `BoardManager` refreshes the view (trail changes, captures, trail cancellation, territory destruction), so `BoardModel` stays untouched. Only chunks with changed cells (and neighbours when a border cell changes) are rebuilt, and only while animating.
+- Animation: newly captured cells rise from the floor to full height over 0.3 s; cells removed by Volatile explosions sink back. The logical capture/removal is already committed before either animation starts. `BoardManager.ResetBoard` (new stage/retry) snaps the view without animating.
+- Height choice: 0.15 was compared against 0.35 in 1080 × 1920 renders; 0.15 walls read as thin lines at the 35° camera, while 0.35 clearly shows pit walls and the slab front edge, so 0.35 was selected.
+- Tests: 6 new EditMode tests — a single raised cell produces one top and four outward walls with correct winding and −Z height; adjacent cells share no inner wall and partial walls start at the lower neighbour's height; a flat board emits no territory geometry; the renderer snaps the initial perimeter, keeps the capture committed in the model while the view rises and completes the rise; destroyed territory sinks and a stage reset snaps flat; the trail mesh follows the active trail and clears on cancellation. Full suite: 231 passed, 0 failed.
+- Real `Game.unity` Play Mode: captures raised territory with visible pit walls, an active 20-cell trail rendered on the pit floor, and animations completed; 1080 × 1920 renders confirmed the look (untracked `Temp/Screenshots/board3d_*.png`). Unity Console: 0 errors/warnings.
+- Known and expected until step 3: ship, aliens, and pickups are still centred on the board plane, so they appear partly sunk into the floor and can be hidden behind nearby raised territory.
+- Next: step 3 (hovering billboard actors with floor shadows).
 
 ## 2.5D Presentation Decisions
 
