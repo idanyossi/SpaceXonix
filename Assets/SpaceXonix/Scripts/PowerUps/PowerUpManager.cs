@@ -40,6 +40,7 @@ namespace SpaceXonix.PowerUps
         private readonly List<GridCoordinate> occupancyBuffer = new List<GridCoordinate>();
         private System.Random random;
         private PowerUpPickup activePickup;
+        private SpaceXonix.Presentation.ActorVisual playerVisual;
         private float tiltBaseMoveSpeed;
 
         public PowerUpType? StoredPowerUp => slot.Stored;
@@ -85,7 +86,9 @@ namespace SpaceXonix.PowerUps
         {
             if (shieldVisual == null || !shieldVisual.activeSelf || playerController == null) return;
             var position = playerController.transform.position;
-            position.z -= .5f;
+            // Sit at the ship's hovering visual rather than on the board plane.
+            if (playerVisual == null) playerVisual = playerController.GetComponent<SpaceXonix.Presentation.ActorVisual>();
+            position.z -= playerVisual != null ? playerVisual.HoverHeight : .55f;
             shieldVisual.transform.position = position;
         }
 

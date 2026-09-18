@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 12 (2.5D Presentation Foundation) in progress — steps 1-3 (camera, 3D board, hovering actors) complete
-- Latest completed feature: hovering actor visuals with surface-following shadow blobs
+- Current phase: Phase 12 (2.5D Presentation Foundation) in progress — steps 1-4 (camera, 3D board, hovering actors, hazards in 3D) complete
+- Latest completed feature: hazards and effects placed in the 3D arena (floor warnings, hover-height beams, blast rings)
 
 ## Phase Progress
 
@@ -55,8 +55,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 236
-- Passed: 236
+- EditMode discovered: 240
+- Passed: 240
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -383,7 +383,15 @@
 - Fixes found while verifying in Play Mode: the built-in quad lookup returned no mesh (shadows were invisible), Unity's quad already faces the camera so an added 180° flip was removed, pure black blobs were invisible on the near-black pit floor (now a dark blue-grey), and square blobs were replaced by flattened spheres so shadows read as discs.
 - Tests: 5 new EditMode tests — the visual hovers toward -Z while the logical root stays put; billboarding follows the camera and non-billboarded visuals keep their rotation; the shadow rests on the pit floor and climbs onto raised territory; the shadow follows the rising capture animation; all configured prefabs have hovering visuals, shadows, logic-only roots, and unit scale. Full suite: 236 passed, 0 failed.
 - Real `Game.unity` Play Mode: aliens, ship, and pickup hover fully above the board with round shadows beneath them on both the floor and captured territory; 1080 × 1920 renders confirmed (untracked `Temp/Screenshots/actors_hover*.png`). Unity Console: 0 errors/warnings.
-- Next: step 4 (lasers, explosions, power shot, and shield placed in the 3D space).
+
+### Step 4 — Hazards and effects in 3D space (complete)
+
+- Lasers: `LaserPresentation.Configure` takes a height; `LaserEmitter` keeps the warning line on the pit floor (0.02 lift) and fires the beam at hover height (0.55), matching the ship's visual so a beam visibly crosses it. Both heights are serialized per emitter.
+- Volatile explosions: new pooled `ExplosionRing` prefab (flattened sphere, translucent orange `ExplosionRing` material) laid flat on the floor, sized to the Volatile's territory blast diameter and faded out over 0.45 s by `ExplosionRingPresenter`, which listens to `EnemyManager.ExplosionOccurred`. `EnemyManager` now exposes its `BoardManager` and the `LastExplosionDefinition` for presentation sizing only.
+- Shield bubble follows the ship's `ActorVisual.HoverHeight` instead of a hard-coded offset; the Power Shot already hovers through its own `ActorVisual`.
+- Tests: 4 new EditMode tests — laser presentation lifts toward the camera and keeps axis orientation/scale; the emitter puts the warning on the floor and the beam at hover height across a real cycle; the blast ring lies on the floor at blast diameter and fades to finished; the presenter spawns on explosions, releases finished rings, and reuses pooled instances. Full suite: 240 passed, 0 failed.
+- Real `Game.unity` Play Mode (stage 4): a detonated Volatile produced a floor blast disc at the blast position, a vertical laser beam fired at hover height across the arena, and the shield bubble sat at -0.55 with the ship. Screenshot: untracked `Temp/Screenshots/hazards_3d.png`. Unity Console: 0 errors/warnings.
+- Next: step 5 (Cinemachine impulse shake for captures/explosions, plus the visual-only board tilt pivot).
 
 ## 2.5D Presentation Decisions
 

@@ -9,6 +9,9 @@ namespace SpaceXonix.Hazards
     public sealed class LaserEmitter : MonoBehaviour
     {
         [SerializeField] private LaserDefinition definition;
+        [Tooltip("Height of the firing beam above the board floor; the warning line stays on the floor.")]
+        [SerializeField, Min(0f)] private float beamHeight = .55f;
+        [SerializeField, Min(0f)] private float warningLift = .02f;
         private BoardManager board;
         private GameManager game;
         private PoolService pool;
@@ -78,12 +81,12 @@ namespace SpaceXonix.Hazards
         {
             if (state == LaserState.Warning)
             {
-                ReleaseBeam(); activeWarning = Acquire(warningPrefab); Configure(activeWarning); WarningStarted?.Invoke();
+                ReleaseBeam(); activeWarning = Acquire(warningPrefab); Configure(activeWarning, warningLift); WarningStarted?.Invoke();
             }
             else if (state == LaserState.Firing)
             {
                 playerHitThisFiringPhase = false;
-                ReleaseWarning(); activeBeam = Acquire(beamPrefab); Configure(activeBeam); CheckPlayerHit(); FiringStarted?.Invoke();
+                ReleaseWarning(); activeBeam = Acquire(beamPrefab); Configure(activeBeam, beamHeight); CheckPlayerHit(); FiringStarted?.Invoke();
             }
             else
             {
@@ -102,7 +105,7 @@ namespace SpaceXonix.Hazards
                 playerHitThisFiringPhase = true;
         }
 
-        private void Configure(GameObject instance)
+        private void Configure(GameObject instance, float height)
         {
             if (instance == null) return;
             var first = board.GetWorldPosition(new GridCoordinate(0, 0));
@@ -111,7 +114,7 @@ namespace SpaceXonix.Hazards
             var center = board.GetWorldPosition(emitterCell);
             var length = definition.axis == LaserAxis.Horizontal ? Mathf.Abs(last.x - first.x) + board.CellWorldSize : Mathf.Abs(last.y - first.y) + board.CellWorldSize;
             if (definition.axis == LaserAxis.Horizontal) center.x = (first.x + last.x) * .5f; else center.y = (first.y + last.y) * .5f;
-            instance.GetComponent<LaserPresentation>().Configure(center, definition.axis, length, definition.beamWidth);
+            instance.GetComponent<LaserPresentation>().Configure(center, definition.axis, length, definition.beamWidth, height);
         }
 
         private GameObject Acquire(GameObject prefab) => prefab != null && pool != null ? pool.Acquire(prefab, transform) : null;

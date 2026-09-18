@@ -20,6 +20,9 @@ namespace SpaceXonix.Enemies
         private readonly Dictionary<EnemyController, GameObject> prefabByInstance = new Dictionary<EnemyController, GameObject>();
         public IReadOnlyList<EnemyController> ActiveEnemies => activeEnemies;
         public bool IsMovementSuspended { get; private set; }
+        public SpaceXonix.Board.BoardManager BoardManager => boardManager;
+        /// <summary>Definition of the most recent Volatile explosion, for presentation sizing.</summary>
+        public EnemyDefinition LastExplosionDefinition { get; private set; }
         public event Action<VolatileEnemy> DetonationStarted;
         public event Action<Vector3, int, int> ExplosionOccurred;
         private void Awake()
@@ -84,6 +87,7 @@ namespace SpaceXonix.Enemies
             Debug.DrawLine(position - Vector3.up * radius, position + Vector3.up * radius, Color.yellow, 1f);
             var destroyedTerritory = boardManager.RemoveCapturedWithinRadius(source.LogicalCell, definition.volatileTerritoryRadiusCells);
             Despawn(source);
+            LastExplosionDefinition = definition;
             ExplosionOccurred?.Invoke(position, destroyedEnemies, destroyedTerritory);
             if (hitsPlayer && gameManager.CanProcessPlayerContact(lifecycleGeneration))
                 gameManager.ReportPlayerFailure(PlayerFailureReason.VolatileExplosion);

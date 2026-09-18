@@ -808,6 +808,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Hazards.LaserEmitter
   definition: {fileID: 11400000, guid: 3ff4a88e64a6ca940a37886ca958d3b1, type: 2}
+  beamHeight: 0.55
+  warningLift: 0.02
 --- !u!4 &1078973438
 Transform:
   m_ObjectHideFlags: 0
@@ -1049,6 +1051,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Hazards.LaserEmitter
   definition: {fileID: 11400000, guid: 892521462e2ed6f4bb957ce24846d62f, type: 2}
+  beamHeight: 0.55
+  warningLift: 0.02
 --- !u!4 &1786466343
 Transform:
   m_ObjectHideFlags: 0
@@ -1180,6 +1184,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2088577236}
   - component: {fileID: 2088577235}
+  - component: {fileID: 2088577237}
   m_Layer: 0
   m_Name: EnemyManager
   m_TagString: Untagged
@@ -1219,6 +1224,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2088577237
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2088577234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31896322b7d053349809e27d833761b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Presentation.ExplosionRingPresenter
+  enemyManager: {fileID: 2088577235}
+  poolService: {fileID: 296692061}
+  ringPrefab: {fileID: 3478987569865383942, guid: 565df1b8b6f0c264dafa8ff741a3d4e0, type: 3}
+  radiusScale: 1
+  fallbackRadius: 0.75
 --- !u!1001 &1987019904147353758
 PrefabInstance:
   m_ObjectHideFlags: 0
