@@ -18,6 +18,10 @@ namespace SpaceXonix.Enemies
         public bool MovementEnabled => movement != null && movement.MovementEnabled;
         public EnemyDefinition Definition => definition;
         public float CollisionRadius => definition != null ? definition.collisionRadius : 0f;
+        /// <summary>Stage-modifier speed scale (Overclocked Swarm). 1 leaves the definition speed untouched.</summary>
+        public float SpeedMultiplier { get; private set; } = 1f;
+        /// <summary>Stage-modifier scale for the Unstable speed-change cadence (Unstable Space).</summary>
+        public float IntervalMultiplier { get; private set; } = 1f;
         public bool IsActiveEnemy { get; private set; }
         public IReadOnlyList<GridCoordinate> LastTraversedCells => traversedCells;
         public bool LastTrailHitAccepted { get; private set; }
@@ -28,7 +32,7 @@ namespace SpaceXonix.Enemies
         {
             definition = data; board = boardManager; game = gameManager;
             transform.position = position;
-            movement = new EnemyMovementModel(new Vector2(position.x, position.y), direction.normalized * data.moveSpeed);
+            movement = new EnemyMovementModel(new Vector2(position.x, position.y), direction.normalized * data.moveSpeed * SpeedMultiplier);
             traversedCells.Clear();
             LastTrailHitAccepted = false;
             HasShieldPassThroughGrace = false;
@@ -36,6 +40,16 @@ namespace SpaceXonix.Enemies
         }
         public virtual void Deactivate() { IsActiveEnemy = false; traversedCells.Clear(); LastTrailHitAccepted = false; HasShieldPassThroughGrace = false; gameObject.SetActive(false); }
         public void SetMovementSuspended(bool suspended) { if (movement != null) movement.MovementEnabled = !suspended; }
+
+        /// <summary>Applies a stage modifier's speed scale, rescaling current motion without touching the definition.</summary>
+        public void SetSpeedMultiplier(float multiplier)
+        {
+            multiplier = Mathf.Max(.01f, multiplier);
+            if (movement != null && SpeedMultiplier > 0f) movement.SetSpeed(movement.Velocity.magnitude / SpeedMultiplier * multiplier);
+            SpeedMultiplier = multiplier;
+        }
+
+        public void SetIntervalMultiplier(float multiplier) => IntervalMultiplier = Mathf.Max(.01f, multiplier);
         public void SetDrift(Vector2 drift) { if (movement != null) movement.Drift = drift; }
         public Vector2 Drift => movement != null ? movement.Drift : Vector2.zero;
         public bool IsTrailContact(Vector2 worldPosition)

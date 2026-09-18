@@ -12,9 +12,9 @@ namespace SpaceXonix.Enemies
         public override void Activate(EnemyDefinition data, SpaceXonix.Board.BoardManager board, SpaceXonix.Core.GameManager game, Vector3 position, Vector2 direction)
         {
             base.Activate(data, board, game, position, direction);
-            timer = data.unstableInterval;
+            timer = data.unstableInterval * IntervalMultiplier;
             currentSpeed = Mathf.Clamp(data.moveSpeed, data.unstableMinSpeed, data.unstableMaxSpeed);
-            movement.SetSpeed(currentSpeed);
+            movement.SetSpeed(currentSpeed * SpeedMultiplier);
         }
         protected override void Update()
         {
@@ -23,9 +23,9 @@ namespace SpaceXonix.Enemies
                 timer -= Time.deltaTime;
                 if (timer <= 0f)
                 {
-                    timer += definition.unstableInterval;
+                    timer += definition.unstableInterval * IntervalMultiplier;
                     currentSpeed = currentSpeed >= definition.unstableMaxSpeed ? definition.unstableMinSpeed : definition.unstableMaxSpeed;
-                    movement.SetSpeed(currentSpeed); SpeedChanged?.Invoke(currentSpeed);
+                    movement.SetSpeed(currentSpeed * SpeedMultiplier); SpeedChanged?.Invoke(currentSpeed);
                 }
             }
             base.Update();

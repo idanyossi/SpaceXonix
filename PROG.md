@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 13 complete; Phase 14 (Stage Modifiers) not started
-- Latest completed feature: run-only roguelite upgrades chosen between stages
+- Current phase: Phase 14 complete; Phase 15 (Alien Core Boss) not started
+- Latest completed feature: per-stage random modifiers with compatibility filtering and score bonuses
 
 ## Phase Progress
 
@@ -25,7 +25,7 @@
 11. **COMPLETE** — Campaign Stages + Progression
 12. **COMPLETE** — 2.5D Presentation Foundation (perspective Cinemachine camera, raised territory, hovering pixel-art billboards)
 13. **COMPLETE** — Roguelite Upgrades
-14. **NOT STARTED** — Stage Modifiers
+14. **COMPLETE** — Per-stage random modifiers and score bonuses
 15. **NOT STARTED** — Alien Core Boss
 16. **NOT STARTED** — UI + Menus + HUD
 17. **NOT STARTED** — Android Controls
@@ -51,13 +51,14 @@
 - `PowerMeter` charges from `BoardManager.CaptureCompleted` through the pure `PowerMeterModel`, fires on `InputRouter.PowerShotRequested`, and advances pooled `PowerShotProjectile` instances that despawn the first standard enemy through `EnemyManager`. Tuning lives in `PowerDefinition` (`ScriptableObjects/Balance/Power.asset`).
 - `PowerUpManager` owns capture-driven pickup spawning, the pure `PowerUpSlotModel` (one stored ability, instantly replaced by a newly touched pickup), and timed Shield/Freeze/Arena Tilt effects. `GameManager` exposes `SetPaused` (time-scale pause that preserves life/control state) and `SetShieldActive`; `EnemyManager` exposes movement suspension and drift.
 - `CampaignManager` (on the GameManager object, execution order 100) drives stages 1–4 inside `Game.unity` from `CampaignDefinition`/`StageDefinition` assets, resetting board, lives, player, enemies, lasers, and per-stage statistics in place. `GameManager.BeginStage`/`StartStagePlay` own the `Briefing` → `Playing` transition; `CampaignRunModel` tracks stage progression and highest stage reached.
+- `StageModifierManager` (on the GameManager object) rolls one compatible modifier per stage from `StageModifierSetDefinition` via the pure `StageModifierSelection.Select`, then pushes typed multipliers into `EnemyManager` (speed, Unstable interval, Volatile radius), `LaserManager` (cooldown), `PowerUpManager` (pickup chance), and `ScoreManager` (score bonus). Definitions are never mutated and every multiplier is cleared between stages.
 - `UpgradeManager` owns the run's upgrades: `UpgradeOffer` builds the between-stage choice from `UpgradeSetDefinition`, the pure `RunUpgradeModel` holds stacks and computes effective stats, and `ApplyToSystems` pushes them into PlayerController speed, PowerMeter gain, and PowerUpManager durations/tilt penalty/pickup chance at every stage load.
 - Collision is body-sized: `PlayerController.collisionRadius` and `EnemyDefinition.collisionRadius` drive ship contact (radius sum), trail contact and capture occupancy (all cells overlapped by the alien body via `BoardManager.GetCellsOverlappingCircle`), bouncing (the whole body must stay in uncaptured space), lasers (beam half-width + ship radius), Power Shot reach, Volatile blasts/detonation, and pickup collection. Prefab visual sizes equal the collision diameters. A radius of 0 preserves the original point/0.6-cell behaviour.
 
 ## Current Test State
 
-- EditMode discovered: 253
-- Passed: 253
+- EditMode discovered: 258
+- Passed: 258
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -428,6 +429,16 @@
 - Fixed after the phase commit: a broken string literal in the briefing panel (a real newline instead of `
 `) stopped compilation; repaired in `0a65b1c`, with the folder meta added in `19c28fa`. Compile and tests now run before every commit.
 
+## Phase 14 — Stage Modifiers
+
+- Data: six `StageModifierDefinition` assets in `ScriptableObjects/Modifiers`, collected by `StageModifiers.asset` — Overclocked Swarm (aliens +25% speed, score x1.15), Laser Storm (lasers recharge 40% faster, x1.15, needs lasers), Dense Sector (+2 aliens, x1.15), Resource Shortage (pickups spawn half as often, x1.10), Unstable Space (Unstable aliens change speed twice as often, x1.15, needs Unstable), Volatile Matter (blasts reach 50% further, x1.20, needs Volatile).
+- Compatibility: `StageModifierDefinition.IsCompatibleWith` only offers a modifier on a stage that actually contains what it modifies (lasers present, required enemy type spawned, spawns present for extra aliens). Stage 1 therefore only ever rolls Overclocked Swarm / Dense Sector / Resource Shortage, while stage 4 can roll all six. When nothing fits, the stage simply runs without a modifier instead of failing.
+- Flow: `CampaignManager.LoadCurrentStage` rolls the modifier **before** lasers are configured and aliens are spawned, so the multipliers reach them as they are built; `SpawnExtras` then adds Dense Sector's extra aliens on random free cells, reusing the stage's first Basic Bouncer spawn as a template. The briefing panel lists the rolled modifier and its bonus, the Stage Complete panel shows the real `Modifier bonus xN.NN`, and a HUD line under the stage counter names the active modifier during play.
+- Effects are applied without mutating definition assets, matching the Phase 13 pattern: new `EnemyManager.SetSpeedMultiplier/SetUnstableIntervalMultiplier/SetVolatileRadiusMultiplier`, `EnemyController.SetSpeedMultiplier/SetIntervalMultiplier` (mid-stage changes rescale from the base speed rather than compounding), `LaserManager`/`LaserEmitter.SetCooldownMultiplier` (warning and firing windows untouched), and `PowerUpManager.SetPickupChanceMultiplier` (applied after the upgrade bonus and the configured cap). `ScoreManager` now exposes `BonusMultiplier` for the HUD and tests.
+- Tests: 5 new EditMode tests — compatibility filtering across laserless/laser/Volatile stages plus the null-pool, null-stage and nothing-compatible cases; seeded selection being deterministic and never rolling an incompatible modifier over 25 seeds; the manager pushing all six typed effects into the real systems and clearing them again; enemy speed rescaling from the base speed while the definition stays at 4; and laser cooldown halving against an unmodified control emitter. Full suite: 258 passed, 0 failed.
+- Real `Game.unity` Play Mode: stage 1 rolled Resource Shortage (x1.10) and the briefing rendered it. Forcing each modifier in turn confirmed stage 1 filters Laser Storm, Unstable Space and Volatile Matter out entirely, while stage 4 applies all six — speed x1.25, laser cooldown 1.40 s -> 0.84 s, Dense Sector 5 -> 7 aliens, Unstable interval x0.5, Volatile radius x1.5, score x1.10-x1.20. A forced Dense Sector run on stage 1 showed 4 aliens instead of 2 with the HUD reading "Dense Sector x1.15". Unity Console: 0 errors/warnings.
+- Deferred: modifier icons and final modifier presentation (Phase 16/20); boss-stage modifiers, if any, arrive with Phase 15.
+
 ## 2.5D Presentation Decisions
 
 - Researched AirXonix: its 3D is presentation over flat Xonix rules (diagonal-down camera, hovering craft, shadows, solid filled territory). Full notes and work breakdown: `IMPLEMENTATION_PLAN.md` section 12.
@@ -452,12 +463,12 @@
 - `Assets/SpaceXonix/Scripts/Scoring` — score model, capture multipliers, and score manager
 - `Assets/SpaceXonix/Scripts/Power` — power meter, power shot projectile, and power tuning
 - `Assets/SpaceXonix/Scripts/PowerUps` — pickups, ability slot, and Shield/Freeze/Arena Tilt effects
-- `Assets/SpaceXonix/Scripts/Campaign` — campaign/stage definitions, run progression, stage flow, and roguelite upgrades
+- `Assets/SpaceXonix/Scripts/Campaign` — campaign/stage definitions, run progression, stage flow, roguelite upgrades, and stage modifiers
 - `Assets/SpaceXonix/Tests/EditMode` — deterministic regression suite
 - `Assets/SpaceXonix/Scenes/Game.unity` — representative gameplay scene
 
 ## Next Recommended Action
 
-**Phase 14 — Stage Modifiers**
+**Phase 15 — Alien Core Boss**
 
 Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.

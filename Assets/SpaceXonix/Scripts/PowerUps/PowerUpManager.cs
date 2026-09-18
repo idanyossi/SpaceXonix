@@ -41,6 +41,7 @@ namespace SpaceXonix.PowerUps
         private readonly Dictionary<PowerUpType, float> durationMultipliers = new Dictionary<PowerUpType, float>();
         private float tiltPenaltyMultiplier = 1f;
         private float pickupChanceBonus;
+        private float pickupChanceMultiplier = 1f;
         private System.Random random;
         private PowerUpPickup activePickup;
         private SpaceXonix.Presentation.ActorVisual playerVisual;
@@ -106,6 +107,9 @@ namespace SpaceXonix.PowerUps
         /// <summary>Run upgrades raise the pickup spawn chance before the configured maximum.</summary>
         public void SetPickupChanceBonus(float bonus) => pickupChanceBonus = Mathf.Max(0f, bonus);
 
+        /// <summary>Stage modifier (Resource Shortage): scales the rolled pickup chance.</summary>
+        public void SetPickupChanceMultiplier(float multiplier) => pickupChanceMultiplier = Mathf.Max(0f, multiplier);
+
         public float GetEffectDuration(PowerUpDefinition definition) =>
             definition == null ? 0f : definition.duration * (durationMultipliers.TryGetValue(definition.type, out var multiplier) ? multiplier : 1f);
 
@@ -139,7 +143,7 @@ namespace SpaceXonix.PowerUps
             if (activePickup != null || spawnDefinition == null || pickupPrefab == null || poolService == null) return false;
             if (gameManager != null && gameManager.CurrentState != GameplayState.Playing) return false;
             var chance = spawnDefinition.GetSpawnChance(capturedPercentage);
-            if (chance > 0f) chance = Mathf.Min(spawnDefinition.maxChance, chance + pickupChanceBonus);
+            if (chance > 0f) chance = Mathf.Min(spawnDefinition.maxChance, chance + pickupChanceBonus) * pickupChanceMultiplier;
             if (chance <= 0f || random.NextDouble() >= chance) return false;
             var definition = PickRandomDefinition();
             if (definition == null || !TryFindSpawnCell(out var cell)) return false;

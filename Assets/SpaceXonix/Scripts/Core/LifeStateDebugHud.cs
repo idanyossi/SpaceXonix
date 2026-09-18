@@ -81,6 +81,9 @@ namespace SpaceXonix.Core
             var run = campaignManager.Run;
             var stage = campaignManager.CurrentStage;
             GUI.Label(new Rect(0f, 20f, Screen.width, 50f), $"Stage {run.CurrentStageNumber}/{run.NormalStageCount}", rightCenteredStyle);
+            var modifier = campaignManager.CurrentModifier;
+            if (modifier != null)
+                GUI.Label(new Rect(0f, 68f, Screen.width, 40f), $"{modifier.displayName}  x{modifier.scoreMultiplier:0.00}", rightCenteredStyle);
             if (campaignManager.Phase == CampaignPhase.Playing) return;
             var previousMatrix = GUI.matrix;
             panelScale = Mathf.Clamp(Mathf.Min(Screen.width / 900f, Screen.height / 640f), .35f, 2f);
@@ -100,7 +103,7 @@ namespace SpaceXonix.Core
                     GUI.Label(new Rect(panel.x + 40f, panel.y + 240f, panel.width - 80f, 44f), $"Enemies: {DescribeEnemies(stage)}", wrapStyle);
                     GUI.Label(new Rect(panel.x + 40f, panel.y + 290f, panel.width - 80f, 44f), $"Lasers: {(stage.lasers != null ? stage.lasers.Length : 0)}", wrapStyle);
                     GUI.Label(new Rect(panel.x + 40f, panel.y + 340f, panel.width - 80f, 100f),
-                        $"Modifier: none\nUpgrades: {(upgradeManager != null ? upgradeManager.Describe() : "none")}", wrapStyle);
+                        $"Modifier: {campaignManager.DescribeModifier()}\nUpgrades: {(upgradeManager != null ? upgradeManager.Describe() : "none")}", wrapStyle);
                     if (GUI.Button(new Rect(panel.center.x - 160f, panel.yMax - 120f, 320f, 80f), "START [Enter]", buttonStyle) || EnterPressed())
                         campaignManager.StartStage();
                     break;
@@ -109,7 +112,7 @@ namespace SpaceXonix.Core
                     GUI.Label(new Rect(panel.x, panel.y + 20f, panel.width, 90f), "STAGE COMPLETE", panelTitleStyle);
                     DrawStats(panel, $"Captured {campaignManager.StageCompletedPercentage:0.0}%",
                         $"Largest capture {(scoreManager != null ? scoreManager.StageLargestCapturePercentage : 0f):0.0}%",
-                        "Modifier bonus x1.00");
+                        $"Modifier bonus x{campaignManager.ModifierScoreMultiplier:0.00}");
                     if (GUI.Button(new Rect(panel.center.x - 160f, panel.yMax - 110f, 320f, 80f), "CONTINUE [Enter]", buttonStyle) || EnterPressed())
                         campaignManager.ContinueAfterStageComplete();
                     break;

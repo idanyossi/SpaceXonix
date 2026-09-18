@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: StageModifiers
+  m_EditorClassIdentifier: SpaceXonix.Runtime:SpaceXonix.Campaign:StageModifierSetDefinition
+  modifiers:
+  - {fileID: 11400000, guid: 82e8582fb968d344f836ba703bc76692, type: 2}
+  - {fileID: 11400000, guid: 5bb919eda0598944eb1afe112f101985, type: 2}
+  - {fileID: 11400000, guid: ca401673255cae6438af4f6be4859e43, type: 2}
+  - {fileID: 11400000, guid: eb228bc7d2576624e8c945b42bd3a004, type: 2}
+  - {fileID: 11400000, guid: 39559ceb5e20a2a45b964d1b553326cd, type: 2}
+  - {fileID: 11400000, guid: 0aaf549367893eb46a8850e113e13c8e, type: 2}

@@ -25,6 +25,16 @@ namespace SpaceXonix.Hazards
         [SerializeField] private LaserEmitter[] emitters;
 
         public LaserEmitter[] Emitters => emitters;
+        public float CooldownMultiplier { get; private set; } = 1f;
+
+        /// <summary>Stage modifier (Laser Storm): scales every emitter's cooldown.</summary>
+        public void SetCooldownMultiplier(float multiplier)
+        {
+            CooldownMultiplier = Mathf.Max(.05f, multiplier);
+            if (emitters == null) return;
+            for (var i = 0; i < emitters.Length; i++)
+                if (emitters[i] != null) emitters[i].SetCooldownMultiplier(CooldownMultiplier);
+        }
         public int ActiveEmitterCount
         {
             get
@@ -68,6 +78,7 @@ namespace SpaceXonix.Hazards
                 }
                 var emitter = emitters[i];
                 emitter.gameObject.SetActive(true);
+                emitter.SetCooldownMultiplier(CooldownMultiplier);
                 emitter.SetDefinition(placement.definition);
                 var cell = placement.definition.axis == LaserAxis.Horizontal
                     ? new GridCoordinate(0, placement.line)

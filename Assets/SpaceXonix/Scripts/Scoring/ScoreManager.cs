@@ -14,6 +14,7 @@ namespace SpaceXonix.Scoring
         public int Score => model?.Score ?? 0;
         public float LargestCapturePercentage => model?.LargestCapturePercentage ?? 0f;
         public float StageLargestCapturePercentage => model?.StageLargestCapturePercentage ?? 0f;
+        public float BonusMultiplier => model?.BonusMultiplier ?? 1f;
         public bool HasLastAward { get; private set; }
         public CaptureScoreAward LastAward { get; private set; }
         public event Action<int> ScoreChanged;

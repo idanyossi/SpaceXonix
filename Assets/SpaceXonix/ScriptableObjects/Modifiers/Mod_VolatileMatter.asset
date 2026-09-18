@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d160f45ab63df7645b17a94f6cd6fb1c, type: 3}
+  m_Name: Mod_VolatileMatter
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Campaign.StageModifierDefinition
+  displayName: Volatile Matter
+  effectText: Volatile blasts reach 50% further.
+  scoreMultiplier: 1.2
+  requiresEnemyType: 1
+  requiredEnemyType: 3
+  requiresLasers: 0
+  enemySpeedMultiplier: 1
+  laserCooldownMultiplier: 1
+  unstableIntervalMultiplier: 1
+  volatileRadiusMultiplier: 1.5
+  pickupChanceMultiplier: 1
+  extraEnemies: 0

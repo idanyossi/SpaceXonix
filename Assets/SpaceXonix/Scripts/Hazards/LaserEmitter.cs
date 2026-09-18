@@ -30,6 +30,10 @@ namespace SpaceXonix.Hazards
         public event Action CooldownStarted;
 
         public LaserDefinition Definition => definition;
+        public float CooldownMultiplier { get; private set; } = 1f;
+
+        /// <summary>Stage modifier (Laser Storm): scales the cooldown of the next built cycle.</summary>
+        public void SetCooldownMultiplier(float multiplier) => CooldownMultiplier = Mathf.Max(.05f, multiplier);
 
         public void SetDefinition(LaserDefinition laserDefinition)
         {
@@ -44,7 +48,7 @@ namespace SpaceXonix.Hazards
             ReleasePresentations();
             board = boardManager; game = gameManager; pool = poolService;
             warningPrefab = warningPresentationPrefab; beamPrefab = beamPresentationPrefab;
-            cycle = new LaserCycleModel(definition.warningDuration, definition.firingDuration, definition.cooldownDuration);
+            cycle = new LaserCycleModel(definition.warningDuration, definition.firingDuration, definition.cooldownDuration * CooldownMultiplier);
             playerHitThisFiringPhase = false;
             cycle.StateChanged += OnStateChanged;
         }

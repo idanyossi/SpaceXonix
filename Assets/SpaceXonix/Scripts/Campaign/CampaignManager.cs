@@ -33,6 +33,7 @@ namespace SpaceXonix.Campaign
         [SerializeField] private PowerMeter powerMeter;
         [SerializeField] private PowerUpManager powerUpManager;
         [SerializeField] private UpgradeManager upgradeManager;
+        [SerializeField] private StageModifierManager modifierManager;
 
         private CampaignRunModel run;
         private bool runStarted;
@@ -40,6 +41,9 @@ namespace SpaceXonix.Campaign
         public CampaignRunModel Run => run;
         public StageDefinition CurrentStage => run != null ? campaign.normalStages[run.CurrentStageIndex] : null;
         public float StageCompletedPercentage { get; private set; }
+        public StageModifierDefinition CurrentModifier => modifierManager != null ? modifierManager.Current : null;
+        public float ModifierScoreMultiplier => modifierManager != null ? modifierManager.ScoreMultiplier : 1f;
+        public string DescribeModifier() => modifierManager != null ? modifierManager.Describe() : "none";
         public CampaignPhase Phase
         {
             get
@@ -94,8 +98,11 @@ namespace SpaceXonix.Campaign
             // Lives carry across stages; only the first stage of a run starts from the configured total.
             gameManager.BeginStage(runStarted ? Mathf.Max(1, gameManager.Lives) : 0);
             runStarted = true;
+            // The modifier is rolled before the stage is built so its multipliers reach the lasers and aliens as they spawn.
+            if (modifierManager != null) modifierManager.SelectFor(stage);
             if (laserManager != null) laserManager.ConfigureStage(stage.lasers);
             if (enemyManager != null) enemyManager.SpawnAll(stage.enemySpawns);
+            if (modifierManager != null) modifierManager.SpawnExtras(stage);
             if (upgradeManager != null) upgradeManager.ApplyToSystems();
             if (scoreManager != null) scoreManager.ResetStageStatistics();
             StageLoaded?.Invoke(stage);

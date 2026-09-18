@@ -867,6 +867,7 @@ GameObject:
   - component: {fileID: 1599803371}
   - component: {fileID: 1599803373}
   - component: {fileID: 1599803374}
+  - component: {fileID: 1599803375}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -962,6 +963,7 @@ MonoBehaviour:
   powerMeter: {fileID: 1823213373}
   powerUpManager: {fileID: 91987429}
   upgradeManager: {fileID: 1599803374}
+  modifierManager: {fileID: 1599803375}
 --- !u!114 &1599803371
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1073,6 +1075,24 @@ MonoBehaviour:
   powerMeter: {fileID: 1823213373}
   powerUpManager: {fileID: 91987429}
   offerCount: 3
+  randomSeed: 0
+--- !u!114 &1599803375
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1599803365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 104bccee2cd8482488c59d9066c2c234, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Campaign.StageModifierManager
+  modifierSet: {fileID: 11400000, guid: 483db2eceb312144d8052a39d31691fb, type: 2}
+  enemyManager: {fileID: 2088577235}
+  laserManager: {fileID: 1884602789}
+  powerUpManager: {fileID: 91987429}
+  scoreManager: {fileID: 1599803369}
   randomSeed: 0
 --- !u!1 &1747002404
 GameObject:
