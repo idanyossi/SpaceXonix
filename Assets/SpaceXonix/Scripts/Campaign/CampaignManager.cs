@@ -15,6 +15,7 @@ namespace SpaceXonix.Campaign
         Briefing,
         Playing,
         StageComplete,
+        UpgradeChoice,
         GameOver,
         NormalStagesCleared
     }
@@ -31,6 +32,7 @@ namespace SpaceXonix.Campaign
         [SerializeField] private ScoreManager scoreManager;
         [SerializeField] private PowerMeter powerMeter;
         [SerializeField] private PowerUpManager powerUpManager;
+        [SerializeField] private UpgradeManager upgradeManager;
 
         private CampaignRunModel run;
 
@@ -41,6 +43,7 @@ namespace SpaceXonix.Campaign
         {
             get
             {
+                if (upgradeManager != null && upgradeManager.HasOffer) return CampaignPhase.UpgradeChoice;
                 if (run != null && run.NormalStagesCleared) return CampaignPhase.NormalStagesCleared;
                 switch (gameManager.CurrentState)
                 {
@@ -87,18 +90,34 @@ namespace SpaceXonix.Campaign
             if (powerUpManager != null) powerUpManager.PrepareForStage();
             if (powerMeter != null) powerMeter.PrepareForStage();
             if (enemyManager != null) enemyManager.DespawnAll();
-            gameManager.BeginStage();
+            gameManager.BeginStage(upgradeManager != null ? upgradeManager.Run.BonusLives : 0);
             if (laserManager != null) laserManager.ConfigureStage(stage.lasers);
             if (enemyManager != null) enemyManager.SpawnAll(stage.enemySpawns);
+            if (upgradeManager != null) upgradeManager.ApplyToSystems();
             if (scoreManager != null) scoreManager.ResetStageStatistics();
             StageLoaded?.Invoke(stage);
         }
 
         public bool StartStage() => Phase == CampaignPhase.Briefing && gameManager.StartStagePlay();
 
+        /// <summary>Leaves Stage Complete: offers the run upgrade choice when one is available, otherwise continues.</summary>
         public bool ContinueAfterStageComplete()
         {
             if (Phase != CampaignPhase.StageComplete) return false;
+            if (upgradeManager != null && upgradeManager.BuildOffer()) return true;
+            return AdvancePastCompletedStage();
+        }
+
+        /// <summary>Takes one of the offered upgrades and moves on to the next stage.</summary>
+        public bool ChooseUpgrade(int index)
+        {
+            if (Phase != CampaignPhase.UpgradeChoice || upgradeManager == null) return false;
+            if (!upgradeManager.Take(index)) return false;
+            return AdvancePastCompletedStage();
+        }
+
+        private bool AdvancePastCompletedStage()
+        {
             if (run.CompleteCurrentStage())
             {
                 LoadCurrentStage();
@@ -112,6 +131,7 @@ namespace SpaceXonix.Campaign
         {
             if (run == null) return;
             run.Reset();
+            if (upgradeManager != null) upgradeManager.ResetRun();
             if (scoreManager != null) scoreManager.ResetScore();
             if (powerMeter != null) powerMeter.ResetMeter();
             if (powerUpManager != null) powerUpManager.ResetForCampaign();

@@ -38,6 +38,9 @@ namespace SpaceXonix.PowerUps
         private readonly Dictionary<PowerUpType, float> effectEndTimes = new Dictionary<PowerUpType, float>();
         private readonly Dictionary<Renderer, Material> frozenRenderers = new Dictionary<Renderer, Material>();
         private readonly List<GridCoordinate> occupancyBuffer = new List<GridCoordinate>();
+        private readonly Dictionary<PowerUpType, float> durationMultipliers = new Dictionary<PowerUpType, float>();
+        private float tiltPenaltyMultiplier = 1f;
+        private float pickupChanceBonus;
         private System.Random random;
         private PowerUpPickup activePickup;
         private SpaceXonix.Presentation.ActorVisual playerVisual;
@@ -94,6 +97,18 @@ namespace SpaceXonix.PowerUps
 
         public void SetRandom(System.Random source) => random = source ?? new System.Random();
 
+        /// <summary>Run upgrades lengthen an ability without mutating its definition asset.</summary>
+        public void SetDurationMultiplier(PowerUpType type, float multiplier) => durationMultipliers[type] = Mathf.Max(0f, multiplier);
+
+        /// <summary>Run upgrades soften the Arena Tilt movement penalty (1 = full penalty, 0 = none).</summary>
+        public void SetTiltPenaltyMultiplier(float multiplier) => tiltPenaltyMultiplier = Mathf.Clamp01(multiplier);
+
+        /// <summary>Run upgrades raise the pickup spawn chance before the configured maximum.</summary>
+        public void SetPickupChanceBonus(float bonus) => pickupChanceBonus = Mathf.Max(0f, bonus);
+
+        public float GetEffectDuration(PowerUpDefinition definition) =>
+            definition == null ? 0f : definition.duration * (durationMultipliers.TryGetValue(definition.type, out var multiplier) ? multiplier : 1f);
+
         public bool IsEffectActive(PowerUpType type) => effectEndTimes.ContainsKey(type);
 
         public float GetEffectRemaining(PowerUpType type) =>
@@ -124,6 +139,7 @@ namespace SpaceXonix.PowerUps
             if (activePickup != null || spawnDefinition == null || pickupPrefab == null || poolService == null) return false;
             if (gameManager != null && gameManager.CurrentState != GameplayState.Playing) return false;
             var chance = spawnDefinition.GetSpawnChance(capturedPercentage);
+            if (chance > 0f) chance = Mathf.Min(spawnDefinition.maxChance, chance + pickupChanceBonus);
             if (chance <= 0f || random.NextDouble() >= chance) return false;
             var definition = PickRandomDefinition();
             if (definition == null || !TryFindSpawnCell(out var cell)) return false;
@@ -225,13 +241,14 @@ namespace SpaceXonix.PowerUps
                     var side = random.Next(2) == 0 ? -1f : 1f;
                     TiltDrift = new Vector2(side * definition.tiltEnemyDrift, 0f);
                     enemyManager?.SetDrift(TiltDrift);
-                    playerController?.SetMoveSpeed(tiltBaseMoveSpeed * (1f - definition.tiltPlayerSlow));
+                    playerController?.SetMoveSpeed(tiltBaseMoveSpeed * (1f - definition.tiltPlayerSlow * tiltPenaltyMultiplier));
                     // A positive camera roll lowers the right side of the arena on screen, so aliens drift downhill.
                     BlendCameraRoll(side * definition.tiltCameraRollDegrees);
                     break;
             }
-            effectEndTimes[type] = Time.time + definition.duration;
-            if (isActiveAndEnabled) effectRoutines[type] = StartCoroutine(EffectDuration(type, definition.duration));
+            var duration = GetEffectDuration(definition);
+            effectEndTimes[type] = Time.time + duration;
+            if (isActiveAndEnabled) effectRoutines[type] = StartCoroutine(EffectDuration(type, duration));
             EffectStarted?.Invoke(type);
         }
 

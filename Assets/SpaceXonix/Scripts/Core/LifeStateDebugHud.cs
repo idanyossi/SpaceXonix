@@ -17,6 +17,7 @@ namespace SpaceXonix.Core
         [SerializeField] private PowerMeter powerMeter;
         [SerializeField] private PowerUpManager powerUpManager;
         [SerializeField] private CampaignManager campaignManager;
+        [SerializeField] private UpgradeManager upgradeManager;
         [SerializeField, Min(0f)] private float captureAwardDisplaySeconds = 2f;
 
         private GameManager game;
@@ -29,6 +30,7 @@ namespace SpaceXonix.Core
         private GUIStyle rightCenteredStyle;
         private GUIStyle buttonStyle;
         private GUIStyle wrapStyle;
+        private GUIStyle upgradeButtonStyle;
         private float awardShownAt = float.NegativeInfinity;
         private readonly List<EnemyType> enemyTypes = new List<EnemyType>();
         private float panelScale = 1f;
@@ -92,12 +94,14 @@ namespace SpaceXonix.Core
             switch (campaignManager.Phase)
             {
                 case CampaignPhase.Briefing:
-                    var panel = DrawPanel(820f, 560f);
+                    var panel = DrawPanel(820f, 620f);
                     GUI.Label(new Rect(panel.x, panel.y + 20f, panel.width, 80f), $"STAGE {stage.stageNumber}: {stage.stageName.ToUpperInvariant()}", panelTitleStyle);
                     GUI.Label(new Rect(panel.x + 40f, panel.y + 110f, panel.width - 80f, 120f), stage.briefing, wrapStyle);
                     GUI.Label(new Rect(panel.x + 40f, panel.y + 240f, panel.width - 80f, 44f), $"Enemies: {DescribeEnemies(stage)}", wrapStyle);
                     GUI.Label(new Rect(panel.x + 40f, panel.y + 290f, panel.width - 80f, 44f), $"Lasers: {(stage.lasers != null ? stage.lasers.Length : 0)}", wrapStyle);
-                    GUI.Label(new Rect(panel.x + 40f, panel.y + 340f, panel.width - 80f, 44f), "Modifier: none   Upgrades: none", wrapStyle);
+                    GUI.Label(new Rect(panel.x + 40f, panel.y + 340f, panel.width - 80f, 100f),
+                        $"Modifier: none
+Upgrades: {(upgradeManager != null ? upgradeManager.Describe() : "none")}", wrapStyle);
                     if (GUI.Button(new Rect(panel.center.x - 160f, panel.yMax - 120f, 320f, 80f), "START [Enter]", buttonStyle) || EnterPressed())
                         campaignManager.StartStage();
                     break;
@@ -109,6 +113,9 @@ namespace SpaceXonix.Core
                         "Modifier bonus x1.00");
                     if (GUI.Button(new Rect(panel.center.x - 160f, panel.yMax - 110f, 320f, 80f), "CONTINUE [Enter]", buttonStyle) || EnterPressed())
                         campaignManager.ContinueAfterStageComplete();
+                    break;
+                case CampaignPhase.UpgradeChoice:
+                    DrawUpgradeChoice();
                     break;
                 case CampaignPhase.GameOver:
                     panel = DrawPanel(820f, 460f);
@@ -125,6 +132,25 @@ namespace SpaceXonix.Core
                         campaignManager.RetryCampaign();
                     break;
             }
+        }
+
+        private void DrawUpgradeChoice()
+        {
+            var offer = upgradeManager.CurrentOffer;
+            var panel = DrawPanel(880f, 200f + offer.Count * 120f);
+            GUI.Label(new Rect(panel.x, panel.y + 20f, panel.width, 80f), "CHOOSE AN UPGRADE", panelTitleStyle);
+            GUI.Label(new Rect(panel.x, panel.y + 100f, panel.width, 40f), "Lasts for this run only", rightCenteredStyle);
+            var chosen = -1;
+            var current = Event.current;
+            for (var i = 0; i < offer.Count; i++)
+            {
+                var definition = offer[i];
+                var stacks = upgradeManager.Run.GetStacks(definition.type);
+                var label = $"{i + 1}. {definition.displayName}{(stacks > 0 ? $" (have {stacks})" : "")}\n{definition.effectText}";
+                if (GUI.Button(new Rect(panel.x + 40f, panel.y + 150f + i * 120f, panel.width - 80f, 100f), label, upgradeButtonStyle)) chosen = i;
+                if (current.type == EventType.KeyDown && current.keyCode == KeyCode.Alpha1 + i) chosen = i;
+            }
+            if (chosen >= 0) campaignManager.ChooseUpgrade(chosen);
         }
 
         private Rect DrawPanel(float width, float height)
@@ -248,6 +274,7 @@ namespace SpaceXonix.Core
             buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 26, fontStyle = FontStyle.Bold };
             wrapStyle = new GUIStyle(livesStyle) { fontSize = 28, fontStyle = FontStyle.Normal, wordWrap = true };
             panelTitleStyle = new GUIStyle(stageCompleteStyle) { fontSize = 48 };
+            upgradeButtonStyle = new GUIStyle(buttonStyle) { fontSize = 24, alignment = TextAnchor.MiddleLeft, padding = new RectOffset(24, 24, 12, 12), wordWrap = true };
         }
     }
 }

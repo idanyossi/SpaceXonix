@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: CampaignUpgrades
+  m_EditorClassIdentifier: SpaceXonix.Runtime:SpaceXonix.Campaign:UpgradeSetDefinition
+  upgrades:
+  - {fileID: 11400000, guid: 3068eeaf3ff63c24298d7254dbaab44c, type: 2}
+  - {fileID: 11400000, guid: 6e3aeb0def4e9354fb5c7897191c65a0, type: 2}
+  - {fileID: 11400000, guid: e6dcd878bb7f4854384dbb403b6d7faf, type: 2}
+  - {fileID: 11400000, guid: ca9f7171f7745d74dbefbaecd50154c6, type: 2}
+  - {fileID: 11400000, guid: cc6df6161814cc241a758640fcaf3d4f, type: 2}
+  - {fileID: 11400000, guid: e7aa886aac9d612438f2c85aa67d81f2, type: 2}
+  - {fileID: 11400000, guid: d2c54bc9d63d95e4abe4a10650c72f1f, type: 2}

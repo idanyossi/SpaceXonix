@@ -866,6 +866,7 @@ GameObject:
   - component: {fileID: 1599803372}
   - component: {fileID: 1599803371}
   - component: {fileID: 1599803373}
+  - component: {fileID: 1599803374}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -924,6 +925,7 @@ MonoBehaviour:
   powerMeter: {fileID: 1823213373}
   powerUpManager: {fileID: 91987429}
   campaignManager: {fileID: 1599803370}
+  upgradeManager: {fileID: 1599803374}
   captureAwardDisplaySeconds: 2
 --- !u!114 &1599803369
 MonoBehaviour:
@@ -959,6 +961,7 @@ MonoBehaviour:
   scoreManager: {fileID: 1599803369}
   powerMeter: {fileID: 1823213373}
   powerUpManager: {fileID: 91987429}
+  upgradeManager: {fileID: 1599803374}
 --- !u!114 &1599803371
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1052,6 +1055,24 @@ MonoBehaviour:
   playerVisual: {fileID: 1987019904147353760}
   ringPresenter: {fileID: 2088577237}
   burstRadius: 0.55
+--- !u!114 &1599803374
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1599803365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd37d2018c08cbf4e809abed4d5dbc48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Campaign.UpgradeManager
+  upgradeSet: {fileID: 11400000, guid: 568d00a172e9f4f41b91a1ef62e60c46, type: 2}
+  playerController: {fileID: 1987019904147353759}
+  powerMeter: {fileID: 1823213373}
+  powerUpManager: {fileID: 91987429}
+  offerCount: 3
+  randomSeed: 0
 --- !u!1 &1747002404
 GameObject:
   m_ObjectHideFlags: 0

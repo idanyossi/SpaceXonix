@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 12 complete; Phase 13 (Roguelite Upgrades) not started
-- Latest completed feature: 2.5D presentation foundation (perspective camera, raised 3D board, hovering actors, 3D hazards, camera feel) verified and profiled
+- Current phase: Phase 13 complete; Phase 14 (Stage Modifiers) not started
+- Latest completed feature: run-only roguelite upgrades chosen between stages
 
 ## Phase Progress
 
@@ -24,7 +24,7 @@
 10. **COMPLETE** — Shield + Freeze + Arena Tilt
 11. **COMPLETE** — Campaign Stages + Progression
 12. **COMPLETE** — 2.5D Presentation Foundation (perspective Cinemachine camera, raised territory, hovering pixel-art billboards)
-13. **NOT STARTED** — Roguelite Upgrades
+13. **COMPLETE** — Roguelite Upgrades
 14. **NOT STARTED** — Stage Modifiers
 15. **NOT STARTED** — Alien Core Boss
 16. **NOT STARTED** — UI + Menus + HUD
@@ -51,12 +51,13 @@
 - `PowerMeter` charges from `BoardManager.CaptureCompleted` through the pure `PowerMeterModel`, fires on `InputRouter.PowerShotRequested`, and advances pooled `PowerShotProjectile` instances that despawn the first standard enemy through `EnemyManager`. Tuning lives in `PowerDefinition` (`ScriptableObjects/Balance/Power.asset`).
 - `PowerUpManager` owns capture-driven pickup spawning, the pure `PowerUpSlotModel` (one stored ability, instantly replaced by a newly touched pickup), and timed Shield/Freeze/Arena Tilt effects. `GameManager` exposes `SetPaused` (time-scale pause that preserves life/control state) and `SetShieldActive`; `EnemyManager` exposes movement suspension and drift.
 - `CampaignManager` (on the GameManager object, execution order 100) drives stages 1–4 inside `Game.unity` from `CampaignDefinition`/`StageDefinition` assets, resetting board, lives, player, enemies, lasers, and per-stage statistics in place. `GameManager.BeginStage`/`StartStagePlay` own the `Briefing` → `Playing` transition; `CampaignRunModel` tracks stage progression and highest stage reached.
+- `UpgradeManager` owns the run's upgrades: `UpgradeOffer` builds the between-stage choice from `UpgradeSetDefinition`, the pure `RunUpgradeModel` holds stacks and computes effective stats, and `ApplyToSystems` pushes them into PlayerController speed, PowerMeter gain, and PowerUpManager durations/tilt penalty/pickup chance at every stage load.
 - Collision is body-sized: `PlayerController.collisionRadius` and `EnemyDefinition.collisionRadius` drive ship contact (radius sum), trail contact and capture occupancy (all cells overlapped by the alien body via `BoardManager.GetCellsOverlappingCircle`), bouncing (the whole body must stay in uncaptured space), lasers (beam half-width + ship radius), Power Shot reach, Volatile blasts/detonation, and pickup collection. Prefab visual sizes equal the collision diameters. A radius of 0 preserves the original point/0.6-cell behaviour.
 
 ## Current Test State
 
-- EditMode discovered: 249
-- Passed: 249
+- EditMode discovered: 253
+- Passed: 253
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -414,6 +415,16 @@
 - Portrait framing verified by 1080 × 1920 renders throughout the phase; the rig re-frames automatically for the editor's landscape Game view and for phone aspects.
 - Deferred to the final QA phase: profiling on a real Android device (frame time, thermal, GPU) and a device build. Editor numbers above are the baseline to compare against.
 
+## Phase 13 — Roguelite Upgrades
+
+- Data: seven `UpgradeDefinition` assets in `ScriptableObjects/Upgrades` collected by `CampaignUpgrades.asset` — Reinforced Hull (+1 life per stack, max 3), Improved Thrusters (+10% speed, 3), Rapid Capacitor (+20% power gain, 3), Shield Capacitor (+25% Shield duration, 3), Cryogenic Core (+25% Freeze duration, 3), Gravity Stabilizer (-50% Arena Tilt slowdown, max 2), Scavenger Protocol (+10% pickup chance, 3).
+- Flow: clearing a stage now goes Stage Complete → **Upgrade Choice** (new `CampaignPhase`) → next stage briefing. `ContinueAfterStageComplete` offers three distinct upgrades the run can still take (fewer only when fewer remain eligible); `ChooseUpgrade(index)` applies one and advances. The temporary HUD panel lists name, effect, and current stacks, selectable by button or number keys, and the briefing lists the run's upgrades.
+- Effects are applied without mutating definition assets: `PlayerController.SetMoveSpeed(base × multiplier)` from a captured base speed, `PowerMeter.SetGainMultiplier`, and new `PowerUpManager.SetDurationMultiplier/SetTiltPenaltyMultiplier/SetPickupChanceBonus` (the pickup bonus is added before the configured maximum). Reinforced Hull feeds `GameManager.BeginStage(bonusLives)`, so it applies from the next stage onward as the plan's ambiguity table specified, never retroactively.
+- Run-only: `RetryCampaign` resets the upgrades along with score and power, restoring base speed and durations.
+- Tests: 4 new EditMode tests — stacking to the limit and reset, each upgrade mapping to its own stat (including the tilt penalty clamped at zero), offers returning three distinct eligible upgrades and nothing when everything is maxed, and the manager applying/clearing effects on the real systems. Full suite: 253 passed, 0 failed.
+- Real `Game.unity` Play Mode: cleared stage 1 at 83%, was offered Reinforced Hull / Shield Capacitor / Rapid Capacitor, took Reinforced Hull, and stage 2 began with **4 lives**; cleared stage 2 and took Gravity Stabilizer, which set the tilt penalty multiplier to 0.5; the stage 3 briefing listed "Reinforced Hull, Gravity Stabilizer". Screenshots confirmed the choice panel (with a "(have 1)" stack hint) and the briefing. Unity Console: 0 errors/warnings.
+- Deferred: modifier score bonus and stage modifiers (Phase 14); upgrade icons and final UI (Phase 16/19).
+
 ## 2.5D Presentation Decisions
 
 - Researched AirXonix: its 3D is presentation over flat Xonix rules (diagonal-down camera, hovering craft, shadows, solid filled territory). Full notes and work breakdown: `IMPLEMENTATION_PLAN.md` section 12.
@@ -438,12 +449,12 @@
 - `Assets/SpaceXonix/Scripts/Scoring` — score model, capture multipliers, and score manager
 - `Assets/SpaceXonix/Scripts/Power` — power meter, power shot projectile, and power tuning
 - `Assets/SpaceXonix/Scripts/PowerUps` — pickups, ability slot, and Shield/Freeze/Arena Tilt effects
-- `Assets/SpaceXonix/Scripts/Campaign` — campaign/stage definitions, run progression, and stage flow
+- `Assets/SpaceXonix/Scripts/Campaign` — campaign/stage definitions, run progression, stage flow, and roguelite upgrades
 - `Assets/SpaceXonix/Tests/EditMode` — deterministic regression suite
 - `Assets/SpaceXonix/Scenes/Game.unity` — representative gameplay scene
 
 ## Next Recommended Action
 
-**Phase 12 — 2.5D Presentation Foundation** (see `IMPLEMENTATION_PLAN.md` section 12)
+**Phase 14 — Stage Modifiers**
 
 Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.
