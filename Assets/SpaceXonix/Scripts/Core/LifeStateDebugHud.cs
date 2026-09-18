@@ -100,8 +100,7 @@ namespace SpaceXonix.Core
                     GUI.Label(new Rect(panel.x + 40f, panel.y + 240f, panel.width - 80f, 44f), $"Enemies: {DescribeEnemies(stage)}", wrapStyle);
                     GUI.Label(new Rect(panel.x + 40f, panel.y + 290f, panel.width - 80f, 44f), $"Lasers: {(stage.lasers != null ? stage.lasers.Length : 0)}", wrapStyle);
                     GUI.Label(new Rect(panel.x + 40f, panel.y + 340f, panel.width - 80f, 100f),
-                        $"Modifier: none
-Upgrades: {(upgradeManager != null ? upgradeManager.Describe() : "none")}", wrapStyle);
+                        $"Modifier: none\nUpgrades: {(upgradeManager != null ? upgradeManager.Describe() : "none")}", wrapStyle);
                     if (GUI.Button(new Rect(panel.center.x - 160f, panel.yMax - 120f, 320f, 80f), "START [Enter]", buttonStyle) || EnterPressed())
                         campaignManager.StartStage();
                     break;
