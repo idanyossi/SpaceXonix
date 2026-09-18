@@ -55,8 +55,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 240
-- Passed: 240
+- EditMode discovered: 242
+- Passed: 242
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -388,7 +388,7 @@
 
 - Lasers: `LaserPresentation.Configure` takes a height; `LaserEmitter` keeps the warning line on the pit floor (0.02 lift) and fires the beam at hover height (0.55), matching the ship's visual so a beam visibly crosses it. Both heights are serialized per emitter.
 - Volatile explosions: new pooled `ExplosionRing` prefab (flattened sphere, translucent orange `ExplosionRing` material) laid flat on the floor, sized to the Volatile's territory blast diameter and faded out over 0.45 s by `ExplosionRingPresenter`, which listens to `EnemyManager.ExplosionOccurred`. `EnemyManager` now exposes its `BoardManager` and the `LastExplosionDefinition` for presentation sizing only.
-- Shield bubble follows the ship's `ActorVisual.HoverHeight` instead of a hard-coded offset; the Power Shot already hovers through its own `ActorVisual`. The bubble was a flattened disc left over from the flat board and read as a 2D card against the 3D models (user feedback), so it is now a full translucent sphere (uniform scale 1.1, alpha 0.3) enclosing the ship.
+- Shield bubble follows the ship's `ActorVisual.HoverHeight` instead of a hard-coded offset; the Power Shot already hovers through its own `ActorVisual`. The bubble was a flattened disc left over from the flat board and read as a 2D card against the 3D models; a translucent sphere then swallowed the ship, so the shield is now a bright green **ring** encircling the ship at hover height (procedural annulus mesh, inner 0.72 / outer 0.88, 48 segments, `Meshes/ShieldRing.asset`). The ship stays fully readable inside it. `RingMeshBuilder` is covered by 2 EditMode tests (radii, flatness, camera-facing winding, argument validation, segment clamping).
 - Tests: 4 new EditMode tests — laser presentation lifts toward the camera and keeps axis orientation/scale; the emitter puts the warning on the floor and the beam at hover height across a real cycle; the blast ring lies on the floor at blast diameter and fades to finished; the presenter spawns on explosions, releases finished rings, and reuses pooled instances. Full suite: 240 passed, 0 failed.
 - Real `Game.unity` Play Mode (stage 4): a detonated Volatile produced a floor blast disc at the blast position, a vertical laser beam fired at hover height across the arena, and the shield bubble sat at -0.55 with the ship. Screenshot: untracked `Temp/Screenshots/hazards_3d.png`. Unity Console: 0 errors/warnings.
 - Next: step 5 (Cinemachine impulse shake for captures/explosions, plus the visual-only board tilt pivot).
