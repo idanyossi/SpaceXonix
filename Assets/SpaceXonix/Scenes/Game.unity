@@ -865,6 +865,7 @@ GameObject:
   - component: {fileID: 1599803370}
   - component: {fileID: 1599803372}
   - component: {fileID: 1599803371}
+  - component: {fileID: 1599803373}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -888,7 +889,7 @@ MonoBehaviour:
   playerController: {fileID: 1987019904147353759}
   boardManager: {fileID: 618364317}
   startingLives: 3
-  respawnDelay: 1.25
+  respawnDelay: 0.7
   postRespawnInvulnerabilityDuration: 2
   captureTargetPercentage: 75
 --- !u!4 &1599803367
@@ -1035,6 +1036,22 @@ MonoBehaviour:
   deathMinForce: 0.6
   deathMaxForce: 1
   randomSeed: 0
+--- !u!114 &1599803373
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1599803365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ad10a953fa8bfd44b4dacff1e664ac7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Presentation.PlayerDeathPresenter
+  gameManager: {fileID: 1599803366}
+  playerVisual: {fileID: 1987019904147353760}
+  ringPresenter: {fileID: 2088577237}
+  burstRadius: 0.55
 --- !u!1 &1747002404
 GameObject:
   m_ObjectHideFlags: 0
@@ -1413,6 +1430,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60a20dd71444aa14d92b85de870873ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Player.PlayerController
+--- !u!114 &1987019904147353760 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7869575738276991704, guid: 51b08254de47fa54086d614da13c194f, type: 3}
+  m_PrefabInstance: {fileID: 1987019904147353758}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7655a0163d27daf4f81697b2d1b5ee1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Presentation.ActorVisual
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

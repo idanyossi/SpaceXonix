@@ -55,8 +55,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 246
-- Passed: 246
+- EditMode discovered: 248
+- Passed: 248
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -400,6 +400,7 @@
 - Arena Tilt keeps using the Cinemachine Dutch roll from step 1; the optional visual-only board pivot was deliberately skipped because tilting the board view alone would desynchronise it from the hovering actors, which stay on the XY plane.
 - Tests: 4 new EditMode tests — routine captures produce zero force while large captures ramp and clamp, the death kick varies in direction and magnitude within its range and stays in the arena plane, explosion scaling with clamps, and the shaker staying silent on a routine capture, varying between two real deaths, and honouring the shake setting. Full suite: 246 passed, 0 failed.
 - Real `Game.unity` Play Mode: with an impulse active the Main Camera was displaced 0.24 from the rig pose, confirming source → listener → brain wiring. After tuning: 4.3% and 1.1% captures requested force 0.000, a 31.9% capture requested the full 0.250, and a death produced a random-direction kick of magnitude 0.795. The long test durations used for sampling were runtime-only; the saved scene keeps 0.35 s Bump. Unity Console: 0 errors/warnings.
+- Death readability fix (playtest feedback: "everything stops for a sec and it looks like it's lagging" before the shake). Measured: the failure call itself takes 0.33 ms and the Console is clean, so the pause was not a stall — it was the 1.25 s `respawnDelay` during which the ship sat motionless at the death position with input disabled and no death feedback. Fixes: `PlayerDeathPresenter` spawns a burst ring at the ship and hides the ship's visual and shadow on the accepted failure, restoring them on `PlayerRespawned`/`StageBriefingStarted`; `respawnDelay` 1.25 s → 0.7 s. 2 new EditMode tests cover the burst/hide/restore cycle and guard the configured delay (0.2 s–0.8 s). Real `Game.unity`: death hid the ship, spawned one burst, shook 0.91, and the ship returned at a safe cell with the burst expired.
 - Next: step 6 (full regression, portrait framing check, and Android draw-call/allocation profiling).
 
 ## 2.5D Presentation Decisions
