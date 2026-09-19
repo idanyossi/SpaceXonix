@@ -15,6 +15,12 @@ namespace SpaceXonix.Input
         public event Action PauseToggleRequested;
 
         public bool GameplayInputEnabled { get; private set; }
+        /// <summary>
+        /// True while the heading came from a swipe. A finger cannot hold a direction the way a
+        /// key can, so a swipe latches until the next swipe instead of being released the moment
+        /// the keyboard poll finds nothing pressed.
+        /// </summary>
+        public bool IsDirectionLatched { get; private set; }
         public CardinalDirection CurrentDirection { get; private set; } = CardinalDirection.Right;
         public bool IsDirectionHeld { get; private set; }
 
@@ -48,21 +54,25 @@ namespace SpaceXonix.Input
             if (Keyboard.current.wKey.wasPressedThisFrame || Keyboard.current.upArrowKey.wasPressedThisFrame)
             {
                 TraceRawInput(Keyboard.current.wKey.wasPressedThisFrame ? "W" : "UpArrow");
+                IsDirectionLatched = false;
                 TrySelectDirection(CardinalDirection.Up);
             }
             else if (Keyboard.current.sKey.wasPressedThisFrame || Keyboard.current.downArrowKey.wasPressedThisFrame)
             {
                 TraceRawInput(Keyboard.current.sKey.wasPressedThisFrame ? "S" : "DownArrow");
+                IsDirectionLatched = false;
                 TrySelectDirection(CardinalDirection.Down);
             }
             else if (Keyboard.current.aKey.wasPressedThisFrame || Keyboard.current.leftArrowKey.wasPressedThisFrame)
             {
                 TraceRawInput(Keyboard.current.aKey.wasPressedThisFrame ? "A" : "LeftArrow");
+                IsDirectionLatched = false;
                 TrySelectDirection(CardinalDirection.Left);
             }
             else if (Keyboard.current.dKey.wasPressedThisFrame || Keyboard.current.rightArrowKey.wasPressedThisFrame)
             {
                 TraceRawInput(Keyboard.current.dKey.wasPressedThisFrame ? "D" : "RightArrow");
+                IsDirectionLatched = false;
                 TrySelectDirection(CardinalDirection.Right);
             }
             else if (IsDirectionHeld && IsPressed(CurrentDirection))
@@ -73,7 +83,7 @@ namespace SpaceXonix.Input
             {
                 return;
             }
-            else
+            else if (!IsDirectionLatched)
             {
                 ReleaseDirection();
             }
@@ -82,13 +92,27 @@ namespace SpaceXonix.Input
         public void SetGameplayInputEnabled(bool enabled)
         {
             GameplayInputEnabled = enabled;
-            if (!enabled) IsDirectionHeld = false;
+            if (enabled) return;
+            IsDirectionHeld = false;
+            IsDirectionLatched = false;
         }
 
         public void ResetDirection(CardinalDirection direction)
         {
             CurrentDirection = direction;
             IsDirectionHeld = false;
+            IsDirectionLatched = false;
+        }
+
+        /// <summary>
+        /// Steers from a swipe. The heading is latched, because the player cannot keep a finger
+        /// pressed the way they hold a key, so it persists until the next swipe or a key press.
+        /// </summary>
+        public bool TrySelectLatchedDirection(CardinalDirection direction)
+        {
+            if (!TrySelectDirection(direction)) return false;
+            IsDirectionLatched = true;
+            return true;
         }
 
         public bool TrySelectDirection(CardinalDirection direction)
@@ -130,6 +154,7 @@ namespace SpaceXonix.Input
         {
             if (!IsDirectionHeld) return;
             IsDirectionHeld = false;
+            IsDirectionLatched = false;
             if (GameManager.Instance != null)
                 GameManager.Instance.TracePlayerLifecycle($"InputDirectionReleased:{CurrentDirection}", force: true);
             DirectionReleased?.Invoke();

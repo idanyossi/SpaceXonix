@@ -77,6 +77,51 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void SwipeLatchesTheHeadingBecauseAFingerCannotHoldADirection()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Router.SetGameplayInputEnabled(true);
+                var origin = new Vector2(300f, 300f);
+                Assert.That(fixture.Touch.ResolveSwipe(origin, origin + new Vector2(0f, 400f)), Is.True);
+
+                Assert.That(fixture.Router.IsDirectionHeld, Is.True);
+                Assert.That(fixture.Router.IsDirectionLatched, Is.True,
+                    "the ship must keep going: the keyboard poll releases any heading that is not latched");
+
+                // A key press takes over and hands control back to hold-to-move.
+                fixture.Router.TrySelectDirection(CardinalDirection.Left);
+                Assert.That(fixture.Router.IsDirectionLatched, Is.True, "TrySelectDirection alone does not clear the latch");
+                fixture.Router.ReleaseDirection();
+                Assert.That(fixture.Router.IsDirectionLatched, Is.False);
+                Assert.That(fixture.Router.IsDirectionHeld, Is.False);
+            }
+        }
+
+        [Test]
+        public void LatchIsDroppedWheneverGameplayInputIsTakenAway()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Router.SetGameplayInputEnabled(true);
+                var origin = new Vector2(300f, 300f);
+                fixture.Touch.ResolveSwipe(origin, origin + new Vector2(400f, 0f));
+                Assert.That(fixture.Router.IsDirectionLatched, Is.True);
+
+                // A death or a stage transition must not leave the ship steering itself.
+                fixture.Router.SetGameplayInputEnabled(false);
+                Assert.That(fixture.Router.IsDirectionLatched, Is.False);
+                Assert.That(fixture.Router.IsDirectionHeld, Is.False);
+
+                fixture.Router.SetGameplayInputEnabled(true);
+                fixture.Touch.ResolveSwipe(origin, origin + new Vector2(400f, 0f));
+                Assert.That(fixture.Router.IsDirectionLatched, Is.True);
+                fixture.Router.ResetDirection(CardinalDirection.Right);
+                Assert.That(fixture.Router.IsDirectionLatched, Is.False, "a respawn resets the heading completely");
+            }
+        }
+
+        [Test]
         public void TouchButtons_RequestAbilityAndPowerThroughTheRouter()
         {
             using (var fixture = new Fixture())

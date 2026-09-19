@@ -94,7 +94,7 @@ namespace SpaceXonix.Input
         {
             LastSwipeDirection = direction;
             SwipeCount++;
-            var steered = inputRouter.TrySelectDirection(direction);
+            var steered = inputRouter.TrySelectLatchedDirection(direction);
             if (logSwipes)
                 Debug.Log($"Swipe {SwipeCount}: {direction} (threshold {ThresholdPixels:0}px, steered: {steered})", this);
             return steered;
