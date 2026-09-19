@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 292
-- Passed: 292
+- EditMode discovered: 296
+- Passed: 296
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -496,6 +496,21 @@
 - The briefing shows the difficulty, and omits the modifier line entirely on Easy where it would always read "none".
 - Tests: 5 new EditMode tests - the mode's effects, a separate record per difficulty that one mode cannot fill in for the other, difficulty surviving a settings reset, both records and the selected mode persisting, and a pre-difficulty save being read as the Hard record. Full suite: 292 passed, 0 failed.
 - Real Play Mode: the difficulty screen showed Easy "No run yet" and Hard "Best: 46162"; choosing Easy loaded the game with **4 lives, no modifier, score bonus 1.00**, and switching to Hard gave **3 lives, "Overclocked Swarm x1.15", bonus 1.15**.
+
+## Playtest Fixes (2026-09-19)
+
+### Alien stuck inside new territory
+
+- Reported: "if i complete a trail with a shield active and an alien is on that trail when it completes the alien just gets stuck".
+- Cause: a Shield lets an alien survive standing on the trail (the pass-through grace), so when the trail is committed the territory closes around it. `EnemyController.AdvanceMovement` falls back to `IsUncapturedWorld` when the body starts blocked, but the alien's **centre** is now captured too, so every candidate is rejected, `Advance` just flips the velocity each frame and the alien never moves again for the rest of the stage.
+- Fix: `EnemyManager.EjectTrappedEnemies`, called from `BoardManager.CaptureCompleted`, finds any alien whose own cell is no longer open and searches outward ring by ring for the nearest spot where its **whole body** fits, then relocates it there. It keeps its heading, speed, drift and frozen state, so it simply carries on from the open space nearest to where it was caught. When the board has no open cell left there is nothing to do and it is left alone, which only happens at 100% capture where the stage ends anyway.
+- Tests: 4 new EditMode tests - the stuck alien reproduced (trapped and provably immobile over 30 steps), ejection returning it to open space with its velocity intact and moving again, untrapped aliens being left alone, and a real capture freeing it through the event with no manual call.
+
+### Upgrade and briefing panels were mostly empty
+
+- Reported: the between-stage panels were far too large and full of dead space.
+- Cause: the shared `CampaignPanel` stretched to the screen with fixed margins and gave the body a fixed slab of the middle, so a short screen like the upgrade choice left a large void.
+- Fix: the panel is now a `VerticalLayoutGroup` with a `ContentSizeFitter`, so its height is the sum of title, body and however many buttons are shown. The briefing and the three-option upgrade choice both come out compact with no empty band, and it still adapts to any aspect.
 
 ## Editor: Play Always Starts From Boot (2026-09-19)
 

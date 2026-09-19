@@ -24,5 +24,7 @@ namespace SpaceXonix.Enemies
             if (reflectY) Velocity = new Vector2(Velocity.x, -Velocity.y);
         }
         public void SetSpeed(float speed) => Velocity = Velocity.normalized * speed;
+        /// <summary>Moves the body without touching velocity, drift or the enabled flag.</summary>
+        public void SetPosition(Vector2 position) => Position = position;
     }
 }

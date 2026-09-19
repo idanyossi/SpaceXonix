@@ -34,12 +34,15 @@ namespace SpaceXonix.Enemies
         private void Start()
         {
             if (gameManager != null) gameManager.StageCompleted += OnStageCompleted;
+            if (boardManager != null) boardManager.CaptureCompleted += OnCaptureCompleted;
             SpawnInitialEnemies();
         }
         private void OnDestroy()
         {
             if (gameManager != null) gameManager.StageCompleted -= OnStageCompleted;
+            if (boardManager != null) boardManager.CaptureCompleted -= OnCaptureCompleted;
         }
+        private void OnCaptureCompleted(BoardCaptureResult result) => EjectTrappedEnemies();
         private void OnStageCompleted() => SetMovementSuspended(true);
         private void Update()
         {
@@ -111,6 +114,57 @@ namespace SpaceXonix.Enemies
             activeEnemies.Remove(enemy);
             RefreshOccupancy();
         }
+        /// <summary>
+        /// Frees any alien that captured territory just closed around. Without this an alien caught
+        /// on a committed trail - which a Shield lets it survive - sits frozen in the new territory
+        /// for the rest of the stage.
+        /// </summary>
+        public int EjectTrappedEnemies()
+        {
+            if (boardManager == null || boardManager.Model == null) return 0;
+            var freed = 0;
+            for (var i = activeEnemies.Count - 1; i >= 0; i--)
+            {
+                var enemy = activeEnemies[i];
+                if (enemy == null || !enemy.IsActiveEnemy || !enemy.IsTrappedInCapturedTerritory()) continue;
+                if (!TryFindOpenPosition(enemy, out var position)) continue;
+                enemy.Relocate(position);
+                freed++;
+            }
+            if (freed > 0) RefreshOccupancy();
+            return freed;
+        }
+
+        /// <summary>
+        /// Searches outward from the alien for somewhere its whole body fits, so it re-enters the
+        /// open area nearest to where it was trapped rather than jumping across the board.
+        /// </summary>
+        private bool TryFindOpenPosition(EnemyController enemy, out Vector3 position)
+        {
+            position = enemy.transform.position;
+            var origin = enemy.LogicalCell;
+            var maxRadius = Mathf.Max(boardManager.Columns, boardManager.Rows);
+            for (var radius = 1; radius <= maxRadius; radius++)
+            {
+                for (var offsetX = -radius; offsetX <= radius; offsetX++)
+                {
+                    for (var offsetY = -radius; offsetY <= radius; offsetY++)
+                    {
+                        // Only the ring at this radius; inner cells were checked already.
+                        if (Mathf.Abs(offsetX) != radius && Mathf.Abs(offsetY) != radius) continue;
+                        var cell = new GridCoordinate(origin.X + offsetX, origin.Y + offsetY);
+                        if (!boardManager.Model.IsInBounds(cell)) continue;
+                        if (boardManager.Model.GetCell(cell) != BoardCellState.Uncaptured) continue;
+                        var candidate = boardManager.GetWorldPosition(cell);
+                        if (!enemy.FitsAt(new Vector2(candidate.x, candidate.y))) continue;
+                        position = new Vector3(candidate.x, candidate.y, enemy.transform.position.z);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         public void RefreshOccupancy()
         {
             occupancy.Clear();

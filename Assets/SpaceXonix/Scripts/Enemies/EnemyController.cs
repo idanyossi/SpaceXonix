@@ -50,6 +50,28 @@ namespace SpaceXonix.Enemies
         }
 
         public void SetIntervalMultiplier(float multiplier) => IntervalMultiplier = Mathf.Max(.01f, multiplier);
+        /// <summary>
+        /// True when the alien's own cell is no longer open space. Captured territory can close
+        /// around it when a trail it was standing on is committed, and from there every candidate
+        /// move is blocked, so it would sit in place flipping its velocity forever.
+        /// </summary>
+        public bool IsTrappedInCapturedTerritory()
+        {
+            if (!IsActiveEnemy || board == null || board.Model == null) return false;
+            var cell = LogicalCell;
+            return board.Model.IsInBounds(cell) && board.Model.GetCell(cell) != BoardCellState.Uncaptured;
+        }
+
+        /// <summary>Moves the alien to open space, keeping its heading, speed, drift and frozen state.</summary>
+        public void Relocate(Vector3 worldPosition)
+        {
+            transform.position = new Vector3(worldPosition.x, worldPosition.y, transform.position.z);
+            if (movement != null) movement.SetPosition(new Vector2(worldPosition.x, worldPosition.y));
+        }
+
+        /// <summary>True when the whole body fits in open space at this position.</summary>
+        public bool FitsAt(Vector2 world) => IsFootprintPassable(world);
+
         public void SetDrift(Vector2 drift) { if (movement != null) movement.Drift = drift; }
         public Vector2 Drift => movement != null ? movement.Drift : Vector2.zero;
         public bool IsTrailContact(Vector2 worldPosition)
