@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 14 complete; Phase 15 (Alien Core Boss) not started
-- Latest completed feature: per-stage random modifiers with compatibility filtering and score bonuses
+- Current phase: Phase 15 complete; Phase 16 (UI + Menus + HUD) not started
+- Latest completed feature: the Alien Core boss stage and the Campaign Complete ending
 
 ## Phase Progress
 
@@ -26,7 +26,7 @@
 12. **COMPLETE** — 2.5D Presentation Foundation (perspective Cinemachine camera, raised territory, hovering pixel-art billboards)
 13. **COMPLETE** — Roguelite Upgrades
 14. **COMPLETE** — Per-stage random modifiers and score bonuses
-15. **NOT STARTED** — Alien Core Boss
+15. **COMPLETE** — Alien Core boss stage and campaign completion
 16. **NOT STARTED** — UI + Menus + HUD
 17. **NOT STARTED** — Android Controls
 18. **NOT STARTED** — Audio
@@ -51,14 +51,15 @@
 - `PowerMeter` charges from `BoardManager.CaptureCompleted` through the pure `PowerMeterModel`, fires on `InputRouter.PowerShotRequested`, and advances pooled `PowerShotProjectile` instances that despawn the first standard enemy through `EnemyManager`. Tuning lives in `PowerDefinition` (`ScriptableObjects/Balance/Power.asset`).
 - `PowerUpManager` owns capture-driven pickup spawning, the pure `PowerUpSlotModel` (one stored ability, instantly replaced by a newly touched pickup), and timed Shield/Freeze/Arena Tilt effects. `GameManager` exposes `SetPaused` (time-scale pause that preserves life/control state) and `SetShieldActive`; `EnemyManager` exposes movement suspension and drift.
 - `CampaignManager` (on the GameManager object, execution order 100) drives stages 1–4 inside `Game.unity` from `CampaignDefinition`/`StageDefinition` assets, resetting board, lives, player, enemies, lasers, and per-stage statistics in place. `GameManager.BeginStage`/`StartStagePlay` own the `Briefing` → `Playing` transition; `CampaignRunModel` tracks stage progression and highest stage reached.
+- `BossController` (scene object `AlienCore`) owns the final stage: a stationary core that fires pooled `BossProjectile` volleys on the pure `BossAttackModel` cycle, takes visual damage as the arena is captured, and dies when the stage's capture target is met. It cannot be shot down; `PowerMeter` routes a Power Shot into `TryInterceptShot`, which stuns the cycle instead.
 - `StageModifierManager` (on the GameManager object) rolls one compatible modifier per stage from `StageModifierSetDefinition` via the pure `StageModifierSelection.Select`, then pushes typed multipliers into `EnemyManager` (speed, Unstable interval, Volatile radius), `LaserManager` (cooldown), `PowerUpManager` (pickup chance), and `ScoreManager` (score bonus). Definitions are never mutated and every multiplier is cleared between stages.
 - `UpgradeManager` owns the run's upgrades: `UpgradeOffer` builds the between-stage choice from `UpgradeSetDefinition`, the pure `RunUpgradeModel` holds stacks and computes effective stats, and `ApplyToSystems` pushes them into PlayerController speed, PowerMeter gain, and PowerUpManager durations/tilt penalty/pickup chance at every stage load.
 - Collision is body-sized: `PlayerController.collisionRadius` and `EnemyDefinition.collisionRadius` drive ship contact (radius sum), trail contact and capture occupancy (all cells overlapped by the alien body via `BoardManager.GetCellsOverlappingCircle`), bouncing (the whole body must stay in uncaptured space), lasers (beam half-width + ship radius), Power Shot reach, Volatile blasts/detonation, and pickup collection. Prefab visual sizes equal the collision diameters. A radius of 0 preserves the original point/0.6-cell behaviour.
 
 ## Current Test State
 
-- EditMode discovered: 258
-- Passed: 258
+- EditMode discovered: 268
+- Passed: 268
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -437,7 +438,19 @@
 - Effects are applied without mutating definition assets, matching the Phase 13 pattern: new `EnemyManager.SetSpeedMultiplier/SetUnstableIntervalMultiplier/SetVolatileRadiusMultiplier`, `EnemyController.SetSpeedMultiplier/SetIntervalMultiplier` (mid-stage changes rescale from the base speed rather than compounding), `LaserManager`/`LaserEmitter.SetCooldownMultiplier` (warning and firing windows untouched), and `PowerUpManager.SetPickupChanceMultiplier` (applied after the upgrade bonus and the configured cap). `ScoreManager` now exposes `BonusMultiplier` for the HUD and tests.
 - Tests: 5 new EditMode tests — compatibility filtering across laserless/laser/Volatile stages plus the null-pool, null-stage and nothing-compatible cases; seeded selection being deterministic and never rolling an incompatible modifier over 25 seeds; the manager pushing all six typed effects into the real systems and clearing them again; enemy speed rescaling from the base speed while the definition stays at 4; and laser cooldown halving against an unmodified control emitter. Full suite: 258 passed, 0 failed.
 - Real `Game.unity` Play Mode: stage 1 rolled Resource Shortage (x1.10) and the briefing rendered it. Forcing each modifier in turn confirmed stage 1 filters Laser Storm, Unstable Space and Volatile Matter out entirely, while stage 4 applies all six — speed x1.25, laser cooldown 1.40 s -> 0.84 s, Dense Sector 5 -> 7 aliens, Unstable interval x0.5, Volatile radius x1.5, score x1.10-x1.20. A forced Dense Sector run on stage 1 showed 4 aliens instead of 2 with the HUD reading "Dense Sector x1.15". Unity Console: 0 errors/warnings.
-- Deferred: modifier icons and final modifier presentation (Phase 16/20); boss-stage modifiers, if any, arrive with Phase 15.
+- Deferred: modifier icons and final modifier presentation (Phase 16/20). Boss-only modifiers were added in Phase 15.
+
+## Phase 15 — Alien Core Boss
+
+- Data: `BossDefinition` (`ScriptableObjects/Boss/AlienCore.asset`) holds placement, fire interval 2.2 s, projectile speed 4.5, 3 shots per volley across 24 deg, projectile radius 0.28, a 2 s Power Shot stun and 4 damage stages. `Stage5_AlienCore.asset` is a normal `StageDefinition` with no spawns and no lasers whose new `boss` field points at it; `CampaignDefinition.bossStage` makes the campaign 5 stages long.
+- Run flow: `CampaignRunModel` gained `HasBossStage`/`IsBossStage`/`CampaignComplete` and a `TotalStageCount`. Clearing stage 4 now loads the boss as stage 5 instead of ending the run; clearing the boss sets `CampaignComplete` and raises `CampaignManager.CampaignCompleted`. The boss stage skips the between-stage upgrade offer, because there is no next stage to spend it on. The one-argument `CampaignRunModel(count)` constructor still behaves exactly as before, so a boss-less campaign keeps the old `NormalStagesCleared` ending.
+- Combat: the core is stationary and cannot be destroyed by shooting. It fires pooled volleys aimed at the ship; a projectile that reaches the ship is a `BossProjectile` failure and one that crosses the unfinished trail is a `TrailHit`. **Shield blocks the ship hit but not the trail hit**, which satisfies the GDD ("Shield functions normally against boss projectiles") while keeping the trail rule identical to every other hazard. A Power Shot is absorbed by the core and stuns its cycle for 2 s without reducing its health; recovery restarts a full interval so it never fires the instant it wakes. Freeze and Arena Tilt do not touch it, and the boss stage excludes Arena Tilt pickups entirely (`PowerUpManager.SetTypeExcluded`) because there are no standard aliens to slow.
+- Damage: the core's condition tracks progress toward the stage's capture target rather than the whole board, stepping through 4 stages and shrinking the body at each one; the HUD reads `ALIEN CORE <n>%` during the fight and `INTERRUPTED` while stunned. A new `CAMPAIGN COMPLETE` panel shows the final score, largest capture and run upgrades.
+- Boss modifiers (GDD section 10): `StageModifierDefinition` gained `requiresBossStage` plus `bossFireIntervalMultiplier`/`bossProjectileSpeedMultiplier`. Boss modifiers are offered **only** on the boss stage and normal modifiers **only** on normal stages, so the alien-free boss can no longer roll "Overclocked Swarm" and do nothing. Three new assets: Overdriven Core (fires 35% more often, x1.15), Plasma Acceleration (projectiles 40% faster, x1.15), Relentless Barrage (20% more often and 20% faster, x1.20).
+- Tests: 10 new EditMode tests — the run playing the boss after the normal stages and completing the campaign (including a finished run still reading as stage 5), a boss-less run keeping the old ending, the attack cycle firing on the interval with stun/recovery/longer-stun-wins semantics and a rejected non-positive interval, volleys aiming at the ship and spreading around that direction, Shield blocking the ship hit but not the trail hit, an unshielded hit reporting `BossProjectile`, a Power Shot stunning rather than killing the core, boss modifiers scaling the cycle and projectile speed without mutating the definition, capture damage stepping and shrinking the body plus defeat clearing in-flight projectiles, and the boss/normal modifier pools staying separate. Full suite: 268 passed, 0 failed.
+- Real `Game.unity` Play Mode: jumped the run to stage 5, which briefed as "Stage 5/5 - Boss: Alien Core - capture 75% to destroy it". The core rendered as a large sphere at the top of the arena firing orange volleys that killed the player three times to Game Over. A scripted capture run walked the core through damage stages 1-4 (body 3.20 -> 1.12) and at 86.5% the stage completed, the core deactivated and its projectiles cleared, then Continue went straight to `CAMPAIGN COMPLETE`. Rolling the boss stage over six seeds drew only boss modifiers (fire interval 2.20 s -> 1.43 s / 1.76 s / 2.20 s), and stage 1 over the same seeds drew only normal ones. Unity Console: 0 errors/warnings.
+- Fixed during the phase: `AssetDatabase.GetBuiltinExtraResource<Mesh>("Sphere.fbx")` returns null in this project, so the core and the projectile prefab were created with no mesh and rendered nothing; both now take the mesh from `GameObject.CreatePrimitive`. `ApplyDamageVisual` also wrote an absolute scale, wiping the authored 3.2 body size on the first frame, and now scales relative to a captured base scale. The briefing panel was resized for the longer boss text and the Campaign Complete subtitle moved out of `DrawStats`' area.
+- Deferred: boss destruction sequence VFX and boss audio (Phases 18/20); a dedicated `Boss.unity` scene is deliberately not used, since the campaign drives every stage in place inside `Game.unity`.
 
 ## 2.5D Presentation Decisions
 
@@ -464,11 +477,12 @@
 - `Assets/SpaceXonix/Scripts/Power` — power meter, power shot projectile, and power tuning
 - `Assets/SpaceXonix/Scripts/PowerUps` — pickups, ability slot, and Shield/Freeze/Arena Tilt effects
 - `Assets/SpaceXonix/Scripts/Campaign` — campaign/stage definitions, run progression, stage flow, roguelite upgrades, and stage modifiers
+- `Assets/SpaceXonix/Scripts/Boss` — Alien Core definition, attack cycle, pooled projectiles, and boss controller
 - `Assets/SpaceXonix/Tests/EditMode` — deterministic regression suite
 - `Assets/SpaceXonix/Scenes/Game.unity` — representative gameplay scene
 
 ## Next Recommended Action
 
-**Phase 15 — Alien Core Boss**
+**Phase 16 — UI, Menus, and HUD**
 
 Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.

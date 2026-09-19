@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39a002348e8ce6f408f312139083533c, type: 3}
+  m_Name: AlienCore
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Boss.BossDefinition
+  displayName: Alien Core
+  columnFraction: 0.5
+  rowFraction: 0.78
+  bodyRadius: 1.6
+  fireInterval: 2.2
+  projectileSpeed: 4.5
+  projectilesPerVolley: 3
+  volleySpreadDegrees: 24
+  projectileRadius: 0.28
+  interruptDuration: 2
+  damageStages: 4

@@ -18,6 +18,7 @@ namespace SpaceXonix.Power
         [SerializeField] private InputRouter inputRouter;
         [SerializeField] private PlayerController playerController;
         [SerializeField] private EnemyManager enemyManager;
+        [SerializeField] private SpaceXonix.Boss.BossController bossController;
         [SerializeField] private PoolService poolService;
         [SerializeField] private GameObject shotPrefab;
 
@@ -107,7 +108,14 @@ namespace SpaceXonix.Power
             for (var i = activeShots.Count - 1; i >= 0; i--)
             {
                 var shot = activeShots[i];
+                var from = (Vector2)shot.transform.position;
                 var step = shot.Advance(deltaTime, enemies, definition.shotHitRadius, bounds, out var hitEnemy);
+                // The boss cannot be shot down, but a hit stops its attack cycle and spends the shot.
+                if (bossController != null && bossController.TryInterceptShot(from, shot.transform.position, definition.shotHitRadius))
+                {
+                    ReleaseShotAt(i);
+                    continue;
+                }
                 if (step == PowerShotStep.Moving) continue;
                 ReleaseShotAt(i);
                 if (step != PowerShotStep.HitEnemy || hitEnemy == null) continue;

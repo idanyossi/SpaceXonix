@@ -291,6 +291,57 @@ Transform:
   m_Children: []
   m_Father: {fileID: 618364318}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &175233843
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 175233845}
+  - component: {fileID: 175233844}
+  m_Layer: 0
+  m_Name: AlienCore
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &175233844
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 175233843}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aebdaca1b2cf68046accbb362ea9e1c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Boss.BossController
+  definition: {fileID: 0}
+  boardManager: {fileID: 618364317}
+  gameManager: {fileID: 1599803366}
+  poolService: {fileID: 296692061}
+  projectilePrefab: {fileID: 6589603349917736157, guid: 9525f0fb75862954f9109c36c8b606d5, type: 3}
+  bodyVisual: {fileID: 1666676553}
+--- !u!4 &175233845
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 175233843}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1666676553}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &296692060
 GameObject:
   m_ObjectHideFlags: 0
@@ -927,6 +978,7 @@ MonoBehaviour:
   powerUpManager: {fileID: 91987429}
   campaignManager: {fileID: 1599803370}
   upgradeManager: {fileID: 1599803374}
+  bossController: {fileID: 175233844}
   captureAwardDisplaySeconds: 2
 --- !u!114 &1599803369
 MonoBehaviour:
@@ -964,6 +1016,7 @@ MonoBehaviour:
   powerUpManager: {fileID: 91987429}
   upgradeManager: {fileID: 1599803374}
   modifierManager: {fileID: 1599803375}
+  bossController: {fileID: 175233844}
 --- !u!114 &1599803371
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1093,7 +1146,98 @@ MonoBehaviour:
   laserManager: {fileID: 1884602789}
   powerUpManager: {fileID: 91987429}
   scoreManager: {fileID: 1599803369}
+  bossController: {fileID: 175233844}
   randomSeed: 0
+--- !u!1 &1666676552
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1666676553}
+  - component: {fileID: 1666676555}
+  - component: {fileID: 1666676554}
+  m_Layer: 0
+  m_Name: Body
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1666676553
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1666676552}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -1.6}
+  m_LocalScale: {x: 3.2, y: 3.2, z: 3.2}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 175233845}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &1666676554
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1666676552}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: b3c078e46dcffa54fa093280c5664d9d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1666676555
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1666676552}
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &1747002404
 GameObject:
   m_ObjectHideFlags: 0
@@ -1266,6 +1410,7 @@ MonoBehaviour:
   inputRouter: {fileID: 448994548}
   playerController: {fileID: 1987019904147353759}
   enemyManager: {fileID: 2088577235}
+  bossController: {fileID: 175233844}
   poolService: {fileID: 296692061}
   shotPrefab: {fileID: 6912669344792508757, guid: e30fb1f048881584fb1befb48b34c4e9, type: 3}
 --- !u!4 &1823213374
@@ -1499,3 +1644,4 @@ SceneRoots:
   - {fileID: 1823213374}
   - {fileID: 91987430}
   - {fileID: 474740379}
+  - {fileID: 175233845}

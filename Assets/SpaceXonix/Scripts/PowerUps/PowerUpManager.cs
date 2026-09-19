@@ -42,6 +42,7 @@ namespace SpaceXonix.PowerUps
         private float tiltPenaltyMultiplier = 1f;
         private float pickupChanceBonus;
         private float pickupChanceMultiplier = 1f;
+        private readonly HashSet<PowerUpType> excludedTypes = new HashSet<PowerUpType>();
         private System.Random random;
         private PowerUpPickup activePickup;
         private SpaceXonix.Presentation.ActorVisual playerVisual;
@@ -109,6 +110,15 @@ namespace SpaceXonix.PowerUps
 
         /// <summary>Stage modifier (Resource Shortage): scales the rolled pickup chance.</summary>
         public void SetPickupChanceMultiplier(float multiplier) => pickupChanceMultiplier = Mathf.Max(0f, multiplier);
+
+        /// <summary>Keeps a pickup type out of the roll for one stage, e.g. Arena Tilt on the alien-free boss stage.</summary>
+        public void SetTypeExcluded(PowerUpType type, bool excluded)
+        {
+            if (excluded) excludedTypes.Add(type); else excludedTypes.Remove(type);
+        }
+
+        public void ClearExcludedTypes() => excludedTypes.Clear();
+        public bool IsTypeExcluded(PowerUpType type) => excludedTypes.Contains(type);
 
         public float GetEffectDuration(PowerUpDefinition definition) =>
             definition == null ? 0f : definition.duration * (durationMultipliers.TryGetValue(definition.type, out var multiplier) ? multiplier : 1f);
@@ -305,16 +315,18 @@ namespace SpaceXonix.PowerUps
             return Vector2.Distance(playerController.transform.position, pickup.transform.position) <= reach;
         }
 
+        private bool IsRollable(PowerUpDefinition definition) => definition != null && !excludedTypes.Contains(definition.type);
+
         private PowerUpDefinition PickRandomDefinition()
         {
             if (powerUps == null || powerUps.Length == 0) return null;
             var count = 0;
-            for (var i = 0; i < powerUps.Length; i++) if (powerUps[i] != null) count++;
+            for (var i = 0; i < powerUps.Length; i++) if (IsRollable(powerUps[i])) count++;
             if (count == 0) return null;
             var pick = random.Next(count);
             for (var i = 0; i < powerUps.Length; i++)
             {
-                if (powerUps[i] == null) continue;
+                if (!IsRollable(powerUps[i])) continue;
                 if (pick-- == 0) return powerUps[i];
             }
             return null;

@@ -19,6 +19,7 @@ namespace SpaceXonix.Campaign
         [SerializeField] private LaserManager laserManager;
         [SerializeField] private PowerUpManager powerUpManager;
         [SerializeField] private ScoreManager scoreManager;
+        [SerializeField] private SpaceXonix.Boss.BossController bossController;
         [Tooltip("0 uses a time-based seed.")]
         [SerializeField] private int randomSeed;
 
@@ -76,6 +77,11 @@ namespace SpaceXonix.Campaign
                 enemyManager.SetSpeedMultiplier(enemySpeed);
                 enemyManager.SetUnstableIntervalMultiplier(unstableInterval);
                 enemyManager.SetVolatileRadiusMultiplier(volatileRadius);
+            }
+            if (bossController != null)
+            {
+                bossController.SetFireIntervalMultiplier(Current != null ? Current.bossFireIntervalMultiplier : 1f);
+                bossController.SetProjectileSpeedMultiplier(Current != null ? Current.bossProjectileSpeedMultiplier : 1f);
             }
             if (laserManager != null) laserManager.SetCooldownMultiplier(laserCooldown);
             if (powerUpManager != null) powerUpManager.SetPickupChanceMultiplier(pickupChance);

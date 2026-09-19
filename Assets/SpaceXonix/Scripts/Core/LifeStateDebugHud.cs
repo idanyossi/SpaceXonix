@@ -18,6 +18,7 @@ namespace SpaceXonix.Core
         [SerializeField] private PowerUpManager powerUpManager;
         [SerializeField] private CampaignManager campaignManager;
         [SerializeField] private UpgradeManager upgradeManager;
+        [SerializeField] private SpaceXonix.Boss.BossController bossController;
         [SerializeField, Min(0f)] private float captureAwardDisplaySeconds = 2f;
 
         private GameManager game;
@@ -80,7 +81,13 @@ namespace SpaceXonix.Core
         {
             var run = campaignManager.Run;
             var stage = campaignManager.CurrentStage;
-            GUI.Label(new Rect(0f, 20f, Screen.width, 50f), $"Stage {run.CurrentStageNumber}/{run.NormalStageCount}", rightCenteredStyle);
+            GUI.Label(new Rect(0f, 20f, Screen.width, 50f), $"Stage {run.CurrentStageNumber}/{run.TotalStageCount}", rightCenteredStyle);
+            if (bossController != null && bossController.IsActive)
+            {
+                var condition = 100f - (float)bossController.DamageStage / Mathf.Max(1, bossController.MaxDamageStages) * 100f;
+                var label = bossController.IsInterrupted ? "ALIEN CORE  INTERRUPTED" : $"ALIEN CORE  {condition:0}%";
+                GUI.Label(new Rect(0f, 110f, Screen.width, 40f), label, rightCenteredStyle);
+            }
             var modifier = campaignManager.CurrentModifier;
             if (modifier != null)
                 GUI.Label(new Rect(0f, 68f, Screen.width, 40f), $"{modifier.displayName}  x{modifier.scoreMultiplier:0.00}", rightCenteredStyle);
@@ -97,12 +104,15 @@ namespace SpaceXonix.Core
             switch (campaignManager.Phase)
             {
                 case CampaignPhase.Briefing:
-                    var panel = DrawPanel(820f, 620f);
+                    var panel = DrawPanel(820f, 680f);
                     GUI.Label(new Rect(panel.x, panel.y + 20f, panel.width, 80f), $"STAGE {stage.stageNumber}: {stage.stageName.ToUpperInvariant()}", panelTitleStyle);
-                    GUI.Label(new Rect(panel.x + 40f, panel.y + 110f, panel.width - 80f, 120f), stage.briefing, wrapStyle);
-                    GUI.Label(new Rect(panel.x + 40f, panel.y + 240f, panel.width - 80f, 44f), $"Enemies: {DescribeEnemies(stage)}", wrapStyle);
-                    GUI.Label(new Rect(panel.x + 40f, panel.y + 290f, panel.width - 80f, 44f), $"Lasers: {(stage.lasers != null ? stage.lasers.Length : 0)}", wrapStyle);
-                    GUI.Label(new Rect(panel.x + 40f, panel.y + 340f, panel.width - 80f, 100f),
+                    // The boss briefing runs longer than a normal stage's, so the block gets room for five lines.
+                    GUI.Label(new Rect(panel.x + 40f, panel.y + 110f, panel.width - 80f, 170f), stage.briefing, wrapStyle);
+                    GUI.Label(new Rect(panel.x + 40f, panel.y + 290f, panel.width - 80f, 44f),
+                        stage.IsBossStage ? $"Boss: {stage.boss.displayName} - capture {game.CaptureTargetPercentage:0}% to destroy it" : $"Enemies: {DescribeEnemies(stage)}",
+                        wrapStyle);
+                    GUI.Label(new Rect(panel.x + 40f, panel.y + 340f, panel.width - 80f, 44f), $"Lasers: {(stage.lasers != null ? stage.lasers.Length : 0)}", wrapStyle);
+                    GUI.Label(new Rect(panel.x + 40f, panel.y + 390f, panel.width - 80f, 100f),
                         $"Modifier: {campaignManager.DescribeModifier()}\nUpgrades: {(upgradeManager != null ? upgradeManager.Describe() : "none")}", wrapStyle);
                     if (GUI.Button(new Rect(panel.center.x - 160f, panel.yMax - 120f, 320f, 80f), "START [Enter]", buttonStyle) || EnterPressed())
                         campaignManager.StartStage();
@@ -128,9 +138,19 @@ namespace SpaceXonix.Core
                     break;
                 case CampaignPhase.NormalStagesCleared:
                     panel = DrawPanel(820f, 460f);
-                    GUI.Label(new Rect(panel.x, panel.y + 20f, panel.width, 90f), "STAGES 1-4 CLEARED", panelTitleStyle);
-                    DrawStats(panel, "Alien Core boss arrives in a later phase", null, null);
+                    GUI.Label(new Rect(panel.x, panel.y + 20f, panel.width, 90f), "ALL STAGES CLEARED", panelTitleStyle);
+                    DrawStats(panel, $"Score {(scoreManager != null ? scoreManager.Score : 0)}", null, null);
                     if (GUI.Button(new Rect(panel.center.x - 200f, panel.yMax - 110f, 400f, 80f), "RETRY CAMPAIGN [Enter]", buttonStyle) || EnterPressed())
+                        campaignManager.RetryCampaign();
+                    break;
+                case CampaignPhase.CampaignComplete:
+                    panel = DrawPanel(820f, 520f);
+                    GUI.Label(new Rect(panel.x, panel.y + 20f, panel.width, 90f), "CAMPAIGN COMPLETE", panelTitleStyle);
+                    // DrawStats owns everything from +120 down, so the subtitle sits directly under the title.
+                    GUI.Label(new Rect(panel.x + 40f, panel.y + 88f, panel.width - 80f, 40f), "The Alien Core is destroyed.", rightCenteredStyle);
+                    DrawStats(panel, $"Largest capture {(scoreManager != null ? scoreManager.LargestCapturePercentage : 0f):0.0}%",
+                        $"Upgrades: {(upgradeManager != null ? upgradeManager.Describe() : "none")}", null);
+                    if (GUI.Button(new Rect(panel.center.x - 200f, panel.yMax - 110f, 400f, 80f), "NEW CAMPAIGN [Enter]", buttonStyle) || EnterPressed())
                         campaignManager.RetryCampaign();
                     break;
             }

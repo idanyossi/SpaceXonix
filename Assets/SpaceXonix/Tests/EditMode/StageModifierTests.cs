@@ -54,6 +54,41 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void Selection_KeepsBossAndNormalModifiersInSeparatePools()
+        {
+            var owned = new List<UnityEngine.Object>();
+            try
+            {
+                var normalStage = Stage(owned, EnemyType.BasicBouncer, lasers: 1);
+                var bossStage = Own(owned, ScriptableObject.CreateInstance<StageDefinition>());
+                bossStage.enemySpawns = new EnemySpawnRequest[0];
+                bossStage.lasers = new LaserPlacement[0];
+                bossStage.boss = Own(owned, ScriptableObject.CreateInstance<SpaceXonix.Boss.BossDefinition>());
+                Assert.That(bossStage.IsBossStage, Is.True);
+
+                var swarm = Own(owned, Modifier("Overclocked Swarm"));
+                var overdriven = Own(owned, Modifier("Overdriven Core"));
+                overdriven.requiresBossStage = true;
+                overdriven.bossFireIntervalMultiplier = .65f;
+
+                var pool = new[] { swarm, overdriven };
+                var types = new List<EnemyType>();
+                var compatible = new List<StageModifierDefinition>();
+
+                StageModifierSelection.Select(pool, normalStage, new System.Random(1), types, compatible);
+                Assert.That(compatible, Is.EquivalentTo(new[] { swarm }), "a boss modifier never lands on a normal stage");
+
+                StageModifierSelection.Select(pool, bossStage, new System.Random(1), types, compatible);
+                Assert.That(compatible, Is.EquivalentTo(new[] { overdriven }),
+                    "the alien-free boss stage never draws an alien modifier");
+            }
+            finally
+            {
+                Destroy(owned);
+            }
+        }
+
+        [Test]
         public void Selection_IsDeterministicForASeedAndAlwaysCompatible()
         {
             var owned = new List<UnityEngine.Object>();

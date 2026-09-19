@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d160f45ab63df7645b17a94f6cd6fb1c, type: 3}
-  m_Name: Mod_ResourceShortage
+  m_Name: Mod_OverdrivenCore
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Campaign.StageModifierDefinition
-  displayName: Resource Shortage
-  effectText: Power-ups spawn half as often.
-  scoreMultiplier: 1.1
+  displayName: Overdriven Core
+  effectText: The Alien Core fires 35% more often.
+  scoreMultiplier: 1.15
   requiresEnemyType: 0
   requiredEnemyType: 2
   requiresLasers: 0
-  requiresBossStage: 0
+  requiresBossStage: 1
   enemySpeedMultiplier: 1
   laserCooldownMultiplier: 1
   unstableIntervalMultiplier: 1
   volatileRadiusMultiplier: 1
-  pickupChanceMultiplier: 0.5
+  pickupChanceMultiplier: 1
   extraEnemies: 0
-  bossFireIntervalMultiplier: 1
+  bossFireIntervalMultiplier: 0.65
   bossProjectileSpeedMultiplier: 1

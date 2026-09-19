@@ -18,9 +18,12 @@ MonoBehaviour:
   requiresEnemyType: 0
   requiredEnemyType: 2
   requiresLasers: 0
+  requiresBossStage: 0
   enemySpeedMultiplier: 1
   laserCooldownMultiplier: 1
   unstableIntervalMultiplier: 1
   volatileRadiusMultiplier: 1
   pickupChanceMultiplier: 1
   extraEnemies: 2
+  bossFireIntervalMultiplier: 1
+  bossProjectileSpeedMultiplier: 1

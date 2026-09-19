@@ -229,7 +229,8 @@ namespace SpaceXonix.Core
         }
 
         public static bool IsShieldableFailure(PlayerFailureReason reason) =>
-            reason == PlayerFailureReason.EnemyContact || reason == PlayerFailureReason.Laser;
+            reason == PlayerFailureReason.EnemyContact || reason == PlayerFailureReason.Laser ||
+            reason == PlayerFailureReason.BossProjectile;
 
         public bool CanProcessPlayerContact(int lifecycleGeneration)
         {

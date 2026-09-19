@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b455e401833ad24c9f81bf18194df78, type: 3}
+  m_Name: Stage5_AlienCore
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Campaign.StageDefinition
+  stageNumber: 5
+  stageName: Alien Core
+  briefing: The Alien Core is stationary and cannot be shot down. It fires volleys
+    that kill your ship and your unfinished trail. A Power Shot only stuns it. Capture
+    75% of the arena to destroy it.
+  enemySpawns: []
+  lasers: []
+  boss: {fileID: 11400000, guid: 5fa6f7c5bc09fdb47bcec5124b9cc7f5, type: 2}

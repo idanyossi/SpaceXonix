@@ -18,6 +18,8 @@ namespace SpaceXonix.Campaign
         public EnemyType requiredEnemyType = EnemyType.Unstable;
         [Tooltip("Only offered on stages that have laser emitters.")]
         public bool requiresLasers;
+        [Tooltip("Boss modifiers are offered only on the boss stage; every other modifier is offered only on normal stages.")]
+        public bool requiresBossStage;
 
         [Header("Typed effects (1 = unchanged)")]
         [Min(.1f)] public float enemySpeedMultiplier = 1f;
@@ -28,10 +30,16 @@ namespace SpaceXonix.Campaign
         [Tooltip("Extra standard aliens spawned on top of the stage's own spawns.")]
         [Min(0)] public int extraEnemies;
 
+        [Header("Boss effects (1 = unchanged)")]
+        [Min(.1f)] public float bossFireIntervalMultiplier = 1f;
+        [Min(.1f)] public float bossProjectileSpeedMultiplier = 1f;
+
         /// <summary>A modifier only appears on a stage that actually contains what it modifies.</summary>
         public bool IsCompatibleWith(StageDefinition stage, List<EnemyType> buffer)
         {
             if (stage == null) return false;
+            // The boss stage has no standard aliens, so it draws only from the boss pool and never from the normal one.
+            if (requiresBossStage != stage.IsBossStage) return false;
             if (requiresLasers && (stage.lasers == null || stage.lasers.Length == 0)) return false;
             if (extraEnemies > 0 && (stage.enemySpawns == null || stage.enemySpawns.Length == 0)) return false;
             if (!requiresEnemyType) return true;

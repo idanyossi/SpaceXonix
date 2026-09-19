@@ -17,3 +17,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b099a2a6878ea0b44b30908311fe3877, type: 2}
   - {fileID: 11400000, guid: b2b0b17d25544ff44a77b63f4beb2ded, type: 2}
   - {fileID: 11400000, guid: 9a2c6a7a9123ae24aa29c8fff2b17320, type: 2}
+  bossStage: {fileID: 11400000, guid: 88b4ce6e95ccdb446843325d9b590e85, type: 2}
