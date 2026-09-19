@@ -27,7 +27,7 @@ namespace SpaceXonix.UI
         {
             if (abilityButton != null) abilityButton.onClick.AddListener(UseAbility);
             if (powerButton != null) powerButton.onClick.AddListener(FirePowerShot);
-            ApplyVisibility(forceVisible || Application.isMobilePlatform);
+            ApplyVisibility(forceVisible || TouchIsAvailable());
         }
 
         private void OnDisable()
@@ -43,6 +43,14 @@ namespace SpaceXonix.UI
             if (abilityButton != null) abilityButton.interactable = powerUpManager != null && powerUpManager.StoredPowerUp.HasValue;
             if (powerButton != null) powerButton.interactable = powerMeter != null && powerMeter.IsReady;
         }
+
+        /// <summary>
+        /// True when the player can actually tap. Tested by the presence of a touchscreen rather
+        /// than by platform, so the buttons also appear in the Device Simulator, which is where
+        /// mobile gets tried long before there is an APK on a phone.
+        /// </summary>
+        public static bool TouchIsAvailable() =>
+            Application.isMobilePlatform || UnityEngine.InputSystem.Touchscreen.current != null;
 
         public void UseAbility()
         {
