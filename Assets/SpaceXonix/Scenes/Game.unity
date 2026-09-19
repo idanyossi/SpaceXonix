@@ -1431,6 +1431,7 @@ MonoBehaviour:
   inputRouter: {fileID: 448994548}
   swipeThresholdFraction: 0.03
   allowMouseSwipe: 1
+  logSwipes: 1
 --- !u!1 &474740376
 GameObject:
   m_ObjectHideFlags: 0
