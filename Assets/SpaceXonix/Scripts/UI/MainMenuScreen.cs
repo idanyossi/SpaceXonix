@@ -17,6 +17,7 @@ namespace SpaceXonix.UI
         [SerializeField] private Text highScoreLabel;
         [SerializeField] private SettingsPanel settingsPanel;
         [SerializeField] private GameObject controlsPanel;
+        [SerializeField] private DifficultyPanel difficultyPanel;
 
         private void OnEnable()
         {
@@ -32,6 +33,7 @@ namespace SpaceXonix.UI
             }
             if (settingsPanel != null) settingsPanel.gameObject.SetActive(false);
             if (controlsPanel != null) controlsPanel.SetActive(false);
+            if (difficultyPanel != null) difficultyPanel.gameObject.SetActive(false);
             RefreshHighScore();
         }
 
@@ -43,17 +45,26 @@ namespace SpaceXonix.UI
             if (quitButton != null) quitButton.onClick.RemoveListener(SceneRouter.QuitGame);
         }
 
-        public void StartCampaign() => SceneRouter.StartCampaign();
+        /// <summary>Start Campaign asks for a difficulty first; the panel itself loads the game scene.</summary>
+        public void StartCampaign()
+        {
+            if (settingsPanel != null) settingsPanel.Close();
+            if (controlsPanel != null) controlsPanel.SetActive(false);
+            if (difficultyPanel != null) difficultyPanel.Open();
+            else SceneRouter.StartCampaign();
+        }
 
         public void OpenSettings()
         {
             if (controlsPanel != null) controlsPanel.SetActive(false);
+            if (difficultyPanel != null) difficultyPanel.Close();
             if (settingsPanel != null) settingsPanel.Open();
         }
 
         public void OpenControls()
         {
             if (settingsPanel != null) settingsPanel.Close();
+            if (difficultyPanel != null) difficultyPanel.Close();
             if (controlsPanel != null) controlsPanel.SetActive(true);
         }
 
@@ -62,7 +73,9 @@ namespace SpaceXonix.UI
             if (highScoreLabel == null) return;
             var settings = GameSettings.Current;
             var best = settings != null ? settings.CampaignHighScore : 0;
-            highScoreLabel.text = best > 0 ? $"Best run: {best}" : "No campaign completed yet";
+            highScoreLabel.text = best > 0
+                ? $"Best run ({settings.Difficulty.DisplayName()}): {best}"
+                : "No campaign completed yet";
         }
     }
 }

@@ -37,6 +37,8 @@ namespace SpaceXonix.Core
         public bool IsInvulnerable => CurrentState == GameplayState.Playing && invulnerabilityRemaining > 0f;
         public int PlayerLifecycleGeneration => playerLifecycleGeneration;
         public float CaptureTargetPercentage => captureTargetPercentage;
+        /// <summary>Configured lives for a fresh run, before any difficulty bonus.</summary>
+        public int StartingLives => startingLives;
         public bool IsPaused { get; private set; }
         public bool IsShieldActive { get; private set; }
         internal float InvulnerabilityRemaining => invulnerabilityRemaining;

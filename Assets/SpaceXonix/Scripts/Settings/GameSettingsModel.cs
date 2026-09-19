@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SpaceXonix.Settings
@@ -19,7 +20,10 @@ namespace SpaceXonix.Settings
         private float sfxVolume = DefaultSfxVolume;
         private bool vibrationEnabled = true;
         private bool cameraShakeEnabled = true;
-        private int campaignHighScore;
+        private DifficultyMode difficulty = DifficultyMode.Hard;
+        // One record per difficulty: Hard's modifier bonuses inflate its scores, so a shared
+        // record would make an Easy run permanently uncompetitive.
+        private readonly int[] campaignHighScores = new int[2];
 
         public event Action Changed;
 
@@ -53,8 +57,17 @@ namespace SpaceXonix.Settings
             set => Assign(ref cameraShakeEnabled, value);
         }
 
-        /// <summary>Best campaign score so far. Raised only through <see cref="TrySetHighScore"/>.</summary>
-        public int CampaignHighScore => campaignHighScore;
+        /// <summary>The difficulty the next run will start on. Remembered between sessions.</summary>
+        public DifficultyMode Difficulty
+        {
+            get => difficulty;
+            set => Assign(ref difficulty, value);
+        }
+
+        /// <summary>Best campaign score on the selected difficulty.</summary>
+        public int CampaignHighScore => GetHighScore(difficulty);
+
+        public int GetHighScore(DifficultyMode mode) => campaignHighScores[(int)mode];
 
         /// <summary>The effective volume a music source should play at, after the master volume.</summary>
         public float EffectiveMusicVolume => masterVolume * musicVolume;
@@ -62,17 +75,19 @@ namespace SpaceXonix.Settings
         /// <summary>The effective volume a sound effect should play at, after the master volume.</summary>
         public float EffectiveSfxVolume => masterVolume * sfxVolume;
 
-        /// <summary>Records a finished run. Returns true only when it beat the stored best.</summary>
-        public bool TrySetHighScore(int score)
+        /// <summary>Records a finished run on the selected difficulty. True only when it beat the best.</summary>
+        public bool TrySetHighScore(int score) => TrySetHighScore(difficulty, score);
+
+        public bool TrySetHighScore(DifficultyMode mode, int score)
         {
-            if (score <= campaignHighScore) return false;
-            campaignHighScore = score;
+            if (score <= campaignHighScores[(int)mode]) return false;
+            campaignHighScores[(int)mode] = score;
             Changed?.Invoke();
             return true;
         }
 
-        /// <summary>Restores the stored best without raising a new record, for loading from disk.</summary>
-        public void LoadHighScore(int score) => campaignHighScore = Mathf.Max(0, score);
+        /// <summary>Restores a stored best without raising a new record, for loading from disk.</summary>
+        public void LoadHighScore(DifficultyMode mode, int score) => campaignHighScores[(int)mode] = Mathf.Max(0, score);
 
         public void ResetToDefaults()
         {
@@ -81,13 +96,15 @@ namespace SpaceXonix.Settings
             sfxVolume = DefaultSfxVolume;
             vibrationEnabled = true;
             cameraShakeEnabled = true;
-            // The high score is a record, not a preference, so resetting settings never clears it.
+            // Difficulty and the high scores are run choices and records, not preferences,
+            // so resetting the settings leaves both alone.
             Changed?.Invoke();
         }
 
-        private void Assign<T>(ref T field, T value) where T : IEquatable<T>
+        // Constrained to struct rather than IEquatable, because enums do not satisfy that constraint.
+        private void Assign<T>(ref T field, T value) where T : struct
         {
-            if (field.Equals(value)) return;
+            if (EqualityComparer<T>.Default.Equals(field, value)) return;
             field = value;
             Changed?.Invoke();
         }

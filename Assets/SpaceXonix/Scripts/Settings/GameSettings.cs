@@ -16,7 +16,10 @@ namespace SpaceXonix.Settings
         private const string SfxVolumeKey = "spacexonix.audio.sfx";
         private const string VibrationKey = "spacexonix.haptics.vibration";
         private const string CameraShakeKey = "spacexonix.camera.shake";
-        private const string HighScoreKey = "spacexonix.campaign.highscore";
+        // The original key predates difficulty and always had modifiers on, so it stays Hard's record.
+        private const string HardHighScoreKey = "spacexonix.campaign.highscore";
+        private const string EasyHighScoreKey = "spacexonix.campaign.highscore.easy";
+        private const string DifficultyKey = "spacexonix.campaign.difficulty";
 
         [Tooltip("Keeps this service alive across scene loads. Turn off for scene-local test rigs.")]
         [SerializeField] private bool persistAcrossScenes = true;
@@ -74,7 +77,9 @@ namespace SpaceXonix.Settings
             model.SfxVolume = store.GetFloat(SfxVolumeKey, GameSettingsModel.DefaultSfxVolume);
             model.VibrationEnabled = store.GetInt(VibrationKey, 1) != 0;
             model.CameraShakeEnabled = store.GetInt(CameraShakeKey, 1) != 0;
-            model.LoadHighScore(store.GetInt(HighScoreKey, 0));
+            model.Difficulty = (DifficultyMode)store.GetInt(DifficultyKey, (int)DifficultyMode.Hard);
+            model.LoadHighScore(DifficultyMode.Hard, store.GetInt(HardHighScoreKey, 0));
+            model.LoadHighScore(DifficultyMode.Easy, store.GetInt(EasyHighScoreKey, 0));
             suppressSave = false;
             SettingsChanged?.Invoke(model);
         }
@@ -87,7 +92,9 @@ namespace SpaceXonix.Settings
             store.SetFloat(SfxVolumeKey, model.SfxVolume);
             store.SetInt(VibrationKey, model.VibrationEnabled ? 1 : 0);
             store.SetInt(CameraShakeKey, model.CameraShakeEnabled ? 1 : 0);
-            store.SetInt(HighScoreKey, model.CampaignHighScore);
+            store.SetInt(DifficultyKey, (int)model.Difficulty);
+            store.SetInt(HardHighScoreKey, model.GetHighScore(DifficultyMode.Hard));
+            store.SetInt(EasyHighScoreKey, model.GetHighScore(DifficultyMode.Easy));
             store.Save();
         }
 

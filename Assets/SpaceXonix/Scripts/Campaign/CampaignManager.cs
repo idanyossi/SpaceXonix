@@ -6,6 +6,7 @@ using SpaceXonix.Hazards;
 using SpaceXonix.Power;
 using SpaceXonix.PowerUps;
 using SpaceXonix.Scoring;
+using SpaceXonix.Settings;
 using UnityEngine;
 
 namespace SpaceXonix.Campaign
@@ -45,6 +46,8 @@ namespace SpaceXonix.Campaign
             ? null
             : run.IsBossStage ? campaign.bossStage : campaign.normalStages[run.CurrentStageIndex];
         public bool IsBossStage => run != null && run.IsBossStage;
+        /// <summary>The difficulty this run is being played on, taken from the settings at run start.</summary>
+        public Settings.DifficultyMode Difficulty { get; private set; } = Settings.DifficultyMode.Hard;
         public float StageCompletedPercentage { get; private set; }
         public StageModifierDefinition CurrentModifier => modifierManager != null ? modifierManager.Current : null;
         public float ModifierScoreMultiplier => modifierManager != null ? modifierManager.ScoreMultiplier : 1f;
@@ -93,7 +96,7 @@ namespace SpaceXonix.Campaign
         {
             var settings = Settings.GameSettings.Current;
             if (settings == null || scoreManager == null) return;
-            IsNewHighScore = settings.TrySetHighScore(scoreManager.Score);
+            IsNewHighScore = settings.TrySetHighScore(Difficulty, scoreManager.Score);
         }
 
         /// <summary>True when the run that just ended beat the stored best.</summary>
@@ -108,6 +111,9 @@ namespace SpaceXonix.Campaign
                 enabled = false;
                 return false;
             }
+            // The run locks in the difficulty chosen in the menu, so changing the setting mid-run does nothing.
+            var settings = Settings.GameSettings.Current;
+            if (settings != null) Difficulty = settings.Difficulty;
             run = new CampaignRunModel(campaign.normalStages.Length, campaign.HasBossStage);
             gameManager.StageCompleted += OnStageCompleted;
             gameManager.GameOver += RecordCampaignScore;
@@ -123,11 +129,19 @@ namespace SpaceXonix.Campaign
             if (powerMeter != null) powerMeter.PrepareForStage();
             if (enemyManager != null) enemyManager.DespawnAll();
             if (bossController != null) bossController.Deactivate();
-            // Lives carry across stages; only the first stage of a run starts from the configured total.
-            gameManager.BeginStage(runStarted ? Mathf.Max(1, gameManager.Lives) : 0);
+            // Lives carry across stages; only the first stage of a run starts from the configured total,
+            // where Easy adds its bonus life on top.
+            gameManager.BeginStage(runStarted
+                ? Mathf.Max(1, gameManager.Lives)
+                : gameManager.StartingLives + Difficulty.BonusStartingLives());
             runStarted = true;
             // The modifier is rolled before the stage is built so its multipliers reach the lasers and aliens as they spawn.
-            if (modifierManager != null) modifierManager.SelectFor(stage);
+            // Easy runs without modifiers at all, which is the whole difference the difficulty makes to a stage.
+            if (modifierManager != null)
+            {
+                if (Difficulty.UsesStageModifiers()) modifierManager.SelectFor(stage);
+                else modifierManager.Clear();
+            }
             if (laserManager != null) laserManager.ConfigureStage(stage.lasers);
             if (enemyManager != null) enemyManager.SpawnAll(stage.enemySpawns);
             if (modifierManager != null) modifierManager.SpawnExtras(stage);
@@ -178,6 +192,9 @@ namespace SpaceXonix.Campaign
             run.Reset();
             runStarted = false;
             IsNewHighScore = false;
+            // Retrying picks up whatever difficulty is selected now, so the menu choice always applies.
+            var settings = Settings.GameSettings.Current;
+            if (settings != null) Difficulty = settings.Difficulty;
             if (upgradeManager != null) upgradeManager.ResetRun();
             if (scoreManager != null) scoreManager.ResetScore();
             if (powerMeter != null) powerMeter.ResetMeter();

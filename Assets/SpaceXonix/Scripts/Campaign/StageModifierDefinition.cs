@@ -47,12 +47,6 @@ namespace SpaceXonix.Campaign
         }
     }
 
-    [CreateAssetMenu(menuName = "SpaceXonix/Stage Modifier Set")]
-    public sealed class StageModifierSetDefinition : ScriptableObject
-    {
-        public StageModifierDefinition[] modifiers;
-    }
-
     /// <summary>Picks one compatible modifier per stage.</summary>
     public static class StageModifierSelection
     {

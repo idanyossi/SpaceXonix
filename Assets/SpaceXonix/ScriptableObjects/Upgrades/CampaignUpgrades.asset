@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: a06092108d7b4524283fdd461b8f77c8, type: 3}
   m_Name: CampaignUpgrades
   m_EditorClassIdentifier: SpaceXonix.Runtime:SpaceXonix.Campaign:UpgradeSetDefinition
   upgrades:

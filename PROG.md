@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 16 complete
-- Latest completed feature: the real uGUI HUD, campaign screens and in-game pause menu
+- Current phase: Phase 16 complete; Easy/Hard difficulty added
+- Latest completed feature: Easy and Hard difficulty modes chosen after Start Campaign
 
 ## Phase Progress
 
@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 283
-- Passed: 283
+- EditMode discovered: 292
+- Passed: 292
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -486,6 +486,24 @@
 - Panels stretch within margins instead of using fixed sizes, so they fit any aspect rather than overflowing whenever the window is shorter than the 1080x1920 reference.
 - Tests: 4 new EditMode tests - the panel showing one caption per button and hiding the spares, each button reporting its own slot and a hidden panel routing nothing, the HUD showing lives/score/capture and the power meter's fill and ready colour, and the HUD tracking a lost life and a real capture. Full suite: 283 passed, 0 failed.
 - Real `Game.unity` Play Mode: the briefing rendered as a proper panel, play showed lives 2, Stage 1/5, "Overclocked Swarm x1.15", score 9288, 26.9% and a full cyan POWER READY bar; Escape opened the pause menu with `Time.timeScale` 0, Settings opened over it, toggling camera shake reached the live `ArenaShaker`, and Resume restored the time scale and closed both. Unity Console: 0 project errors.
+
+## Difficulty Modes (requested 2026-09-19)
+
+- Requested by the user: "easy doesnt have the stage modifiers and hard does have it", with Easy also granting an extra life. Chosen flow: Start Campaign opens a **Choose Difficulty** screen rather than replacing the button with two.
+- `DifficultyMode` (Easy/Hard) with the whole difference expressed as two extension methods - `UsesStageModifiers()` and `BonusStartingLives()` - so nothing else has to branch on the enum. Easy: no stage modifiers, 4 starting lives. Hard: modifiers on with their score bonuses, 3 starting lives. Enemies, lasers and the 75% capture target are identical.
+- `CampaignManager` locks the difficulty in at `Initialize` and at `RetryCampaign`, so changing the setting mid-run does nothing but the menu choice always applies to the next run. `LoadCurrentStage` either rolls a modifier or calls `Clear()`, and the first stage of a run adds the difficulty's bonus life on top of `GameManager.StartingLives`.
+- **One high score per difficulty.** Hard's modifier bonuses (x1.10-x1.20) inflate its scores, so a shared record would make an Easy run permanently uncompetitive. The pre-existing `spacexonix.campaign.highscore` key becomes Hard's record, because every run before difficulty existed had modifiers on; Easy gets a new key. The difficulty screen shows each mode's own best.
+- The briefing shows the difficulty, and omits the modifier line entirely on Easy where it would always read "none".
+- Tests: 5 new EditMode tests - the mode's effects, a separate record per difficulty that one mode cannot fill in for the other, difficulty surviving a settings reset, both records and the selected mode persisting, and a pre-difficulty save being read as the Hard record. Full suite: 292 passed, 0 failed.
+- Real Play Mode: the difficulty screen showed Easy "No run yet" and Hard "Best: 46162"; choosing Easy loaded the game with **4 lives, no modifier, score bonus 1.00**, and switching to Hard gave **3 lives, "Overclocked Swarm x1.15", bonus 1.15**.
+
+## Broken ScriptableObject Assets (found 2026-09-19)
+
+- Verifying Hard exposed that `StageModifiers.asset` had `m_Script: {fileID: 0}` - **no script reference at all** - so it silently loaded as null and Hard could never roll a modifier. `CampaignUpgrades.asset` had the identical fault, meaning the **roguelite upgrades had been dead since Phase 13**.
+- Cause: `StageModifierSetDefinition` and `UpgradeSetDefinition` were each declared beside another type in a file named after the *other* class. Unity only creates a `MonoScript` for the type matching the file name, so these assets were saved with no script. They worked in the session that created them, because the in-memory instance was still alive, and loaded as null from the next domain reload onward - which is exactly why every earlier Play Mode check passed.
+- Fix: both classes moved into their own files, and each asset's `m_Script` repaired in place so the asset GUIDs and scene references survived. Both scene links were re-pointed and verified.
+- Guard: 4 new EditMode tests load the real assets, including `EveryScriptableObjectAsset_ResolvesToItsScript`, which walks every ScriptableObject under `Assets/SpaceXonix` and fails if any cannot resolve its script. That is the general form of the bug, so a new asset cannot reintroduce it.
+- Lesson recorded for later phases: a Play Mode check in the same session that created an asset proves nothing about whether it survives a reload.
 
 ## 2.5D Presentation Decisions
 
