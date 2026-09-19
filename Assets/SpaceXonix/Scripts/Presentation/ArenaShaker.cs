@@ -36,6 +36,7 @@ namespace SpaceXonix.Presentation
         [SerializeField] private int randomSeed;
 
         private System.Random random;
+        private SpaceXonix.Settings.GameSettingsModel boundSettings;
 
         public bool ShakeEnabled { get; private set; } = true;
         public float LastForce { get; private set; }
@@ -50,6 +51,14 @@ namespace SpaceXonix.Presentation
         private void OnEnable()
         {
             random ??= randomSeed != 0 ? new System.Random(randomSeed) : new System.Random();
+            // The player's camera-shake preference wins whenever a settings service exists, and
+            // keeps winning when they change it mid-run from the pause menu.
+            boundSettings = SpaceXonix.Settings.GameSettings.Current;
+            if (boundSettings != null)
+            {
+                ApplyShakeSetting();
+                boundSettings.Changed += ApplyShakeSetting;
+            }
             if (boardManager != null) boardManager.CaptureCompleted += OnCaptureCompleted;
             if (enemyManager != null) enemyManager.ExplosionOccurred += OnExplosion;
             if (gameManager != null) gameManager.PlayerFailed += OnPlayerFailed;
@@ -57,9 +66,16 @@ namespace SpaceXonix.Presentation
 
         private void OnDisable()
         {
+            if (boundSettings != null) boundSettings.Changed -= ApplyShakeSetting;
+            boundSettings = null;
             if (boardManager != null) boardManager.CaptureCompleted -= OnCaptureCompleted;
             if (enemyManager != null) enemyManager.ExplosionOccurred -= OnExplosion;
             if (gameManager != null) gameManager.PlayerFailed -= OnPlayerFailed;
+        }
+
+        private void ApplyShakeSetting()
+        {
+            if (boundSettings != null) ShakeEnabled = boundSettings.CameraShakeEnabled;
         }
 
         /// <summary>Uniform shake of the given force along the source's default direction.</summary>

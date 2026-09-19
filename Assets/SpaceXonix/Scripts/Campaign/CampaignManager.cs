@@ -78,8 +78,26 @@ namespace SpaceXonix.Campaign
 
         private void OnDestroy()
         {
-            if (gameManager != null) gameManager.StageCompleted -= OnStageCompleted;
+            if (gameManager != null)
+            {
+                gameManager.StageCompleted -= OnStageCompleted;
+                gameManager.GameOver -= RecordCampaignScore;
+            }
         }
+
+        /// <summary>
+        /// A run ends either by losing every life or by destroying the Alien Core; both submit the
+        /// campaign score, so a good run still counts when it ends badly.
+        /// </summary>
+        public void RecordCampaignScore()
+        {
+            var settings = Settings.GameSettings.Current;
+            if (settings == null || scoreManager == null) return;
+            IsNewHighScore = settings.TrySetHighScore(scoreManager.Score);
+        }
+
+        /// <summary>True when the run that just ended beat the stored best.</summary>
+        public bool IsNewHighScore { get; private set; }
 
         public bool Initialize()
         {
@@ -92,6 +110,7 @@ namespace SpaceXonix.Campaign
             }
             run = new CampaignRunModel(campaign.normalStages.Length, campaign.HasBossStage);
             gameManager.StageCompleted += OnStageCompleted;
+            gameManager.GameOver += RecordCampaignScore;
             return true;
         }
 
@@ -147,6 +166,7 @@ namespace SpaceXonix.Campaign
                 LoadCurrentStage();
                 return true;
             }
+            RecordCampaignScore();
             if (wasBossStage) CampaignCompleted?.Invoke();
             else NormalStagesCleared?.Invoke();
             return true;
@@ -157,6 +177,7 @@ namespace SpaceXonix.Campaign
             if (run == null) return;
             run.Reset();
             runStarted = false;
+            IsNewHighScore = false;
             if (upgradeManager != null) upgradeManager.ResetRun();
             if (scoreManager != null) scoreManager.ResetScore();
             if (powerMeter != null) powerMeter.ResetMeter();

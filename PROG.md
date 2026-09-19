@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 15 complete; Phase 16 (UI + Menus + HUD) not started
-- Latest completed feature: the Alien Core boss stage and the Campaign Complete ending
+- Current phase: Phase 16 in progress (settings and persistence done; screens next)
+- Latest completed feature: PlayerPrefs-backed settings and the campaign high score
 
 ## Phase Progress
 
@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 269
-- Passed: 269
+- EditMode discovered: 275
+- Passed: 275
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -452,6 +452,22 @@
 - Fixed during the phase: `AssetDatabase.GetBuiltinExtraResource<Mesh>("Sphere.fbx")` returns null in this project, so the core and the projectile prefab were created with no mesh and rendered nothing; both now take the mesh from `GameObject.CreatePrimitive`. `ApplyDamageVisual` also wrote an absolute scale, wiping the authored 3.2 body size on the first frame, and now scales relative to a captured base scale. The briefing panel was resized for the longer boss text and the Campaign Complete subtitle moved out of `DrawStats`' area.
 - Fixed after the phase commit (playtest screenshot): the Alien Core was visible on **stage 1**, parked at the board corner. The core lives in `Game.unity` for every stage and nothing ever hid it - `Activate` only switched its own GameObject on, and `Deactivate` left the body showing. It now hides its body visual in `Awake` and in `Deactivate`, and shows it only in `Activate`; the controller GameObject itself is never toggled, so it keeps running and can still be woken on stage 5. A new EditMode test walks hidden -> `Activate(null)` still hidden -> `Activate(definition)` visible -> `Deactivate` hidden again, and the boss fixture now assigns its references before Awake so it matches the saved scene. Verified in Play Mode: the core is hidden on stages 1-4 and visible only on stage 5. Full suite: 269 passed, 0 failed.
 - Deferred: boss destruction sequence VFX and boss audio (Phases 18/20); a dedicated `Boss.unity` scene is deliberately not used, since the campaign drives every stage in place inside `Game.unity`.
+
+## Phase 16 — UI, Menus, and HUD (in progress)
+
+### Settings and persistence (done)
+
+- `GameSettingsModel` is the pure preference state: master/music/SFX volume (clamped 0-1, and combined into `EffectiveMusicVolume`/`EffectiveSfxVolume` for Phase 18's audio), vibration and camera-shake toggles, and the campaign high score. It raises `Changed` only on real changes, so setting a value to what it already is writes nothing.
+- `GameSettings` is the persistent service (`Settings` object in `Game.unity`, execution order -200, `DontDestroyOnLoad`). It loads once, writes every change straight back, and exposes `GameSettings.Current` for systems that only need to read. Persistence goes through the `ISettingsStore` seam: `PlayerPrefsSettingsStore` in the game, an in-memory store in tests, so the suite never touches the editor's shared PlayerPrefs.
+- The high score is treated as a record rather than a preference: `TrySetHighScore` only accepts a strictly better run, `ResetToDefaults` deliberately leaves it alone, and `CampaignManager.RecordCampaignScore` submits it on **both** endings - `GameManager.GameOver` and beating the boss - so a strong run still counts when it ends badly. `CampaignManager.IsNewHighScore` tells the UI whether to celebrate.
+- Camera shake is the first setting with a real consumer: `ArenaShaker` adopts the stored preference when it wakes and stays subscribed to `Changed`, so toggling it mid-run from the pause menu takes effect immediately.
+- Tests: 6 new EditMode tests - volume clamping with change events only on real changes, master volume combining with each channel (and muting everything at zero), the high score keeping only the best and surviving a settings reset, the service loading defaults then persisting each change and a fresh service reading them back, the high score persisting and still needing to be beaten rather than matched after a reload, and the shaker following the setting including a mid-run change. Full suite: 275 passed, 0 failed.
+- Real `Game.unity` Play Mode: settings loaded at defaults (master 1, music 0.7, shake on), toggling `CameraShakeEnabled` flipped `ArenaShaker.ShakeEnabled` live in both directions, and losing a run at 53.8% captured wrote score 13960 into `spacexonix.campaign.highscore` with `IsNewHighScore` true. Unity Console: 0 errors/warnings.
+- Fixed while writing the tests: `GameSettings.Awake` destroyed duplicate services unconditionally, which in EditMode logs "Destroy may not be called from edit mode" and permanently destroys objects. The singleton guard now runs only in play mode, so test rigs can stand several services side by side.
+
+### Remaining in this phase
+
+Boot and MainMenu scenes, the real uGUI HUD and panels replacing `LifeStateDebugHud`'s IMGUI, the pause menu, the settings screen, and safe-area handling.
 
 ## 2.5D Presentation Decisions
 
