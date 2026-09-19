@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 16 complete; Easy/Hard difficulty added
-- Latest completed feature: Easy and Hard difficulty modes chosen after Start Campaign
+- Current phase: Phase 17 complete
+- Latest completed feature: Android swipe steering and on-screen Ability/Power buttons
 
 ## Phase Progress
 
@@ -27,8 +27,8 @@
 13. **COMPLETE** — Roguelite Upgrades
 14. **COMPLETE** — Per-stage random modifiers and score bonuses
 15. **COMPLETE** — Alien Core boss stage and campaign completion
-16. **NOT STARTED** — UI + Menus + HUD
-17. **NOT STARTED** — Android Controls
+16. **COMPLETE** — UI, menus, HUD, settings, pause, and safe area
+17. **COMPLETE** — Android swipe controls and touch buttons
 18. **NOT STARTED** — Audio
 19. **NOT STARTED** — Asset Acquisition/Integration
 20. **NOT STARTED** — Visual Polish + VFX + Cinemachine
@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 296
-- Passed: 296
+- EditMode discovered: 303
+- Passed: 303
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -497,6 +497,16 @@
 - Tests: 5 new EditMode tests - the mode's effects, a separate record per difficulty that one mode cannot fill in for the other, difficulty surviving a settings reset, both records and the selected mode persisting, and a pre-difficulty save being read as the Hard record. Full suite: 292 passed, 0 failed.
 - Real Play Mode: the difficulty screen showed Easy "No run yet" and Hard "Best: 46162"; choosing Easy loaded the game with **4 lives, no modifier, score bonus 1.00**, and switching to Hard gave **3 lives, "Overclocked Swarm x1.15", bonus 1.15**.
 
+## Phase 17 — Android Controls
+
+- `SwipeModel` is the pure gesture rule: a drag steers along whichever axis moved further, and anything below the threshold is ignored so a tap or a shaky finger never turns the ship. A perfectly diagonal drag resolves horizontally, which is documented rather than left to chance. The threshold is a fraction of the screen's **shorter edge** (3%), so the gesture feels the same on a phone and a tablet and in either orientation.
+- `TouchInputSource` feeds swipes into the same `InputRouter` the keyboard uses, so PC and Android share one abstraction exactly as the GDD requires - including the gameplay-input gate, so swipes are dead during respawns and transitions like every other control. A press that starts on a UI element is never read as a gameplay swipe (`EventSystem.IsPointerOverGameObject`). A drag re-anchors each time it steers, so one continuous finger movement can turn the ship more than once instead of firing once per touch. Mouse drags count as swipes too, which is only there to make the gesture testable in the editor.
+- `TouchControls` adds the on-screen **ABILITY** and **POWER** buttons, routed through `InputRouter.RequestAbility`/`RequestPowerShot` so a tap and a key press are the same request. They dim rather than disappear when unusable, keeping their position stable, and are hidden on desktop where the keyboard covers both. Pause already had its on-screen button from Phase 16.
+- **Orientation fixed:** the player settings allowed both landscape orientations, but the board, camera framing and HUD are all built for 1080x1920 portrait, so a phone would have rotated into a layout the game was never designed for. Auto-rotation is now limited to the two portrait orientations. `renderOutsideSafeArea` stays on, which is exactly why `SafeAreaFitter` exists.
+- Tests: 7 new EditMode tests - swipes resolving to the dominant axis including the diagonal rule, small movements being ignored, the threshold scaling with the shorter edge in both orientations and never reaching zero, swipes steering through the router, swipes obeying the gameplay-input gate, the touch buttons requesting ability and power through the router, and the buttons hiding on desktop. Full suite: 303 passed, 0 failed.
+- Real `Game.unity` Play Mode: all four swipe directions steered the ship (Up, Left, Down, Right) while a 7px flick was rejected; the buttons appeared dimmed with no power and no ability, then lit up once a capture charged the meter and a Shield was stored, and tapping them fired a Power Shot and activated the Shield.
+- Deferred to Phase 21: running this on a real Android device. Everything here was verified in the editor through the same code paths a device uses, but touch feel and safe-area insets can only be judged on hardware.
+
 ## Playtest Fixes (2026-09-19)
 
 ### Alien stuck inside new territory
@@ -558,6 +568,6 @@
 
 ## Next Recommended Action
 
-**Phase 16 — UI, Menus, and HUD**
+**Phase 18 — Audio**
 
 Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.
