@@ -6,6 +6,12 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/SpaceXonix/Scenes/Boot.unity
+    guid: 031a8a3b45fb83a41b126b7e27be29d4
+  - enabled: 1
+    path: Assets/SpaceXonix/Scenes/MainMenu.unity
+    guid: ed32cc55f932da34489092c9a7b5eb95
+  - enabled: 1
     path: Assets/SpaceXonix/Scenes/Game.unity
     guid: 1e10a307784aa614697e719708932683
   m_configObjects:

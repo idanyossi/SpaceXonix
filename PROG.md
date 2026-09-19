@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 16 in progress (settings and persistence done; screens next)
-- Latest completed feature: PlayerPrefs-backed settings and the campaign high score
+- Current phase: Phase 16 in progress (settings, Boot and Main Menu done; in-game HUD next)
+- Latest completed feature: the Boot and Main Menu scenes with a working settings screen
 
 ## Phase Progress
 
@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 275
-- Passed: 275
+- EditMode discovered: 279
+- Passed: 279
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -465,9 +465,20 @@
 - Real `Game.unity` Play Mode: settings loaded at defaults (master 1, music 0.7, shake on), toggling `CameraShakeEnabled` flipped `ArenaShaker.ShakeEnabled` live in both directions, and losing a run at 53.8% captured wrote score 13960 into `spacexonix.campaign.highscore` with `IsNewHighScore` true. Unity Console: 0 errors/warnings.
 - Fixed while writing the tests: `GameSettings.Awake` destroyed duplicate services unconditionally, which in EditMode logs "Destroy may not be called from edit mode" and permanently destroys objects. The singleton guard now runs only in play mode, so test rigs can stand several services side by side.
 
+### Boot, Main Menu and settings screen (done)
+
+- Scenes: `Boot.unity` holds the persistent services and `BootLoader`, which routes to the menu once they have woken; `MainMenu.unity` holds the menu itself. Build Settings is now Boot -> MainMenu -> Game, and `SceneRouter` owns every transition, always restoring `Time.timeScale` first so a paused game cannot carry its freeze into the next scene.
+- Main Menu: title, campaign high score read from `GameSettings`, and Start Campaign / Settings / Controls / Quit. Quit hides itself on Android and iOS instead of showing a dead button. The content sits in a `VerticalLayoutGroup` so it adapts to any aspect rather than relying on fixed offsets against the 1080x1920 reference.
+- Settings screen: Master, Music and SFX volume sliders plus Vibration and Camera Shake toggles, with Reset Defaults and Back. `SettingsPanel` binds two ways and guards the feedback loop, so a refresh from the model never writes back into it. Settings and Controls each sit on a full-screen opaque overlay that dims the menu and swallows clicks behind it.
+- `SafeAreaFitter` keeps the UI inside the device safe area, re-checking each frame because rotation and foldables change it. The anchor maths is a static pure function so it is unit tested without a device.
+- Input: `InputRouter` gained `PauseToggleRequested`, checked **before** the gameplay-input gate, because pausing is exactly what disables gameplay input and Escape still has to close the menu. `PauseMenu` routes through the existing `GameManager.SetPaused`, so the time-scale pause, input gating and damage rejection behave as they already do for the ability pause.
+- Tests: 4 new EditMode tests - the safe area returning the full rect for a full-screen area, insetting for a notch and gesture bar, ignoring an axis on request and surviving zero-sized or degenerate platform data, and the settings panel binding both ways without feeding back on itself. Full suite: 279 passed, 0 failed.
+- Real Play Mode: the menu renders correctly and reads "Best run: 13960" from the previous session's PlayerPrefs, proving persistence across scenes. Opening Settings shows master 1.0, music 0.7 and SFX 1.0 on the sliders; dragging the music slider to 0.25 wrote through to both the model and `spacexonix.audio.music`. Unity Console: 0 errors/warnings.
+- Note on verification: MCP screenshots of a Screen Space - Overlay canvas are unreliable - single frames came back all-cyan, all-dark, or missing the IMGUI pass entirely, and repeating the capture fixed it each time. Layout and colour were confirmed by querying the live components rather than trusting one frame. The modal dim was a real finding though, not an artifact: at alpha 0.82 the bright menu text still showed through, so both overlays are now fully opaque.
+
 ### Remaining in this phase
 
-Boot and MainMenu scenes, the real uGUI HUD and panels replacing `LifeStateDebugHud`'s IMGUI, the pause menu, the settings screen, and safe-area handling.
+The real uGUI HUD and panels replacing `LifeStateDebugHud`'s IMGUI, and the in-game pause menu wired into `Game.unity`.
 
 ## 2.5D Presentation Decisions
 

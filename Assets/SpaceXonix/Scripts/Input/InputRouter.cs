@@ -12,6 +12,7 @@ namespace SpaceXonix.Input
         public event Action DirectionReleased;
         public event Action PowerShotRequested;
         public event Action AbilityRequested;
+        public event Action PauseToggleRequested;
 
         public bool GameplayInputEnabled { get; private set; }
         public CardinalDirection CurrentDirection { get; private set; } = CardinalDirection.Right;
@@ -19,6 +20,14 @@ namespace SpaceXonix.Input
 
         private void Update()
         {
+            // Pause is checked before the gameplay gate, because a paused game has gameplay input
+            // disabled and Escape still has to bring the player back out of the pause menu.
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                TraceRawInput("Escape");
+                RequestPauseToggle();
+            }
+
             if (!GameplayInputEnabled || Keyboard.current == null)
             {
                 return;
@@ -110,6 +119,12 @@ namespace SpaceXonix.Input
             AbilityRequested?.Invoke();
             return true;
         }
+
+        /// <summary>
+        /// Asks for the pause menu to open or close. Unlike the gameplay actions this is never gated,
+        /// because pausing is exactly what disables gameplay input.
+        /// </summary>
+        public void RequestPauseToggle() => PauseToggleRequested?.Invoke();
 
         public void ReleaseDirection()
         {
