@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 16 in progress (settings, Boot and Main Menu done; in-game HUD next)
-- Latest completed feature: the Boot and Main Menu scenes with a working settings screen
+- Current phase: Phase 16 complete
+- Latest completed feature: the real uGUI HUD, campaign screens and in-game pause menu
 
 ## Phase Progress
 
@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 279
-- Passed: 279
+- EditMode discovered: 283
+- Passed: 283
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -476,9 +476,16 @@
 - Real Play Mode: the menu renders correctly and reads "Best run: 13960" from the previous session's PlayerPrefs, proving persistence across scenes. Opening Settings shows master 1.0, music 0.7 and SFX 1.0 on the sliders; dragging the music slider to 0.25 wrote through to both the model and `spacexonix.audio.music`. Unity Console: 0 errors/warnings.
 - Note on verification: MCP screenshots of a Screen Space - Overlay canvas are unreliable - single frames came back all-cyan, all-dark, or missing the IMGUI pass entirely, and repeating the capture fixed it each time. Layout and colour were confirmed by querying the live components rather than trusting one frame. The modal dim was a real finding though, not an artifact: at alpha 0.82 the bright menu text still showed through, so both overlays are now fully opaque.
 
-### Remaining in this phase
+### Gameplay HUD, campaign screens and pause menu (done)
 
-The real uGUI HUD and panels replacing `LifeStateDebugHud`'s IMGUI, and the in-game pause menu wired into `Game.unity`.
+- `GameHud` replaces the IMGUI debug HUD with real uGUI: lives, score, capture percentage, stage counter, active modifier, the power meter as a filled bar that recolours when ready, the one stored ability, running effect timers and the brief capture award. `LifeStateDebugHud` is disabled in the scene rather than deleted, so the old readout is still available if a future phase needs it.
+- `CampaignPanel` is **one** reusable panel for all six between-stage screens - briefing, stage complete, upgrade choice, game over, stages cleared and campaign complete - since they differ only in title, body and buttons. `CampaignScreens` drives it from the campaign phase and owns every screen's copy in one place. Spare buttons hide themselves, so the same panel serves a one-button briefing and a three-option upgrade choice.
+- Game Over, All Stages Cleared and Campaign Complete now offer Main Menu alongside retry, and each shows the campaign best, calling out `NEW BEST RUN` when the run set one.
+- `PauseMenu` is wired into `Game.unity`: Escape or the on-screen pause button opens Resume / Restart Campaign / Settings / Main Menu. It routes through the existing `GameManager.SetPaused`, so the time-scale pause, input gating and damage rejection behave exactly as they do for the ability pause, and the pause button hides itself while the menu is open. Pausing is refused outside Playing and Respawning, and a Game Over force-closes it.
+- The settings screen is now a prefab (`Prefabs/UI/SettingsOverlay.prefab`) shared by the Main Menu and the pause menu, rather than two hand-built copies that could drift apart.
+- Panels stretch within margins instead of using fixed sizes, so they fit any aspect rather than overflowing whenever the window is shorter than the 1080x1920 reference.
+- Tests: 4 new EditMode tests - the panel showing one caption per button and hiding the spares, each button reporting its own slot and a hidden panel routing nothing, the HUD showing lives/score/capture and the power meter's fill and ready colour, and the HUD tracking a lost life and a real capture. Full suite: 283 passed, 0 failed.
+- Real `Game.unity` Play Mode: the briefing rendered as a proper panel, play showed lives 2, Stage 1/5, "Overclocked Swarm x1.15", score 9288, 26.9% and a full cyan POWER READY bar; Escape opened the pause menu with `Time.timeScale` 0, Settings opened over it, toggling camera shake reached the live `ArenaShaker`, and Resume restored the time scale and closed both. Unity Console: 0 project errors.
 
 ## 2.5D Presentation Decisions
 
