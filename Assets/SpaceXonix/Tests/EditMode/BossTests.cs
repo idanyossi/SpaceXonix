@@ -190,6 +190,28 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void Core_IsHiddenOnEveryStageExceptTheBossStage()
+        {
+            using (var fixture = new Fixture())
+            {
+                Assert.That(fixture.Body.gameObject.activeSelf, Is.False,
+                    "the core sits in the scene for every stage, so it must start hidden");
+
+                // A normal stage load passes no boss definition.
+                fixture.Boss.Activate(null);
+                Assert.That(fixture.Boss.IsActive, Is.False);
+                Assert.That(fixture.Body.gameObject.activeSelf, Is.False, "a normal stage must not show the core");
+
+                fixture.Boss.Activate(fixture.Definition);
+                Assert.That(fixture.Boss.IsActive, Is.True);
+                Assert.That(fixture.Body.gameObject.activeSelf, Is.True);
+
+                fixture.Boss.Deactivate();
+                Assert.That(fixture.Body.gameObject.activeSelf, Is.False, "beating it hides it again");
+            }
+        }
+
+        [Test]
         public void Modifiers_ScaleTheFiringCycleAndProjectileSpeedWithoutTouchingTheDefinition()
         {
             using (var fixture = new Fixture())
@@ -283,6 +305,8 @@ namespace SpaceXonix.Tests.EditMode
                 Definition.bodyRadius = 1.5f;
 
                 var bossObject = Own(new GameObject("AlienCore"));
+                // Inactive while the references are set, so Awake sees them exactly as it does in the saved scene.
+                bossObject.SetActive(false);
                 Body = new GameObject("Body").transform;
                 Body.SetParent(bossObject.transform, false);
                 Boss = bossObject.AddComponent<BossController>();
@@ -290,6 +314,9 @@ namespace SpaceXonix.Tests.EditMode
                 Set(Boss, "poolService", root.AddComponent<PoolService>());
                 Set(Boss, "projectilePrefab", projectilePrefab);
                 Set(Boss, "bodyVisual", Body);
+                bossObject.SetActive(true);
+                // EditMode does not run Awake for us, so the hidden-by-default state is applied by hand.
+                Invoke(Boss, "Awake");
                 root.SetActive(true);
             }
 

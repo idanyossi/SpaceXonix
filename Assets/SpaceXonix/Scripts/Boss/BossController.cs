@@ -42,6 +42,9 @@ namespace SpaceXonix.Boss
         public event Action Interrupted;
         public event Action Defeated;
 
+        // The core lives in the scene for every stage, so it must start hidden and only show on a boss stage.
+        private void Awake() => SetVisible(false);
+
         private void OnEnable()
         {
             if (boardManager != null) boardManager.CapturedPercentageChanged += OnCapturedPercentageChanged;
@@ -66,9 +69,9 @@ namespace SpaceXonix.Boss
             attack = new BossAttackModel(definition.fireInterval * fireIntervalMultiplier);
             DamageStage = 0;
             IsActive = true;
-            gameObject.SetActive(true);
             MoveToBoardAnchor();
             ApplyDamageVisual();
+            SetVisible(true);
         }
 
         public void Deactivate()
@@ -77,6 +80,16 @@ namespace SpaceXonix.Boss
             attack = null;
             DamageStage = 0;
             ReleaseAllProjectiles();
+            SetVisible(false);
+        }
+
+        /// <summary>
+        /// Shows or hides the core's body. Only the visual is toggled, never this GameObject, so the
+        /// controller keeps running and can be woken again on the boss stage.
+        /// </summary>
+        private void SetVisible(bool visible)
+        {
+            if (bodyVisual != null) bodyVisual.gameObject.SetActive(visible);
         }
 
         /// <summary>Stage modifier hook: scales how often the core fires.</summary>
