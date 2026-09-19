@@ -1,0 +1,10 @@
+{
+  "name": "SpaceXonix.Editor",
+  "rootNamespace": "SpaceXonix.EditorTools",
+  "references": [
+    "SpaceXonix.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ]
+}

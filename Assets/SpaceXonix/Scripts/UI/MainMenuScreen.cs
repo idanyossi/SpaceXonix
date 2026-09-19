@@ -68,13 +68,26 @@ namespace SpaceXonix.UI
             if (controlsPanel != null) controlsPanel.SetActive(true);
         }
 
+        /// <summary>
+        /// Shows the best run across both difficulties, named. The mode is only chosen after Start
+        /// Campaign, so showing the selected mode's record here would hide a real record behind a
+        /// choice the player has not made yet; the difficulty screen breaks it down per mode.
+        /// </summary>
         public void RefreshHighScore()
         {
             if (highScoreLabel == null) return;
             var settings = GameSettings.Current;
-            var best = settings != null ? settings.CampaignHighScore : 0;
+            if (settings == null)
+            {
+                highScoreLabel.text = "No campaign completed yet";
+                return;
+            }
+            var easy = settings.GetHighScore(DifficultyMode.Easy);
+            var hard = settings.GetHighScore(DifficultyMode.Hard);
+            var bestMode = hard >= easy ? DifficultyMode.Hard : DifficultyMode.Easy;
+            var best = Mathf.Max(easy, hard);
             highScoreLabel.text = best > 0
-                ? $"Best run ({settings.Difficulty.DisplayName()}): {best}"
+                ? $"Best run: {best} ({bestMode.DisplayName()})"
                 : "No campaign completed yet";
         }
     }

@@ -497,6 +497,13 @@
 - Tests: 5 new EditMode tests - the mode's effects, a separate record per difficulty that one mode cannot fill in for the other, difficulty surviving a settings reset, both records and the selected mode persisting, and a pre-difficulty save being read as the Hard record. Full suite: 292 passed, 0 failed.
 - Real Play Mode: the difficulty screen showed Easy "No run yet" and Hard "Best: 46162"; choosing Easy loaded the game with **4 lives, no modifier, score bonus 1.00**, and switching to Hard gave **3 lives, "Overclocked Swarm x1.15", bonus 1.15**.
 
+## Editor: Play Always Starts From Boot (2026-09-19)
+
+- Reported: pressing Play in Unity went straight to stage 1 instead of the menu. Not a bug in the game - Unity starts Play Mode from whichever scene is **open**, ignoring the Build Settings order, and `Game.unity` was the scene left open.
+- Fix: `Assets/SpaceXonix/Editor/PlayFromBootScene.cs` (new editor-only assembly `SpaceXonix.Editor`) sets `EditorSceneManager.playModeStartScene` to `Boot.unity` on load, so the editor follows the real startup path no matter which scene is open. It is a toggle under **SpaceXonix > Always Play From Boot Scene**, on by default and stored per user and per project, because forcing the menu on every Play is unhelpful while iterating on one scene. A missing Boot scene warns and falls back rather than failing.
+- Follow-on fix: the menu's best-run line showed the *selected* difficulty's record, so a 46162 Hard record read as "No campaign completed yet" whenever Easy was selected. Since the mode is now chosen **after** Start Campaign, the menu shows the best run across both modes with its mode named, and the difficulty screen keeps the per-mode breakdown.
+- Verified: with `Game.unity` open, Play loaded Boot, routed to MainMenu, kept the settings service alive across the load, and the menu read "Best run: 46162 (Hard)".
+
 ## Broken ScriptableObject Assets (found 2026-09-19)
 
 - Verifying Hard exposed that `StageModifiers.asset` had `m_Script: {fileID: 0}` - **no script reference at all** - so it silently loaded as null and Hard could never roll a modifier. `CampaignUpgrades.asset` had the identical fault, meaning the **roguelite upgrades had been dead since Phase 13**.
