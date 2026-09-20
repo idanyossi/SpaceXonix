@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 534a2a0cb7169fa4e96acdbfb13e3246, type: 3}
+  m_Name: SfxLibrary
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Audio.SfxLibrary
+  definitions:
+  - {fileID: 11400000, guid: 94e70032e9f93ae4cbba107c1dc18ea1, type: 2}
+  - {fileID: 11400000, guid: 042f3b29aca78b44e81e2522526e7c5d, type: 2}
+  - {fileID: 11400000, guid: 6faeefe4aecb9724796b7f4587a243f9, type: 2}
+  - {fileID: 11400000, guid: d48fb9355082bab4bb88a68ba1455866, type: 2}
+  - {fileID: 11400000, guid: 28067f36603943245be34ff9c924b8ab, type: 2}
+  - {fileID: 11400000, guid: 967031c1e4c29fa42b1db062523eafea, type: 2}
+  - {fileID: 11400000, guid: 5275278cfba0d0f40b3614ad0096ce9e, type: 2}
+  - {fileID: 11400000, guid: 7e04e4f07713c2747ad2b0c45c47c5bd, type: 2}
+  - {fileID: 11400000, guid: e7bcd70c59d54f942bd7f5b96727d3a2, type: 2}
+  - {fileID: 11400000, guid: fb8c20541d7e67f458a7ac9d9b52eccd, type: 2}
+  - {fileID: 11400000, guid: 17e9af5e0782df54a8d57b2cdc3c9605, type: 2}
+  - {fileID: 11400000, guid: 264e0e78e37a57247a3462699e593cf0, type: 2}
+  - {fileID: 11400000, guid: da8ac1ea83093314582f68805f398dff, type: 2}
+  - {fileID: 11400000, guid: af77f3a42ef114540bf4456c1538f57d, type: 2}
+  - {fileID: 11400000, guid: a9aabd24134785a42b363c71d464945d, type: 2}
+  - {fileID: 11400000, guid: 6ed0c92a34021004699ebadc332397cb, type: 2}
+  - {fileID: 11400000, guid: 34a243b83cb35f145804ba372468521c, type: 2}
+  - {fileID: 11400000, guid: 0d2ef9196f121a846a9113fa1067cc51, type: 2}
+  - {fileID: 11400000, guid: 13b903d0c9105e349822410d87b73840, type: 2}
+  - {fileID: 11400000, guid: 95c7eaab5a09b93459df6135ea975d5d, type: 2}
+  menuTrack: {fileID: 0}
+  gameplayTrack: {fileID: 0}
+  bossTrack: {fileID: 0}

@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 17 complete
-- Latest completed feature: Android swipe steering and on-screen Ability/Power buttons
+- Current phase: Phase 18 complete (audio system; clips arrive in Phase 19)
+- Latest completed feature: the audio service, sound library and gameplay sound bindings
 
 ## Phase Progress
 
@@ -29,7 +29,7 @@
 15. **COMPLETE** — Alien Core boss stage and campaign completion
 16. **COMPLETE** — UI, menus, HUD, settings, pause, and safe area
 17. **COMPLETE** — Android swipe controls and touch buttons
-18. **NOT STARTED** — Audio
+18. **COMPLETE** — Audio system, sound library, and gameplay bindings
 19. **NOT STARTED** — Asset Acquisition/Integration
 20. **NOT STARTED** — Visual Polish + VFX + Cinemachine
 21. **NOT STARTED** — Final QA + Profiling + Submission Cleanup
@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 305
-- Passed: 305
+- EditMode discovered: 313
+- Passed: 313
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -497,6 +497,18 @@
 - Tests: 5 new EditMode tests - the mode's effects, a separate record per difficulty that one mode cannot fill in for the other, difficulty surviving a settings reset, both records and the selected mode persisting, and a pre-difficulty save being read as the Hard record. Full suite: 292 passed, 0 failed.
 - Real Play Mode: the difficulty screen showed Easy "No run yet" and Hard "Best: 46162"; choosing Easy loaded the game with **4 lives, no modifier, score bonus 1.00**, and switching to Hard gave **3 lives, "Overclocked Swarm x1.15", bonus 1.15**.
 
+## Phase 18 — Audio
+
+- Scope: this phase builds the audio **system**. The clips themselves are Phase 19's job, so every sound is configured but empty, and the game is deliberately silent rather than broken until they arrive.
+- `GameSfx` names all 19 sound categories the GDD lists plus `MusicTrack` for the three loops. Gameplay asks for one of these rather than a clip, so sounds can be swapped or left empty without touching a system.
+- `SfxDefinition` holds one sound's tuning: several clips picked at random, volume, a pitch spread so repeats do not sound mechanical, and a minimum interval so frequent events cannot machine-gun. Frequent sounds (direction changes, trail steps, lasers, boss shots, alien deaths) got intervals of 50-120ms and wider pitch spread; one-off moments (power full, boss destroyed, UI) are pinned to identical playback.
+- `SfxLibrary` maps every `GameSfx` to its definition and holds the three music clips. Its own file, per the Phase 15/16 lesson. A duplicate entry keeps the first rather than throwing, since that is a data mistake, not a crash.
+- `AudioManager` is the persistent service: a pool of 12 2D voices, round-robined and preferring an idle one before stealing the oldest, plus one music source that crossfades on unscaled time so music behaves while paused. Volumes come from `GameSettings`, and it stays subscribed so a change on the settings screen is heard at once. `Play` returns false and does nothing when a sound has no clip, repeats inside its interval, or effects are muted.
+- `GameplayAudioBinder` does all the event wiring in one place, so no gameplay system knows audio exists and a missing AudioManager costs nothing but silence. Captures pick the large-capture sound at or above 15%, a direction change plays the trail sound when the ship is safe and the steer sound when exposed, and stage loads switch between the gameplay and boss tracks.
+- Tests: 8 new EditMode tests - empty definitions picking nothing rather than throwing, pitch staying inside its spread, the library finding every sound and keeping the first duplicate, music tracks mapping with None as silence, playing a configured sound while skipping an empty one, the minimum interval blocking a repeat without affecting other sounds, muted effects and a muted master both silencing playback, and switching tracks without restarting the one already playing.
+- Real Play Mode with placeholder clips: loading stage 1 started the **Gameplay** track, one capture fired three sounds ending on `PowerMeterFull`, a death fired `PlayerHit`, and loading the boss stage switched to the **Boss** track.
+- Gotcha worth remembering: right after `CreateAsset`, `LoadAssetAtPath` can still return null while the import settles, and assigning that null into a scene reference silently stores nothing. Two scene links were written as null this way before the reference was checked and re-assigned.
+
 ## Mobile Playtest Fixes (2026-09-19)
 
 ### Swipes logged but the ship never moved
@@ -588,6 +600,6 @@
 
 ## Next Recommended Action
 
-**Phase 18 — Audio**
+**Phase 19 — Asset Acquisition/Integration**
 
 Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.

@@ -1336,6 +1336,7 @@ GameObject:
   m_Component:
   - component: {fileID: 387014203}
   - component: {fileID: 387014202}
+  - component: {fileID: 387014204}
   m_Layer: 0
   m_Name: Settings
   m_TagString: Untagged
@@ -1371,6 +1372,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &387014204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 387014201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4425c06b2e4503c4eb18c82a43d2d6c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Audio.AudioManager
+  library: {fileID: 11400000, guid: ef613e8fe803c684abb8064909b8eb9e, type: 2}
+  voiceCount: 12
+  musicCrossfade: 0.75
+  randomSeed: 0
 --- !u!1 &448994547
 GameObject:
   m_ObjectHideFlags: 0
@@ -4099,6 +4116,7 @@ GameObject:
   - component: {fileID: 1599803373}
   - component: {fileID: 1599803374}
   - component: {fileID: 1599803375}
+  - component: {fileID: 1599803376}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -4328,6 +4346,29 @@ MonoBehaviour:
   scoreManager: {fileID: 1599803369}
   bossController: {fileID: 175233844}
   randomSeed: 0
+--- !u!114 &1599803376
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1599803365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a27ba6cbf00bf9f4ab6676c028d17821, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Audio.GameplayAudioBinder
+  audioManager: {fileID: 0}
+  gameManager: {fileID: 1599803366}
+  boardManager: {fileID: 618364317}
+  inputRouter: {fileID: 448994548}
+  powerMeter: {fileID: 1823213373}
+  powerUpManager: {fileID: 91987429}
+  enemyManager: {fileID: 2088577235}
+  laserManager: {fileID: 1884602789}
+  campaignManager: {fileID: 1599803370}
+  bossController: {fileID: 175233844}
+  largeCapturePercentage: 15
 --- !u!1 &1613218425
 GameObject:
   m_ObjectHideFlags: 0
