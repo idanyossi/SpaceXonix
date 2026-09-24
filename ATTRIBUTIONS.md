@@ -16,7 +16,9 @@ only be used when their licence permits use in the project."*
 |---|---|---|---|---|
 | `Assets/SpaceXonix/Art/ThirdParty/Ansimuz/*.png` (7 sprite sheets) and the frames cut from them | Luis Zuno ([@ansimuz](https://ansimuz.com)) | [Space Ship Shooter Pixel Art Assets](https://opengameart.org/content/space-ship-shooter-pixel-art-assets), OpenGameArt | **CC0 1.0** | Player ship, all four alien types, the Alien Core, pickups, boss projectile |
 
-The licence text ships beside the art in `Art/ThirdParty/Ansimuz/LICENSE.txt`. CC0 needs no
+| `Assets/SpaceXonix/Art/ThirdParty/Ansimuz/Background/*.png` (5 layers) | Luis Zuno ([@ansimuz](https://ansimuz.com)) | [Space Background](https://opengameart.org/content/space-background-3), OpenGameArt | **CC0 1.0** | The drifting space backdrop behind the arena and menus |
+
+The licence text ships beside the art in `Art/ThirdParty/Ansimuz/LICENSE.txt` and `Art/ThirdParty/Ansimuz/Background/LICENSE.txt`. CC0 needs no
 attribution; it is recorded here anyway, and ansimuz asks that you *"spread the word"*.
 
 The art is used modified, which CC0 permits: the Unstable and Volatile aliens and the Alien Core are
@@ -40,7 +42,7 @@ effects also clashed with the 8-bit pixel art in a way chiptune effects do not.
 
 | Asset | Source | Licence | Notes |
 |---|---|---|---|
-| `LegacyRuntime.ttf` | Unity built-in | Unity Companion Licence | Ships with Unity; used by the uGUI Text elements |
+| `Assets/SpaceXonix/Art/ThirdParty/Kenney/Fonts/Kenney Mini Square.ttf` and `Kenney Pixel Square.ttf` | Kenney ([kenney.nl](https://kenney.nl)), [Kenney Fonts](https://kenney.nl/assets/kenney-fonts) | **CC0 1.0** | Body text and titles in every menu and the HUD. Licence text in the same folder |
 
 ### Packages
 
@@ -49,17 +51,21 @@ Companion Licence and do not need individual entries.
 
 ---
 
+### Generated in the project
+
+The board, trail and laser textures (`Art/Generated/*.png`, from **SpaceXonix > Generate Board Art**)
+and the menu widgets (`Art/Generated/UI/*.png`, from **SpaceXonix > Apply UI Skin**) are drawn in code
+by this project, so they carry no third-party licence.
+
 ## Still to source
 
 The game runs without these, using the stand-ins listed.
 
 | Need | Used by | Current stand-in |
 |---|---|---|
-| Board floor, territory and trail textures | `Materials/Board` | Flat colours |
-| Laser warning and beam | `Materials/Hazards` | Flat colours, which now clash with the pixel art |
 | Power Shot | `Prefabs/Power/PowerShot.prefab` | A stretched cube. The pack's bolt sprites could replace it, but its launch code stretches the visual, so it needs code changes first |
 | UI icons — upgrades, abilities, pause | `Prefabs/UI` | Text labels |
-| Title/logo | `MainMenu.unity` | Text |
+| Title/logo | `MainMenu.unity` | The title in Kenney Pixel Square |
 
 Section 12 of `IMPLEMENTATION_PLAN.md` settled the visual direction: **pixel-art sprites** on a
 diagonal-down perspective camera, with gameplay staying on the XY plane. New art should match

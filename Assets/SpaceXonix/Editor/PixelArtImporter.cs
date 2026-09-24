@@ -16,6 +16,8 @@ namespace SpaceXonix.EditorTools
     {
         public const string ArtRoot = "Assets/SpaceXonix/Art/ThirdParty";
         public const string FramesFolder = ArtRoot + "/Ansimuz/Frames";
+        /// <summary>Backdrop layers tile across the view, so they import like the board textures, not as sprites.</summary>
+        public const string BackgroundFolder = ArtRoot + "/Ansimuz/Background";
         private const int PixelsPerUnit = 16;
 
         /// <summary>Each sheet's frame size, read left to right and top to bottom.</summary>
@@ -32,9 +34,25 @@ namespace SpaceXonix.EditorTools
 
         private void OnPreprocessTexture()
         {
-            if (assetPath.StartsWith(BoardArtGenerator.Folder))
+            if (UiSkin.IsUiSprite(assetPath))
             {
-                // Board and laser textures tile across meshes, so they repeat and are not sprites,
+                // Menu widgets are nine-sliced sprites: their frames keep their size however big the panel.
+                var ui = (TextureImporter)assetImporter;
+                ui.textureType = TextureImporterType.Sprite;
+                ui.spriteImportMode = SpriteImportMode.Single;
+                ui.spritePixelsPerUnit = PixelsPerUnit;
+                ui.filterMode = FilterMode.Point;
+                ui.textureCompression = TextureImporterCompression.Uncompressed;
+                ui.mipmapEnabled = false;
+                ui.alphaIsTransparency = true;
+                ui.wrapMode = TextureWrapMode.Clamp;
+                var border = UiSkin.BorderFor(System.IO.Path.GetFileNameWithoutExtension(assetPath));
+                ui.spriteBorder = new Vector4(border, border, border, border);
+                return;
+            }
+            if (assetPath.StartsWith(BoardArtGenerator.Folder) || assetPath.StartsWith(BackgroundFolder))
+            {
+                // Board, laser and backdrop textures tile across meshes, so they repeat and are not sprites,
                 // but they are still pixel art and must stay crisp.
                 var tiling = (TextureImporter)assetImporter;
                 tiling.textureType = TextureImporterType.Default;
@@ -42,7 +60,11 @@ namespace SpaceXonix.EditorTools
                 tiling.textureCompression = TextureImporterCompression.Uncompressed;
                 tiling.mipmapEnabled = false;
                 tiling.alphaIsTransparency = true;
-                tiling.wrapMode = TextureWrapMode.Repeat;
+                // The feature planets are single objects: repeating them would bleed a row of pixels
+                // from the opposite edge onto their borders.
+                var name = System.IO.Path.GetFileNameWithoutExtension(assetPath);
+                var single = assetPath.StartsWith(BackgroundFolder) && (name == "BigPlanet" || name == "RingPlanet");
+                tiling.wrapMode = single ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
                 return;
             }
             if (!assetPath.StartsWith(ArtRoot)) return;

@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 319
-- Passed: 319
+- EditMode discovered: 327
+- Passed: 327
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -523,6 +523,32 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - Generated textures get their own import rule: point filtered, uncompressed and without mipmaps like the sprites, but **repeating** and not sprites, since they tile across meshes.
 - **Harness note:** a first render showed no trail. The game's own consistency check had cancelled it, because the scripted trail's head was nowhere near the ship. It was not a rendering bug. Re-running with the ship at the trail's head, rendered in the same frame, showed it correctly.
 - Tests: 4 new EditMode tests - tops tiling in world space with shared corners agreeing, walls running along their length and up their height, raised cells carrying one UV per vertex, and the laser tiling along the beam with never less than one repeat. Full suite: 323 passed, 0 failed.
+
+### Background (done)
+
+- **ansimuz's Space Background, CC0**, the same artist as the ships, so it matches by construction. It is built from five layers: the nebula backdrop, a star field, a far planet field, and two feature planets (a big planet top right, a ringed planet bottom left).
+- `SpaceBackdrop` puts each layer on a camera-facing quad and re-fits it every frame, so it covers the view at any aspect, from a portrait phone to the landscape editor. Layers sit at a fraction of the camera's far plane, which the rig changes with the framing, so they always stay behind the board and are never clipped. The stars and planet field drift at different speeds for parallax, and the feature planets bob slowly. Tiling goes through a `MaterialPropertyBlock` and keeps texels square whatever the view's shape.
+- Materials: the nebula is opaque, and the other layers use alpha cutout rather than blending, which keeps pixel edges hard and avoids sorting problems.
+- The backdrop and star field repeat, but the two feature planets clamp, because repeating a single object would bleed a row of pixels from the opposite edge onto its border.
+- It is in both the main menu and the game. The camera clears to a dark nebula purple instead of grey.
+
+### Menus (done)
+
+- The menus now look like part of the same ship. `UiSkin` (**SpaceXonix > Apply UI Skin**) draws the widgets in code, in the board plating's palette:
+  - **Panels:** a dark hull plate inside a bevelled teal frame, riveted at the corners.
+  - **Buttons:** raised plating with a two-pixel lip. The pressed state drops the lip and shifts the face down, so a button visibly pushes in. There are also hover and disabled states.
+  - **Slots:** recessed slots for slider tracks, toggles, the power meter and the ability box.
+  - **Other:** a glowing fill, a plating knob and a pixel tick.
+- Everything is nine-sliced at 16 pixels per unit, so frames keep their pixel size on any panel.
+- The Kenney Pixel UI pack was looked at and rejected as generic and flat next to the ship art.
+- **Fonts: Kenney Mini Square for body text and Kenney Pixel Square for titles, CC0.** They import as hinted raster, which keeps the glyphs' edges hard. Titles are the plating's glow cyan with a drop shadow.
+- The styler recognises roles from the hierarchy (a Button, a Slider's parts, a Toggle's graphics, a panel by name), so running it again after adding a screen styles that screen too. It covers the main menu, the difficulty screen, the HUD, the campaign screens, the pause menu and the settings overlay prefab. It styles a nested prefab through the prefab itself, never through scene overrides.
+- **Pixel fonts need different overflow rules:**
+  - Their taller line height made truncating rects drop single-line captions entirely, which blanked the EASY and HARD labels. Body text now overflows vertically.
+  - The wider title font wrapped long stage names into the body text. Titles now shrink to fit their rect, down to half their authored size.
+- **The difficulty panel stretched to the full screen**, which left most of it empty in portrait. It is now a fixed 920×790 centred card, sized to its content. The Hard description was shortened so it no longer runs into the best score.
+- **Capture note:** the MCP's screenshot of an overlay canvas double-encodes gamma, so the dark hull came out grey. Rendering the canvas through the camera into an sRGB texture read exactly `#161A2B`, the palette value, so the game itself is correct. Menu checks were done with those camera renders at 540×960 portrait.
+- Tests: 4 new EditMode tests fail if any button, panel label or text in the main menu, the game scene or the settings overlay is left unskinned, or if a UI sprite loses its nine-slice border or point filtering. Full suite: 327 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 

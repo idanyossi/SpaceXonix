@@ -65,9 +65,9 @@ namespace SpaceXonix.EditorTools
         // ---------------------------------------------------------------- textures
 
         /// <summary>Four 16-pixel deck plates per tile, each different, so the floor does not read as a grid.</summary>
-        private static Canvas DeckFloor()
+        private static PixelCanvas DeckFloor()
         {
-            var c = new Canvas(32, 32, DeckBase);
+            var c = new PixelCanvas(32, 32, DeckBase);
             for (var py = 0; py < 2; py++)
                 for (var px = 0; px < 2; px++)
                     Plate(c, px * 16, py * 16, DeckSeam, DeckLight, DeckShade, DeckRivet);
@@ -86,9 +86,9 @@ namespace SpaceXonix.EditorTools
         }
 
         /// <summary>The same plate layout as the deck, but clean and powered, so capturing reads as converting it.</summary>
-        private static Canvas TerritoryTop()
+        private static PixelCanvas TerritoryTop()
         {
-            var c = new Canvas(32, 32, PlateBase);
+            var c = new PixelCanvas(32, 32, PlateBase);
             for (var py = 0; py < 2; py++)
                 for (var px = 0; px < 2; px++)
                     Plate(c, px * 16, py * 16, PlateSeam, PlateLight, PlateShade, PlateRivet);
@@ -108,9 +108,9 @@ namespace SpaceXonix.EditorTools
         /// Walls only ever show their bottom six pixels (0.35 units at 16 per unit), so all the detail
         /// is there: dark at the floor, a lit edge at the top where the plating begins.
         /// </summary>
-        private static Canvas TerritoryWall()
+        private static PixelCanvas TerritoryWall()
         {
-            var c = new Canvas(32, 32, PlateShade);
+            var c = new PixelCanvas(32, 32, PlateShade);
             // Rows count from the top of the image; the wall's base is the bottom of the image.
             for (var x = 0; x < 32; x++)
             {
@@ -128,18 +128,18 @@ namespace SpaceXonix.EditorTools
         /// One trail cell. The rim is mid cyan rather than dark, so neighbouring cells join into one
         /// continuous energy line instead of a string of beads, and each cell's hot core gives it a pulse.
         /// </summary>
-        private static Canvas TrailCell()
+        private static PixelCanvas TrailCell()
         {
-            var c = new Canvas(8, 8, Hex(0x2aa9c9));
+            var c = new PixelCanvas(8, 8, Hex(0x2aa9c9));
             c.Rect(1, 1, 6, 6, Glow);
             c.Rect(3, 3, 2, 2, Hot);
             return c;
         }
 
         /// <summary>Across the beam: dark edges, red, then a white-hot core. Along it: bright pulses that scroll.</summary>
-        private static Canvas LaserBeam()
+        private static PixelCanvas LaserBeam()
         {
-            var c = new Canvas(16, 8, LaserRed);
+            var c = new PixelCanvas(16, 8, LaserRed);
             for (var x = 0; x < 16; x++)
             {
                 c.Set(x, 0, LaserDark); c.Set(x, 7, LaserDark);
@@ -152,16 +152,16 @@ namespace SpaceXonix.EditorTools
         }
 
         /// <summary>A dashed red line with clear gaps, cut out rather than blended so the pixels stay hard.</summary>
-        private static Canvas LaserWarning()
+        private static PixelCanvas LaserWarning()
         {
-            var c = new Canvas(16, 8, Clear);
+            var c = new PixelCanvas(16, 8, Clear);
             for (var x = 0; x < 10; x++) { c.Set(x, 3, LaserRed); c.Set(x, 4, LaserRed); }
             c.Set(0, 3, LaserDark); c.Set(9, 4, LaserDark);
             return c;
         }
 
         /// <summary>A bevelled plate: seam on the far edges, light on the near edges, rivets in the corners.</summary>
-        private static void Plate(Canvas c, int x0, int y0, Color32 seam, Color32 light, Color32 shade, Color32 rivet)
+        private static void Plate(PixelCanvas c, int x0, int y0, Color32 seam, Color32 light, Color32 shade, Color32 rivet)
         {
             for (var i = 0; i < 16; i++)
             {
@@ -178,7 +178,7 @@ namespace SpaceXonix.EditorTools
 
         // ---------------------------------------------------------------- plumbing
 
-        private static void Write(string name, Canvas canvas) =>
+        private static void Write(string name, PixelCanvas canvas) =>
             File.WriteAllBytes($"{Folder}/{name}.png", canvas.Encode());
 
         private static void Assign(string material, string texture, bool cutout)
@@ -201,45 +201,6 @@ namespace SpaceXonix.EditorTools
             EditorUtility.SetDirty(mat);
         }
 
-        private static Color32 Hex(int rgb) => new Color32((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb, 255);
-
-        /// <summary>A pixel grid addressed from the top-left, the way pixel art is drawn.</summary>
-        private sealed class Canvas
-        {
-            private readonly Color32[] pixels;
-            public readonly int Width;
-            public readonly int Height;
-
-            public Canvas(int width, int height, Color32 fill)
-            {
-                Width = width; Height = height;
-                pixels = new Color32[width * height];
-                for (var i = 0; i < pixels.Length; i++) pixels[i] = fill;
-            }
-
-            public void Set(int x, int y, Color32 color)
-            {
-                if (x < 0 || y < 0 || x >= Width || y >= Height) return;
-                // Textures store rows bottom-up; flip so drawing code can think top-down.
-                pixels[(Height - 1 - y) * Width + x] = color;
-            }
-
-            public void Line(int x0, int y0, int x1, int y1, Color32 color)
-            {
-                for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++) Set(x, y, color);
-            }
-
-            public void Rect(int x, int y, int width, int height, Color32 color) => Line(x, y, x + width - 1, y + height - 1, color);
-
-            public byte[] Encode()
-            {
-                var texture = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
-                texture.SetPixels32(pixels);
-                texture.Apply();
-                var bytes = texture.EncodeToPNG();
-                Object.DestroyImmediate(texture);
-                return bytes;
-            }
-        }
+        private static Color32 Hex(int rgb) => PixelCanvas.Hex(rgb);
     }
 }
