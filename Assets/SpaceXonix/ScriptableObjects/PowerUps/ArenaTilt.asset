@@ -16,6 +16,10 @@ MonoBehaviour:
   displayName: Arena Tilt
   duration: 5
   pickupMaterial: {fileID: 2100000, guid: 61e67414734db134ba8ec6319ba06780, type: 2}
+  pickupFrames:
+  - {fileID: 21300000, guid: 5ee70f268a518bc4eae80927bff4da52, type: 3}
+  - {fileID: 21300000, guid: 16a3275f18354fd488b116708d97cd54, type: 3}
+  pickupTint: {r: 1, g: 0.85, b: 0.45, a: 1}
   tiltEnemyDrift: 0.4
   tiltPlayerSlow: 0.2
   tiltCameraRollDegrees: 6

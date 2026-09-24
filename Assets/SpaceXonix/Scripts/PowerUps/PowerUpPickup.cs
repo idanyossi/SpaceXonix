@@ -21,15 +21,31 @@ namespace SpaceXonix.PowerUps
             LifetimeRemaining = lifetime;
             transform.position = worldPosition;
             if (pickupRenderer == null) pickupRenderer = GetComponentInChildren<Renderer>();
-            if (pickupRenderer != null && definition.pickupMaterial != null) pickupRenderer.sharedMaterial = definition.pickupMaterial;
+            if (pickupRenderer is SpriteRenderer sprite)
+            {
+                // One pooled pickup serves every power-up, so its look is set per spawn.
+                sprite.color = definition.pickupTint;
+                var animator = sprite.GetComponent<SpaceXonix.Presentation.SpriteFrameAnimator>();
+                if (animator != null && definition.pickupFrames != null && definition.pickupFrames.Length > 0)
+                    animator.SetFrames(definition.pickupFrames, 6f);
+                else if (definition.pickupFrames != null && definition.pickupFrames.Length > 0)
+                    sprite.sprite = definition.pickupFrames[0];
+            }
+            else if (pickupRenderer != null && definition.pickupMaterial != null)
+            {
+                pickupRenderer.sharedMaterial = definition.pickupMaterial;
+            }
         }
 
         /// <summary>Returns false once the pickup's lifetime has run out.</summary>
         public bool Tick(float deltaTime)
         {
-            // Spin the visual only; the logical root stays axis-aligned on the board plane.
-            var spinTarget = pickupRenderer != null ? pickupRenderer.transform : transform;
-            spinTarget.Rotate(0f, 0f, spinDegreesPerSecond * deltaTime, Space.Self);
+            // Spin a mesh visual only. Rotating pixel art smears it, and a sprite already animates.
+            if (!(pickupRenderer is SpriteRenderer))
+            {
+                var spinTarget = pickupRenderer != null ? pickupRenderer.transform : transform;
+                spinTarget.Rotate(0f, 0f, spinDegreesPerSecond * deltaTime, Space.Self);
+            }
             if (!Expires) return true;
             LifetimeRemaining -= deltaTime;
             return LifetimeRemaining > 0f;

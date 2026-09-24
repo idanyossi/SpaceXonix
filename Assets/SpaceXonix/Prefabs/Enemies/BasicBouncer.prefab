@@ -9,8 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7708465216962149103}
-  - component: {fileID: 7036512609701958418}
-  - component: {fileID: 6577928671694428674}
+  - component: {fileID: 583218020032206428}
+  - component: {fileID: 3851935402082874695}
   m_Layer: 0
   m_Name: Visual
   m_TagString: Untagged
@@ -33,16 +33,9 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5116143544689575744}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &7036512609701958418
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2655203148793558798}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &6577928671694428674
-MeshRenderer:
+--- !u!212 &583218020032206428
+SpriteRenderer:
+  serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -56,7 +49,7 @@ MeshRenderer:
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
+  m_RayTracingMode: 0
   m_RayTraceProcedural: 0
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
@@ -66,7 +59,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: 9dfc825aed78fcd4ba02077103263b40, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -79,7 +72,7 @@ MeshRenderer:
   m_IgnoreNormalsForChartDetection: 0
   m_ImportantGI: 0
   m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
+  m_SelectedEditorRenderState: 0
   m_MinimumChartSize: 4
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
@@ -89,7 +82,33 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 2670c6100427d1d419d4083b900f72fd, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 1, y: 1}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+--- !u!114 &3851935402082874695
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2655203148793558798}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 609e1bc5a68f89942be5353c1efe2872, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Presentation.SpriteFrameAnimator
+  frames:
+  - {fileID: 21300000, guid: 2670c6100427d1d419d4083b900f72fd, type: 3}
+  - {fileID: 21300000, guid: 75eb366a3d9000f40be59e4610fbf32e, type: 3}
+  framesPerSecond: 4
+  randomStartFrame: 1
 --- !u!1 &6461552448834079123
 GameObject:
   m_ObjectHideFlags: 0
@@ -175,7 +194,7 @@ MonoBehaviour:
   shadow: {fileID: 927579056001618863}
   boardManager: {fileID: 0}
   hoverHeight: 0.55
-  faceCamera: 0
+  faceCamera: 1
   shadowLift: 0.01
   shadowScale: 0.8
 --- !u!1 &6805454044815721402

@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 19 partly complete - audio filled with generated placeholders; art still needs sourcing
-- Latest completed feature: placeholder audio for every sound and track, and the licence record
+- Current phase: Phase 19 complete bar music and a few textures; Phase 20 next
+- Latest completed feature: CC0 pixel-art sprites for every actor and CC0 sound effects for 19 of 20 sounds
 
 ## Phase Progress
 
@@ -30,7 +30,7 @@
 16. **COMPLETE** — UI, menus, HUD, settings, pause, and safe area
 17. **COMPLETE** — Android swipe controls and touch buttons
 18. **COMPLETE** — Audio system, sound library, and gameplay bindings
-19. **PARTLY COMPLETE** — Audio filled with generated placeholders and the licence record written; third-party art still to source
+19. **COMPLETE** — CC0 pixel-art sprites for every actor, CC0 sound effects, licence record (music and board textures still to source)
 20. **NOT STARTED** — Visual Polish + VFX + Cinemachine
 21. **NOT STARTED** — Final QA + Profiling + Submission Cleanup
 
@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 314
-- Passed: 314
+- EditMode discovered: 319
+- Passed: 319
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -514,10 +514,20 @@
 - `ATTRIBUTIONS.md` at the repo root records every shipped asset with its source and licence, as the GDD's Asset Licensing section requires, plus the full inventory of what still needs sourcing and which stand-in each replaces.
 - It notes that CC-BY assets need visible in-game credit, not just a file entry, so a credits screen goes on the Phase 20 list the moment the first one is added.
 
-### Still outstanding
+### Third-party art and audio (done)
 
-- All third-party **art**: ship, four alien types, the Alien Core, pickup icons, board and hazard textures, UI icons and a logo. Every visual is still a primitive, a procedural mesh or a flat colour.
-- Replacing the placeholder audio with real clips.
+- **Sourcing.** Browsed Kenney and itch.io's free pixel-art listings, and followed up on OpenGameArt when itch.io blocked its filtered pages. The deciding constraint turned out to be that **the GitHub repository is public**: committing an asset publishes its raw files, so every pack whose licence forbids redistribution was out, however good it looked. That removed the [8x8] pack, the CraftPix/Free Game Assets packs and dani567's pack. Helianthus Games' kit was dropped because its licence is silent on redistribution and its ships are side-view, which is wrong for a camera looking down on the board. The full reasoning is in `ATTRIBUTIONS.md`.
+- **Art: ansimuz's Space Ship Shooter Pixel Art Assets (CC0).** Genuine top-down pixel art on a 16-pixel grid, with a ship, three enemy designs, an explosion, bolts and power-up orbs. **Kenney's space art was deliberately not used for anything in-world**: it is smooth vector, and mixing it with pixel sprites is what makes asset-pack games look cheap. Kenney has no pixel-art space pack at all.
+- **Audio: Kenney Sci-Fi Sounds plus the Space Shooter Remastered bonus clips (CC0).** Sound has no visual style, so there is no clash. They cover 19 of the 20 sounds, with several variants picked at random for alien deaths and boss shots. The clips were chosen **by name, not by ear**, and `ThirdPartyAudioApplier` is the one place to change a mapping. The direction blip stays generated because it must be quieter than anything in the pack, and all three music loops stay generated because neither Kenney pack has music.
+- **Pipeline.** Raw downloads live in the git-ignored `AssetSources/`, and only the files actually used are copied into `Assets`, each folder with its licence file. `PixelArtImporter` forces point filtering, no compression and no mipmaps on anything under `Art/ThirdParty`, since any of those would smear a 16-pixel sprite. It also cuts each sheet into one PNG per frame, which avoids the deprecated slicing API and needs no 2D Sprite package. `PixelArtSpriteApplier` (**SpaceXonix > Apply Pixel Art Sprites**) records the whole art mapping in one re-runnable place.
+- **Mapping.** Three alien silhouettes cover four alien types, so tint separates two of them: Basic Bouncer is the pink pod, Linear the pink wings, Unstable the tank in electric blue, and Volatile the pod in orange. The Alien Core is the tank in red at 3.2 units wide. Two orb designs serve the three power-ups: warm for Shield, icy blue for Freeze, gold for Arena Tilt.
+- **Hitboxes still equal visuals.** Every sprite is scaled so its width is exactly the collision diameter, the rule set in the Phase 11 hitbox fix. The trade-off, accepted deliberately, is that pixel density varies by actor: a Volatile packs its 16 pixels into 0.28 units, an alien into 1.0.
+- **Billboard or flat?** Both were rendered at the real 1080x1920 portrait target. At this camera pitch they look nearly identical, so the tiebreaker was pixel art: a flat sprite under perspective has its pixel rows compressed unevenly and shimmers as it moves, while a billboard keeps every pixel square. **Billboarding stays**, which is also what Phase 12 originally planned.
+- `ActorVisual` gained a heading applied inside the camera facing, so the ship turns on screen to face its direction of travel (`ShipHeading`) without tilting away from the camera. Pickups no longer spin, since rotating pixel art smears it and the orbs already animate. `SpriteFrameAnimator` loops the thruster flicker and alien pulses, and catches up correctly after a long frame.
+- **Fixed on the way:** shadows were a fixed 0.8 units wide, so a Volatile sat on a shadow three times its own width. They now scale to each actor's visual.
+- **Test fixed on the way:** the hitbox size test measured the first `MeshFilter` in a prefab. Once the visuals became sprites, the only mesh left was the shadow, so it would have silently started measuring the shadow instead. It now measures the actor's own visual, sprite or mesh.
+- Tests: 5 new EditMode tests - the frame animator looping and catching up after a hitch, the ship's heading for each direction, a billboard turning on screen while still facing the camera, shadows sized to their actor, and a pickup taking its sprite and tint from its power-up without spinning. Full suite: 319 passed, 0 failed.
+- **Still outstanding:** music; board, trail and laser textures (the flat laser bars now clash with the pixel art); a Power Shot sprite, which needs its launch code changed since it stretches its visual; and UI icons and a logo.
 
 ## Phase 18 — Audio
 

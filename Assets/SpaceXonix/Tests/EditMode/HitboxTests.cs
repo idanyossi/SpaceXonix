@@ -161,10 +161,27 @@ namespace SpaceXonix.Tests.EditMode
         private static void AssertVisualMatches(string prefabPath, float radius)
         {
             var prefab = AssetDatabase(prefabPath);
-            var filter = prefab.GetComponentInChildren<MeshFilter>();
-            Assert.That(filter, Is.Not.Null, prefabPath);
-            var scale = filter.transform == prefab.transform ? prefab.transform.localScale : Vector3.Scale(prefab.transform.localScale, filter.transform.localScale);
-            var width = filter.sharedMesh.bounds.size.x * scale.x;
+            // Measure the actor's own visual, never the shadow, which is a mesh of its own size.
+            var actorVisual = prefab.GetComponent<SpaceXonix.Presentation.ActorVisual>();
+            var visual = actorVisual != null && actorVisual.Visual != null ? actorVisual.Visual : null;
+            if (visual == null && prefab.transform.childCount > 0) visual = prefab.transform.GetChild(0);
+            Assert.That(visual, Is.Not.Null, prefabPath);
+
+            float localWidth;
+            var sprite = visual.GetComponent<SpriteRenderer>();
+            if (sprite != null)
+            {
+                Assert.That(sprite.sprite, Is.Not.Null, prefabPath + " has a SpriteRenderer with no sprite");
+                localWidth = sprite.sprite.bounds.size.x;
+            }
+            else
+            {
+                var filter = visual.GetComponent<MeshFilter>();
+                Assert.That(filter, Is.Not.Null, prefabPath);
+                localWidth = filter.sharedMesh.bounds.size.x;
+            }
+            var scale = Vector3.Scale(prefab.transform.localScale, visual.localScale);
+            var width = localWidth * scale.x;
             Assert.That(width, Is.EqualTo(radius * 2f).Within(.02f), prefabPath);
         }
 

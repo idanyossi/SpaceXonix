@@ -77,3 +77,6 @@ UserSettings/*
 # Editor screenshot captures (MCP / manual)
 /[Aa]ssets/Screenshots/
 /[Aa]ssets/Screenshots.meta
+
+# Raw third-party downloads; only the files actually used are copied into Assets
+/AssetSources/

@@ -21,6 +21,12 @@ namespace SpaceXonix.Presentation
         private Transform cameraTransform;
 
         public float HoverHeight => hoverHeight;
+        /// <summary>
+        /// In-plane rotation of the visual in degrees, 0 pointing up the board. Lets a sprite such as
+        /// the ship face its direction of travel while still billboarding toward the camera.
+        /// </summary>
+        public float HeadingDegrees { get; set; }
+        public bool FaceCamera => faceCamera;
         public Transform Visual => visual;
         public Transform Shadow => shadow;
 
@@ -30,8 +36,24 @@ namespace SpaceXonix.Presentation
         {
             if (visual == null && transform.childCount > 0) visual = transform.GetChild(0);
             if (boardManager == null) boardManager = FindFirstObjectByType<BoardManager>();
-            // A flattened sphere reads as a round blob without needing a texture.
-            if (shadow != null) shadow.localScale = new Vector3(shadowScale, shadowScale, shadowScale * .06f);
+            // A flattened sphere reads as a round blob without needing a texture. It is sized to the
+            // actor, so a tiny Volatile alien does not sit on a shadow three times its own width.
+            if (shadow != null)
+            {
+                var size = shadowScale * VisualWidth();
+                shadow.localScale = new Vector3(size, size, size * .06f);
+            }
+        }
+
+        /// <summary>The visual's drawn width in world units, whether it is a sprite or a mesh.</summary>
+        public float VisualWidth()
+        {
+            if (visual == null) return 1f;
+            var sprite = visual.GetComponent<SpriteRenderer>();
+            if (sprite != null && sprite.sprite != null) return sprite.sprite.bounds.size.x * visual.localScale.x;
+            var filter = visual.GetComponent<MeshFilter>();
+            if (filter != null && filter.sharedMesh != null) return filter.sharedMesh.bounds.size.x * visual.localScale.x;
+            return 1f;
         }
 
         private void LateUpdate() => Apply(cameraTransform != null ? cameraTransform.rotation : ResolveCameraRotation());
@@ -43,7 +65,10 @@ namespace SpaceXonix.Presentation
             if (visual != null)
             {
                 visual.position = new Vector3(origin.x, origin.y, origin.z - hoverHeight);
-                if (faceCamera) visual.rotation = cameraRotation;
+                var heading = Quaternion.Euler(0f, 0f, HeadingDegrees);
+                // Heading is applied inside the facing, so a billboard turns on screen rather than tilting away.
+                if (faceCamera) visual.rotation = cameraRotation * heading;
+                else if (HeadingDegrees != 0f) visual.rotation = heading;
             }
             if (shadow == null) return;
             var surface = boardManager != null ? boardManager.GetVisualSurfaceHeight(origin) : 0f;

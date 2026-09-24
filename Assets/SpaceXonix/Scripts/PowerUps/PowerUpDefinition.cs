@@ -8,8 +8,12 @@ namespace SpaceXonix.PowerUps
         public PowerUpType type;
         public string displayName = "Power-Up";
         [Min(.1f)] public float duration = 4f;
-        [Tooltip("Material applied to this power-up's board pickup.")]
+        [Tooltip("Material applied to this power-up's board pickup when it is drawn as a mesh.")]
         public Material pickupMaterial;
+        [Tooltip("Looping frames for this power-up's board pickup when it is drawn as a sprite.")]
+        public Sprite[] pickupFrames;
+        [Tooltip("Tint over the frames, so one orb design can serve several power-ups.")]
+        public Color pickupTint = Color.white;
 
         [Header("Arena Tilt")]
         [Tooltip("Sideways drift added to aliens. Keep it below every alien's sideways speed so they can still move against the tilt.")]
