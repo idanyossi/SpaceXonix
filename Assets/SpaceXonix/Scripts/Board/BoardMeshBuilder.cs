@@ -6,6 +6,10 @@ namespace SpaceXonix.Board
     /// <summary>
     /// Builds board presentation geometry in board-local space. The board lies on XY; height rises toward -Z (the camera).
     /// Submesh 0 holds slab tops, submesh 1 holds side walls.
+    ///
+    /// UVs are in world space scaled by <see cref="Buffers.UvScale"/>, so a texture tiles at one fixed
+    /// pixel density across every chunk, top and wall. Seams line up between neighbouring cells
+    /// because each vertex's UV comes from its position, not from the cell it belongs to.
     /// </summary>
     public static class BoardMeshBuilder
     {
@@ -15,10 +19,13 @@ namespace SpaceXonix.Board
             public readonly List<Vector3> Normals = new List<Vector3>();
             public readonly List<int> Tops = new List<int>();
             public readonly List<int> Walls = new List<int>();
+            public readonly List<Vector2> Uvs = new List<Vector2>();
+            /// <summary>Texture repeats per world unit. 0.5 means one repeat every two units.</summary>
+            public float UvScale = 1f;
 
             public void Clear()
             {
-                Vertices.Clear(); Normals.Clear(); Tops.Clear(); Walls.Clear();
+                Vertices.Clear(); Normals.Clear(); Tops.Clear(); Walls.Clear(); Uvs.Clear();
             }
         }
 
@@ -64,9 +71,21 @@ namespace SpaceXonix.Board
             mesh.subMeshCount = 2;
             mesh.SetVertices(buffers.Vertices);
             mesh.SetNormals(buffers.Normals);
+            mesh.SetUVs(0, buffers.Uvs);
             mesh.SetTriangles(buffers.Tops, 0, false);
             mesh.SetTriangles(buffers.Walls, 1, false);
             mesh.RecalculateBounds();
+        }
+
+        /// <summary>
+        /// Tops use the board's XY. Walls use the coordinate running along the wall and the height,
+        /// so a wall's texture reads upright and continues around a corner.
+        /// </summary>
+        public static Vector2 Project(Vector3 vertex, Vector3 outward, float scale)
+        {
+            if (outward == Vector3.left || outward == Vector3.right) return new Vector2(vertex.y, -vertex.z) * scale;
+            if (outward == Vector3.up || outward == Vector3.down) return new Vector2(vertex.x, -vertex.z) * scale;
+            return new Vector2(vertex.x, vertex.y) * scale;
         }
 
         private static float HeightAt(float[] heights, int width, int height, int x, int y) =>
@@ -78,6 +97,10 @@ namespace SpaceXonix.Board
             var start = buffers.Vertices.Count;
             buffers.Vertices.Add(bl); buffers.Vertices.Add(br); buffers.Vertices.Add(tl); buffers.Vertices.Add(tr);
             for (var i = 0; i < 4; i++) buffers.Normals.Add(outward);
+            buffers.Uvs.Add(Project(bl, outward, buffers.UvScale));
+            buffers.Uvs.Add(Project(br, outward, buffers.UvScale));
+            buffers.Uvs.Add(Project(tl, outward, buffers.UvScale));
+            buffers.Uvs.Add(Project(tr, outward, buffers.UvScale));
             // Unity front faces satisfy cross(b - a, c - a) pointing toward the viewer (outward).
             if (Vector3.Dot(Vector3.Cross(tl - bl, br - bl), outward) > 0f)
             {

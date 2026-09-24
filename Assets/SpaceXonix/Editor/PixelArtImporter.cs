@@ -32,6 +32,19 @@ namespace SpaceXonix.EditorTools
 
         private void OnPreprocessTexture()
         {
+            if (assetPath.StartsWith(BoardArtGenerator.Folder))
+            {
+                // Board and laser textures tile across meshes, so they repeat and are not sprites,
+                // but they are still pixel art and must stay crisp.
+                var tiling = (TextureImporter)assetImporter;
+                tiling.textureType = TextureImporterType.Default;
+                tiling.filterMode = FilterMode.Point;
+                tiling.textureCompression = TextureImporterCompression.Uncompressed;
+                tiling.mipmapEnabled = false;
+                tiling.alphaIsTransparency = true;
+                tiling.wrapMode = TextureWrapMode.Repeat;
+                return;
+            }
             if (!assetPath.StartsWith(ArtRoot)) return;
             var importer = (TextureImporter)assetImporter;
             importer.textureType = TextureImporterType.Sprite;

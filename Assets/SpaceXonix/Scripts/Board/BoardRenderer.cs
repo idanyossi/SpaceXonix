@@ -14,6 +14,8 @@ namespace SpaceXonix.Board
         [SerializeField] private Material territoryTopMaterial;
         [SerializeField] private Material territoryWallMaterial;
         [SerializeField] private Material trailMaterial;
+        [Tooltip("World units covered by one repeat of the floor and territory textures. 2 units of a 32-pixel tile is 16 pixels per unit, the sprites' density.")]
+        [SerializeField, Min(.01f)] private float textureWorldSize = 2f;
         [SerializeField, Min(.01f)] private float territoryHeight = .35f;
         [SerializeField, Min(.001f)] private float trailLift = .02f;
         [SerializeField, Min(.01f)] private float riseSeconds = .3f;
@@ -136,6 +138,7 @@ namespace SpaceXonix.Board
                 if (!chunkDirty[chunk]) continue;
                 chunkDirty[chunk] = false;
                 int xMin = cx * chunkSize, yMin = cy * chunkSize;
+                buffers.UvScale = 1f / textureWorldSize;
                 BoardMeshBuilder.BuildRaisedCells(heights, width, height, cellSize, xMin, yMin,
                     Mathf.Min(width, xMin + chunkSize), Mathf.Min(height, yMin + chunkSize), buffers);
                 BoardMeshBuilder.Apply(chunkMeshes[chunk], buffers);
@@ -167,6 +170,8 @@ namespace SpaceXonix.Board
             for (var i = 0; i < trailCells.Count; i++) trailFlags[trailCells[i]] = false;
             trailCells.Clear();
             for (var i = 0; i < trail.Count; i++) { trailCells.Add(trail[i]); trailFlags[trail[i]] = true; }
+            // One repeat per cell, so every trail cell draws as its own glowing segment.
+            buffers.UvScale = 1f / cellSize;
             BoardMeshBuilder.BuildFlatCells(trailCells, width, cellSize, trailLift, buffers);
             BoardMeshBuilder.Apply(trailMesh, buffers);
         }
@@ -179,7 +184,9 @@ namespace SpaceXonix.Board
             float w = width * cellSize, h = height * cellSize;
             mesh.vertices = new[] { Vector3.zero, new Vector3(w, 0f), new Vector3(0f, h), new Vector3(w, h) };
             mesh.normals = new[] { Vector3.back, Vector3.back, Vector3.back, Vector3.back };
-            mesh.uv = new[] { Vector2.zero, Vector2.right, Vector2.up, Vector2.one };
+            // World-space UVs, so the deck tiles at the same density as the territory built on it.
+            var scale = 1f / textureWorldSize;
+            mesh.uv = new[] { Vector2.zero, new Vector2(w, 0f) * scale, new Vector2(0f, h) * scale, new Vector2(w, h) * scale };
             mesh.triangles = new[] { 0, 2, 1, 2, 3, 1 };
             GetComponent<MeshFilter>().sharedMesh = mesh;
             GetComponent<MeshRenderer>().sharedMaterial = floorMaterial != null ? floorMaterial : RuntimeMaterial(new Color(.02f, .03f, .08f));

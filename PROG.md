@@ -509,6 +509,21 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - The Kenney audio, the generated placeholders and both of their editor commands were removed.
 - The MCP blocks `AssetDatabase.DeleteAsset` from executed code as a safety measure; that was left in place and the files were removed through the filesystem instead, `.meta` files included.
 
+### Board, trail and lasers (done)
+
+- **Design, chosen by the user:** the board starts as the deck of a giant derelict ship, and capturing converts it into your plating - *"make it look like we took that space"*. An open-space floor was proposed first and turned down as weird.
+- The art is **drawn in code** by `BoardArtGenerator` (**SpaceXonix > Generate Board Art**) rather than sourced: these are patterns, not characters, and drawing them in ansimuz's palette at the sprites' 16 pixels per unit guarantees they match. Being generated in the project, they carry no licence.
+  - **Deck:** dull, cold slate plates with seams, bevels and rivets. The four plates in each tile differ (a vent grille, faded hazard stripes, scuffs, a missing rivet) so the floor never reads as a flat grid.
+  - **Claimed plating:** the same plate layout, clean and bright teal, with a lit power strip, a chevron and a status light, so capturing reads as converting the deck rather than covering it.
+  - **Walls:** only ever show their bottom six pixels (0.35 units), so all their detail is there: dark at the foot, a lit cyan edge where the plating begins.
+  - **Trail:** one texture repeat per cell, with a mid-cyan rim so neighbouring cells join into one continuous energy line. A dark rim was tried first and read as a string of beads.
+  - **Lasers:** the beam has dark edges, red and a white-hot core, with bright pulses that scroll along it; the warning is a dashed red line cut out with alpha clipping rather than blended, which keeps its edges hard and needs no sorting.
+- **The board meshes had no UVs at all**, so any texture would have smeared into one colour. `BoardMeshBuilder` now writes world-space UVs: tops use board XY and walls use the coordinate along the wall plus the height, so wall art stays upright and continues round corners. Because each UV comes from the vertex position rather than the cell, seams line up between neighbouring cells and chunks.
+- **Lasers were stretched cubes**, so a texture would have smeared across the whole board. `LaserPresentation` now sets tiling from the beam's length through a `MaterialPropertyBlock`, which tiles each pooled beam without creating a material per instance, and scrolls the beam's pattern on unscaled time.
+- Generated textures get their own import rule: point filtered, uncompressed and without mipmaps like the sprites, but **repeating** and not sprites, since they tile across meshes.
+- **Harness note:** a first render showed no trail. The game's own consistency check had cancelled it, because the scripted trail's head was nowhere near the ship. It was not a rendering bug. Re-running with the ship at the trail's head, rendered in the same frame, showed it correctly.
+- Tests: 4 new EditMode tests - tops tiling in world space with shared corners agreeing, walls running along their length and up their height, raised cells carrying one UV per vertex, and the laser tiling along the beam with never less than one repeat. Full suite: 323 passed, 0 failed.
+
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 
 **What blocked full completion:** this phase is about bringing in licensed third-party art and audio, which cannot be downloaded from here. The MCP's `generate_image` and `generate_model` tools exist but **both providers report `configured: false`**, so AI generation was not available either. The project had **zero** art and audio files before this phase.
