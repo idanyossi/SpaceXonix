@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: Sfx_PowerMeterFull
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Audio.SfxDefinition
   sfx: 4
-  clips: []
+  clips:
+  - {fileID: 8300000, guid: 103788db61d3da34fbd8b2d10ca7c711, type: 3}
   volume: 1
   pitchVariance: 0
   minimumInterval: 0

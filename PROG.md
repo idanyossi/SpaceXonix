@@ -7,8 +7,8 @@
 - Active branch: `main`
 - Main gameplay scene: `Assets/SpaceXonix/Scenes/Game.unity`
 - Default logical board: configurable 54 x 96 cells
-- Current phase: Phase 18 complete (audio system; clips arrive in Phase 19)
-- Latest completed feature: the audio service, sound library and gameplay sound bindings
+- Current phase: Phase 19 partly complete - audio filled with generated placeholders; art still needs sourcing
+- Latest completed feature: placeholder audio for every sound and track, and the licence record
 
 ## Phase Progress
 
@@ -30,7 +30,7 @@
 16. **COMPLETE** — UI, menus, HUD, settings, pause, and safe area
 17. **COMPLETE** — Android swipe controls and touch buttons
 18. **COMPLETE** — Audio system, sound library, and gameplay bindings
-19. **NOT STARTED** — Asset Acquisition/Integration
+19. **PARTLY COMPLETE** — Audio filled with generated placeholders and the licence record written; third-party art still to source
 20. **NOT STARTED** — Visual Polish + VFX + Cinemachine
 21. **NOT STARTED** — Final QA + Profiling + Submission Cleanup
 
@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 313
-- Passed: 313
+- EditMode discovered: 314
+- Passed: 314
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -497,6 +497,28 @@
 - Tests: 5 new EditMode tests - the mode's effects, a separate record per difficulty that one mode cannot fill in for the other, difficulty surviving a settings reset, both records and the selected mode persisting, and a pre-difficulty save being read as the Hard record. Full suite: 292 passed, 0 failed.
 - Real Play Mode: the difficulty screen showed Easy "No run yet" and Hard "Best: 46162"; choosing Easy loaded the game with **4 lives, no modifier, score bonus 1.00**, and switching to Hard gave **3 lives, "Overclocked Swarm x1.15", bonus 1.15**.
 
+## Phase 19 — Asset Acquisition/Integration (partly complete)
+
+**What blocked full completion:** this phase is about bringing in licensed third-party art and audio, which cannot be downloaded from here. The MCP's `generate_image` and `generate_model` tools exist but **both providers report `configured: false`**, so AI generation was not available either. The project had **zero** art and audio files before this phase.
+
+### Placeholder audio (done)
+
+- `SpaceXonix/Generate Placeholder Audio` synthesises a clip for all 20 sounds and all 3 music loops directly in the editor, so the game is audible now. Being generated in-project, they carry no licence obligations, and `SpaceXonix/Delete Placeholder Audio` removes them in one step when real clips arrive.
+- Each sound's shape matches what it represents so they stay distinguishable while playtesting: rising tones for gains (capture, pickup, power full), falling ones for losses (player hit, freeze), noise bursts for destruction (Volatile, boss). Every clip is fade-edged so nothing clicks on play or loop. Music is three short arpeggio loops with per-note pluck envelopes.
+- Import settings are applied per category: effects are PCM and decompressed on load, music is Vorbis and streamed, everything forced to mono.
+- **Gap found while testing:** the binder only chose music from `StageLoaded`, so the menu had no track at all and started silent. `MusicCue` now states a scene's track outright, and the Main Menu carries one. It is silent rather than throwing when no audio service exists.
+- Verified from a real boot: the Main Menu plays `Music_Menu`, a stage load switches to `Music_Gameplay`, and a capture fires three effects.
+
+### Licence record (done)
+
+- `ATTRIBUTIONS.md` at the repo root records every shipped asset with its source and licence, as the GDD's Asset Licensing section requires, plus the full inventory of what still needs sourcing and which stand-in each replaces.
+- It notes that CC-BY assets need visible in-game credit, not just a file entry, so a credits screen goes on the Phase 20 list the moment the first one is added.
+
+### Still outstanding
+
+- All third-party **art**: ship, four alien types, the Alien Core, pickup icons, board and hazard textures, UI icons and a logo. Every visual is still a primitive, a procedural mesh or a flat colour.
+- Replacing the placeholder audio with real clips.
+
 ## Phase 18 — Audio
 
 - Scope: this phase builds the audio **system**. The clips themselves are Phase 19's job, so every sound is configured but empty, and the game is deliberately silent rather than broken until they arrive.
@@ -600,6 +622,6 @@
 
 ## Next Recommended Action
 
-**Phase 19 — Asset Acquisition/Integration**
+**Phase 20 — Visual Polish + VFX + Cinemachine**
 
 Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.

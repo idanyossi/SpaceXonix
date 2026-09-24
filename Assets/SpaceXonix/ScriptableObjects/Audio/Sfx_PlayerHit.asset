@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: Sfx_PlayerHit
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Audio.SfxDefinition
   sfx: 14
-  clips: []
+  clips:
+  - {fileID: 8300000, guid: 2e7a8cecdd2a2744d8903c99a676bf80, type: 3}
   volume: 1
   pitchVariance: 0.05
   minimumInterval: 0

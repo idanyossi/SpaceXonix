@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: Sfx_LaserWarning
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Audio.SfxDefinition
   sfx: 15
-  clips: []
+  clips:
+  - {fileID: 8300000, guid: 0593144547201624e9fe7b0468323223, type: 3}
   volume: 1
   pitchVariance: 0.05
   minimumInterval: 0.1

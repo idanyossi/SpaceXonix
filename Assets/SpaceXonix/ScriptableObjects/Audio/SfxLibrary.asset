@@ -33,6 +33,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0d2ef9196f121a846a9113fa1067cc51, type: 2}
   - {fileID: 11400000, guid: 13b903d0c9105e349822410d87b73840, type: 2}
   - {fileID: 11400000, guid: 95c7eaab5a09b93459df6135ea975d5d, type: 2}
-  menuTrack: {fileID: 0}
-  gameplayTrack: {fileID: 0}
-  bossTrack: {fileID: 0}
+  menuTrack: {fileID: 8300000, guid: d5be84c6f478da845bd7bf6d66ae0959, type: 3}
+  gameplayTrack: {fileID: 8300000, guid: 28a24f1abba88154a8f9b141b077b8ee, type: 3}
+  bossTrack: {fileID: 8300000, guid: 9653c57ddbc77604b9b271fa02e0058a, type: 3}

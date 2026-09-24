@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: Sfx_ArenaTilt
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Audio.SfxDefinition
   sfx: 11
-  clips: []
+  clips:
+  - {fileID: 8300000, guid: 7d9eb0ba664fc7c438529488a2118575, type: 3}
   volume: 1
   pitchVariance: 0.05
   minimumInterval: 0

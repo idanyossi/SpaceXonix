@@ -541,7 +541,7 @@ MonoBehaviour:
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 42
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -1596,7 +1596,7 @@ MonoBehaviour:
     m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 52
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -1857,7 +1857,7 @@ MonoBehaviour:
     m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 58
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -1963,6 +1963,7 @@ GameObject:
   - component: {fileID: 1151014540}
   - component: {fileID: 1151014541}
   - component: {fileID: 1151014542}
+  - component: {fileID: 1151014543}
   m_Layer: 0
   m_Name: SafeArea
   m_TagString: Untagged
@@ -2027,6 +2028,19 @@ MonoBehaviour:
   settingsPanel: {fileID: 2031243490}
   controlsPanel: {fileID: 1509958765}
   difficultyPanel: {fileID: 600455046}
+--- !u!114 &1151014543
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1151014539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa6d2271ee1541940ab612f330e1ca0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Audio.MusicCue
+  track: 1
 --- !u!1 &1151447758
 GameObject:
   m_ObjectHideFlags: 0
@@ -3028,6 +3042,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1831539320}
   - component: {fileID: 1831539319}
+  - component: {fileID: 1831539321}
   m_Layer: 0
   m_Name: Settings
   m_TagString: Untagged
@@ -3063,6 +3078,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1831539321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1831539318}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4425c06b2e4503c4eb18c82a43d2d6c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Audio.AudioManager
+  library: {fileID: 11400000, guid: ef613e8fe803c684abb8064909b8eb9e, type: 2}
+  voiceCount: 12
+  musicCrossfade: 0.75
+  randomSeed: 0
 --- !u!1 &1956389217
 GameObject:
   m_ObjectHideFlags: 0
@@ -3356,7 +3387,7 @@ MonoBehaviour:
     m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 52
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1

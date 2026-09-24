@@ -171,6 +171,32 @@ namespace SpaceXonix.Tests.EditMode
             }
         }
 
+        [Test]
+        public void MusicCue_AsksForItsTrackAndIsSilentWithoutAService()
+        {
+            var host = new GameObject("MusicCue");
+            try
+            {
+                var cue = host.AddComponent<MusicCue>();
+                typeof(MusicCue).GetField("track", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .SetValue(cue, MusicTrack.Menu);
+
+                // No AudioManager exists here, which is exactly the case that must not throw.
+                Assert.That(cue.Play(), Is.False);
+
+                using (var fixture = new Fixture())
+                {
+                    fixture.Library.menuTrack = AudioClip.Create("menu", 64, 1, 8000, false);
+                    Assert.That(cue.Play(), Is.True);
+                    Assert.That(fixture.Manager.CurrentTrack, Is.EqualTo(MusicTrack.Menu));
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
         private static SfxDefinition Definition(GameSfx sfx)
         {
             var definition = ScriptableObject.CreateInstance<SfxDefinition>();

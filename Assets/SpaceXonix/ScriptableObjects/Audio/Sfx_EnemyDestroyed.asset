@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: Sfx_EnemyDestroyed
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Audio.SfxDefinition
   sfx: 12
-  clips: []
+  clips:
+  - {fileID: 8300000, guid: cbad72a7f2d61d040807733cecdb4a48, type: 3}
   volume: 1
   pitchVariance: 0.12
   minimumInterval: 0.05
