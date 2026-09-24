@@ -46,6 +46,10 @@ namespace SpaceXonix.Audio
                 if (transform.parent == null) DontDestroyOnLoad(gameObject);
             }
             instance = this;
+            // Nothing is heard without a listener, and the menu had none: only the gameplay camera
+            // carried one. The audio is all 2D, so where the listener sits does not matter, and
+            // owning it here means every scene is heard, with exactly one listener.
+            if (GetComponent<AudioListener>() == null) gameObject.AddComponent<AudioListener>();
             random = randomSeed != 0 ? new System.Random(randomSeed) : new System.Random();
             BuildVoices();
             BindSettings(GameSettings.Current);

@@ -11,6 +11,26 @@ namespace SpaceXonix.Tests.EditMode
     public sealed class AudioTests
     {
         [Test]
+        public void Manager_OwnsExactlyOneListener()
+        {
+            // The menu scene had no listener, so its music played to nobody.
+            using (var fixture = new Fixture())
+            {
+                typeof(AudioManager).GetMethod("Awake", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(fixture.Manager, null);
+                Assert.That(fixture.Manager.GetComponents<AudioListener>(), Has.Length.EqualTo(1));
+            }
+        }
+
+        [TestCase("Assets/SpaceXonix/Scenes/Boot.unity")]
+        [TestCase("Assets/SpaceXonix/Scenes/MainMenu.unity")]
+        [TestCase("Assets/SpaceXonix/Scenes/Game.unity")]
+        public void Scenes_LeaveTheListenerToTheAudioManager(string path)
+        {
+            // A second listener in any scene would make Unity warn and pick one arbitrarily.
+            Assert.That(System.IO.File.ReadAllText(path), Does.Not.Contain("\nAudioListener:"));
+        }
+
+        [Test]
         public void Definition_WithNoClipsYetPicksNothingRatherThanThrowing()
         {
             var definition = ScriptableObject.CreateInstance<SfxDefinition>();

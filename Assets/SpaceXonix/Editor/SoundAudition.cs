@@ -28,7 +28,9 @@ namespace SpaceXonix.EditorTools
         private static readonly Dictionary<GameSfx, string[]> Shortlist = new Dictionary<GameSfx, string[]>
         {
             // DirectionChanged is left out on purpose: turning is silent, see GameplayAudioBinder.
-            { GameSfx.TrailStarted, new[] { "sfx_sounds_Blip5", "sfx_movement_portal1", "sfx_sounds_high1" } },
+            // Steady-pitch blips only: the first shortlist here included a portal sweep, and even the
+            // mild Blip5 read as squirmy once random pitch was added on top.
+            { GameSfx.TrailStarted, new[] { "sfx_sounds_Blip2", "sfx_coin_single4", "sfx_sounds_Blip8" } },
             { GameSfx.CaptureCompleted, new[] { "sfx_coin_double1", "sfx_coin_double3", "sfx_sounds_powerup2" } },
             { GameSfx.LargeCapture, new[] { "sfx_coin_cluster3", "sfx_sounds_fanfare1", "sfx_coin_cluster6" } },
             { GameSfx.PowerMeterFull, new[] { "sfx_sounds_powerup4", "sfx_sounds_powerup10", "sfx_sounds_powerup16" } },

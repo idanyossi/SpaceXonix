@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 330
-- Passed: 330
+- EditMode discovered: 334
+- Passed: 334
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -556,6 +556,13 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - **Raised territory looked cut out.** The plating texture repeats every 2 units in world space, and a cell is 0.18 units, so each plate spans about five and a half cells and every staircase edge sliced straight through a plate. `BoardMeshBuilder` now lays a trim strip (submesh 2) along every top edge that drops to a lower neighbour. It is 0.125 units deep, two pixels at 16 per unit: a lit outer edge with a dark groove inside it, so every captured region ends on a finished edge. The trim's UVs run along the edge in world space, so its pattern continues unbroken across cells. The texture clamps across its depth, so the inner edge cannot wrap round to the lit row. Verified on a staircase edge, a lone island and a one-cell line; the board's outer frame gets the same trim.
 - **The controls panel overflowed.** At size 40 in the pixel font, 17 lines needed about 880 px of the 810 available. The manual line breaks also stranded "and" and "75%" once the wider font rewrapped them. The body is now short paragraphs at size 34, with headings in the title cyan; it needs 658 px.
 - Tests: 3 new EditMode tests check that trim appears on every exposed edge and nowhere else, that it lies on the top face inside the edge and faces the camera, and that a width of 0 builds none. Full suite: 330 passed, 0 failed.
+
+### Playtest fixes, round 2 (2026-09-25)
+
+- **The main menu was silent.** Its music was playing, but the menu scene had **no AudioListener**. Only the gameplay camera carried one, so nothing in the menu could be heard. The persistent `AudioManager` now owns the game's single listener, since all audio is 2D and its position is irrelevant. The gameplay camera's listener was removed so there is never a second one. Verified live from Boot: exactly one listener in Boot, the menu and the game; the title music playing in the menu and Level 1 in the stage; no console warnings.
+- **The squirmy sound was the trail start**, not the turn. A pitch scan of the candidates (per-window zero-crossing pitch, summed movement in octaves) found that the second trail-start candidate, `sfx_movement_portal1`, moves about 71 octaves, the most of any sound scanned. `Blip5`, the one in use, was mild at 0.15, but it was played with ±10% random pitch on top. The shortlist is now three steady blips measured at no more than 0.02 octaves of movement (`Blip2`, `coin_single4`, `Blip8`), the sound defaults to `Blip2`, and its random pitch is off. The three old candidates were removed from the repository.
+- The menu music measured quiet in testing because the saved settings have master and music at about 20% each, which multiply to 0.044. That is the player's own setting, not a bug.
+- Tests: 4 new EditMode tests. One checks the manager owns exactly one listener even when woken twice; three check that no scene carries a listener of its own. Full suite: 334 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 
