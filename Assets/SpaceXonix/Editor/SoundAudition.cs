@@ -27,7 +27,7 @@ namespace SpaceXonix.EditorTools
         /// <summary>Three candidates per sound, best guess first. The first is the default.</summary>
         private static readonly Dictionary<GameSfx, string[]> Shortlist = new Dictionary<GameSfx, string[]>
         {
-            { GameSfx.DirectionChanged, new[] { "sfx_menu_move1", "sfx_menu_move2", "sfx_sounds_Blip1" } },
+            // DirectionChanged is left out on purpose: turning is silent, see GameplayAudioBinder.
             { GameSfx.TrailStarted, new[] { "sfx_sounds_Blip5", "sfx_movement_portal1", "sfx_sounds_high1" } },
             { GameSfx.CaptureCompleted, new[] { "sfx_coin_double1", "sfx_coin_double3", "sfx_sounds_powerup2" } },
             { GameSfx.LargeCapture, new[] { "sfx_coin_cluster3", "sfx_sounds_fanfare1", "sfx_coin_cluster6" } },

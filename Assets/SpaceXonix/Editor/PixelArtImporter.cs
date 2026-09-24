@@ -65,6 +65,9 @@ namespace SpaceXonix.EditorTools
                 var name = System.IO.Path.GetFileNameWithoutExtension(assetPath);
                 var single = assetPath.StartsWith(BackgroundFolder) && (name == "BigPlanet" || name == "RingPlanet");
                 tiling.wrapMode = single ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+                // The territory trim repeats along its edge but spans its depth exactly once, so its
+                // inner edge must not wrap round to the lit outer row.
+                if (name == "TerritoryRim") tiling.wrapModeV = TextureWrapMode.Clamp;
                 return;
             }
             if (!assetPath.StartsWith(ArtRoot)) return;

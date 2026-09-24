@@ -477,9 +477,11 @@ MonoBehaviour:
   floorMaterial: {fileID: 2100000, guid: f8bb03a5dce2bab4399f2466630acdb7, type: 2}
   territoryTopMaterial: {fileID: 2100000, guid: 3d03e67534b6ec94a9c578e473e758a7, type: 2}
   territoryWallMaterial: {fileID: 2100000, guid: 7ed710cfaf0c75a4ca26ab2253b431cd, type: 2}
+  territoryRimMaterial: {fileID: 2100000, guid: 354b3f6a443b9684fb8c60c34ceec346, type: 2}
   trailMaterial: {fileID: 2100000, guid: b4740bee8a261fb42be68c6e4fe4c1ce, type: 2}
   textureWorldSize: 2
   territoryHeight: 0.35
+  rimWidth: 0.125
   trailLift: 0.02
   riseSeconds: 0.3
   chunkSize: 18
@@ -4510,7 +4512,6 @@ MonoBehaviour:
   audioManager: {fileID: 0}
   gameManager: {fileID: 1599803366}
   boardManager: {fileID: 618364317}
-  inputRouter: {fileID: 448994548}
   powerMeter: {fileID: 1823213373}
   powerUpManager: {fileID: 91987429}
   enemyManager: {fileID: 2088577235}

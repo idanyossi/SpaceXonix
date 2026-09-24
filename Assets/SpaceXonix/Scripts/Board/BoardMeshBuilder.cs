@@ -5,7 +5,8 @@ namespace SpaceXonix.Board
 {
     /// <summary>
     /// Builds board presentation geometry in board-local space. The board lies on XY; height rises toward -Z (the camera).
-    /// Submesh 0 holds slab tops, submesh 1 holds side walls.
+    /// Submesh 0 holds slab tops, submesh 1 holds side walls, and submesh 2 holds the trim along
+    /// every exposed top edge.
     ///
     /// UVs are in world space scaled by <see cref="Buffers.UvScale"/>, so a texture tiles at one fixed
     /// pixel density across every chunk, top and wall. Seams line up between neighbouring cells
@@ -19,13 +20,20 @@ namespace SpaceXonix.Board
             public readonly List<Vector3> Normals = new List<Vector3>();
             public readonly List<int> Tops = new List<int>();
             public readonly List<int> Walls = new List<int>();
+            public readonly List<int> Rims = new List<int>();
             public readonly List<Vector2> Uvs = new List<Vector2>();
             /// <summary>Texture repeats per world unit. 0.5 means one repeat every two units.</summary>
             public float UvScale = 1f;
+            /// <summary>
+            /// Width of the trim laid along a raised cell's top edge wherever it drops to a lower
+            /// neighbour. 0 builds no trim. Its UVs run along the edge (u) and across it from the
+            /// outer edge (v = 0) to the inner (v = 1), so a trim texture needs only a few rows.
+            /// </summary>
+            public float RimWidth;
 
             public void Clear()
             {
-                Vertices.Clear(); Normals.Clear(); Tops.Clear(); Walls.Clear(); Uvs.Clear();
+                Vertices.Clear(); Normals.Clear(); Tops.Clear(); Walls.Clear(); Rims.Clear(); Uvs.Clear();
             }
         }
 
@@ -42,13 +50,29 @@ namespace SpaceXonix.Board
                 AddQuad(buffers, buffers.Tops, new Vector3(x0, y0, top), new Vector3(x1, y0, top), new Vector3(x0, y1, top), new Vector3(x1, y1, top), Vector3.back);
 
                 var left = HeightAt(heights, width, height, x - 1, y);
-                if (left < h) AddQuad(buffers, buffers.Walls, new Vector3(x0, y1, -left), new Vector3(x0, y0, -left), new Vector3(x0, y1, top), new Vector3(x0, y0, top), Vector3.left);
+                if (left < h)
+                {
+                    AddQuad(buffers, buffers.Walls, new Vector3(x0, y1, -left), new Vector3(x0, y0, -left), new Vector3(x0, y1, top), new Vector3(x0, y0, top), Vector3.left);
+                    AddRim(buffers, new Vector3(x0, y0, top), new Vector3(x0, y1, top), Vector3.right);
+                }
                 var right = HeightAt(heights, width, height, x + 1, y);
-                if (right < h) AddQuad(buffers, buffers.Walls, new Vector3(x1, y0, -right), new Vector3(x1, y1, -right), new Vector3(x1, y0, top), new Vector3(x1, y1, top), Vector3.right);
+                if (right < h)
+                {
+                    AddQuad(buffers, buffers.Walls, new Vector3(x1, y0, -right), new Vector3(x1, y1, -right), new Vector3(x1, y0, top), new Vector3(x1, y1, top), Vector3.right);
+                    AddRim(buffers, new Vector3(x1, y0, top), new Vector3(x1, y1, top), Vector3.left);
+                }
                 var down = HeightAt(heights, width, height, x, y - 1);
-                if (down < h) AddQuad(buffers, buffers.Walls, new Vector3(x0, y0, -down), new Vector3(x1, y0, -down), new Vector3(x0, y0, top), new Vector3(x1, y0, top), Vector3.down);
+                if (down < h)
+                {
+                    AddQuad(buffers, buffers.Walls, new Vector3(x0, y0, -down), new Vector3(x1, y0, -down), new Vector3(x0, y0, top), new Vector3(x1, y0, top), Vector3.down);
+                    AddRim(buffers, new Vector3(x0, y0, top), new Vector3(x1, y0, top), Vector3.up);
+                }
                 var up = HeightAt(heights, width, height, x, y + 1);
-                if (up < h) AddQuad(buffers, buffers.Walls, new Vector3(x1, y1, -up), new Vector3(x0, y1, -up), new Vector3(x1, y1, top), new Vector3(x0, y1, top), Vector3.up);
+                if (up < h)
+                {
+                    AddQuad(buffers, buffers.Walls, new Vector3(x1, y1, -up), new Vector3(x0, y1, -up), new Vector3(x1, y1, top), new Vector3(x0, y1, top), Vector3.up);
+                    AddRim(buffers, new Vector3(x0, y1, top), new Vector3(x1, y1, top), Vector3.down);
+                }
             }
         }
 
@@ -68,12 +92,13 @@ namespace SpaceXonix.Board
         public static void Apply(Mesh mesh, Buffers buffers)
         {
             mesh.Clear();
-            mesh.subMeshCount = 2;
+            mesh.subMeshCount = 3;
             mesh.SetVertices(buffers.Vertices);
             mesh.SetNormals(buffers.Normals);
             mesh.SetUVs(0, buffers.Uvs);
             mesh.SetTriangles(buffers.Tops, 0, false);
             mesh.SetTriangles(buffers.Walls, 1, false);
+            mesh.SetTriangles(buffers.Rims, 2, false);
             mesh.RecalculateBounds();
         }
 
@@ -87,6 +112,41 @@ namespace SpaceXonix.Board
             if (outward == Vector3.up || outward == Vector3.down) return new Vector2(vertex.x, -vertex.z) * scale;
             return new Vector2(vertex.x, vertex.y) * scale;
         }
+
+        /// <summary>
+        /// Lays a strip of trim on the top face along one edge, from <paramref name="start"/> to
+        /// <paramref name="end"/>, extending <see cref="Buffers.RimWidth"/> inward. Without it a
+        /// captured region stops mid-plate and looks cut out; with it every region ends on a
+        /// finished edge. It sits a hair above the top so the two never fight for depth.
+        /// </summary>
+        private static void AddRim(Buffers buffers, Vector3 start, Vector3 end, Vector3 inward)
+        {
+            if (buffers.RimWidth <= 0f) return;
+            var lift = new Vector3(0f, 0f, -RimLift);
+            var offset = inward * buffers.RimWidth;
+            Vector3 outerA = start + lift, outerB = end + lift, innerA = outerA + offset, innerB = outerB + offset;
+            var startIndex = buffers.Vertices.Count;
+            buffers.Vertices.Add(outerA); buffers.Vertices.Add(outerB); buffers.Vertices.Add(innerA); buffers.Vertices.Add(innerB);
+            for (var i = 0; i < 4; i++) buffers.Normals.Add(Vector3.back);
+            // Along the edge in world space, so the trim's pattern runs unbroken across cells.
+            var along = end - start;
+            float u0 = Vector3.Dot(start, along.normalized) * buffers.UvScale, u1 = Vector3.Dot(end, along.normalized) * buffers.UvScale;
+            buffers.Uvs.Add(new Vector2(u0, 0f)); buffers.Uvs.Add(new Vector2(u1, 0f));
+            buffers.Uvs.Add(new Vector2(u0, 1f)); buffers.Uvs.Add(new Vector2(u1, 1f));
+            // Face the camera (-Z) whichever way the edge runs.
+            if (Vector3.Dot(Vector3.Cross(innerA - outerA, outerB - outerA), Vector3.back) > 0f)
+            {
+                buffers.Rims.Add(startIndex); buffers.Rims.Add(startIndex + 2); buffers.Rims.Add(startIndex + 1);
+                buffers.Rims.Add(startIndex + 2); buffers.Rims.Add(startIndex + 3); buffers.Rims.Add(startIndex + 1);
+            }
+            else
+            {
+                buffers.Rims.Add(startIndex); buffers.Rims.Add(startIndex + 1); buffers.Rims.Add(startIndex + 2);
+                buffers.Rims.Add(startIndex + 2); buffers.Rims.Add(startIndex + 1); buffers.Rims.Add(startIndex + 3);
+            }
+        }
+
+        public const float RimLift = .002f;
 
         private static float HeightAt(float[] heights, int width, int height, int x, int y) =>
             x < 0 || y < 0 || x >= width || y >= height ? 0f : heights[x + y * width];

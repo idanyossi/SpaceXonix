@@ -47,6 +47,7 @@ namespace SpaceXonix.EditorTools
             Write("DeckFloor", DeckFloor());
             Write("TerritoryTop", TerritoryTop());
             Write("TerritoryWall", TerritoryWall());
+            Write("TerritoryRim", TerritoryRim());
             Write("TrailCell", TrailCell());
             Write("LaserBeam", LaserBeam());
             Write("LaserWarning", LaserWarning());
@@ -55,6 +56,8 @@ namespace SpaceXonix.EditorTools
             Assign("Board/SpaceFloor", "DeckFloor", false);
             Assign("Board/TerritoryTop", "TerritoryTop", false);
             Assign("Board/TerritoryWall", "TerritoryWall", false);
+            EnsureMaterial("Board/TerritoryRim", "Board/TerritoryTop");
+            Assign("Board/TerritoryRim", "TerritoryRim", false);
             Assign("Board/Trail", "TrailCell", false);
             Assign("Hazards/LaserBeam", "LaserBeam", false);
             Assign("Hazards/LaserWarning", "LaserWarning", true);
@@ -121,6 +124,18 @@ namespace SpaceXonix.EditorTools
                 c.Set(x, 27, PlateBase);
                 c.Set(x, 26, Glow);
             }
+            return c;
+        }
+
+        /// <summary>
+        /// The trim along captured territory's exposed top edges, two pixels deep: a lit outer edge
+        /// and a dark groove inside it, so every region ends on a finished edge instead of stopping
+        /// mid-plate. Rows count from the top of the image, which is the inner side (v = 1).
+        /// </summary>
+        private static PixelCanvas TerritoryRim()
+        {
+            var c = new PixelCanvas(16, 2, PlateSeam);
+            for (var x = 0; x < 16; x++) c.Set(x, 1, x % 8 == 3 ? Hot : Glow);
             return c;
         }
 
@@ -199,6 +214,15 @@ namespace SpaceXonix.EditorTools
             mat.SetFloat("_Cutoff", .5f);
             if (cutout) mat.EnableKeyword("_ALPHATEST_ON"); else mat.DisableKeyword("_ALPHATEST_ON");
             EditorUtility.SetDirty(mat);
+        }
+
+        /// <summary>Creates a material by copying a sibling, so it shares the shader and settings.</summary>
+        private static void EnsureMaterial(string material, string copyFrom)
+        {
+            var path = $"Assets/SpaceXonix/Materials/{material}.mat";
+            if (AssetDatabase.LoadAssetAtPath<Material>(path) != null) return;
+            AssetDatabase.CopyAsset($"Assets/SpaceXonix/Materials/{copyFrom}.mat", path);
+            AssetDatabase.ImportAsset(path);
         }
 
         private static Color32 Hex(int rgb) => PixelCanvas.Hex(rgb);

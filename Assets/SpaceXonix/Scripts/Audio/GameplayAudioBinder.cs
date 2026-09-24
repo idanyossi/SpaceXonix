@@ -3,7 +3,6 @@ using SpaceXonix.Campaign;
 using SpaceXonix.Core;
 using SpaceXonix.Enemies;
 using SpaceXonix.Hazards;
-using SpaceXonix.Input;
 using SpaceXonix.Power;
 using SpaceXonix.PowerUps;
 using UnityEngine;
@@ -19,7 +18,6 @@ namespace SpaceXonix.Audio
         [SerializeField] private AudioManager audioManager;
         [SerializeField] private GameManager gameManager;
         [SerializeField] private BoardManager boardManager;
-        [SerializeField] private InputRouter inputRouter;
         [SerializeField] private PowerMeter powerMeter;
         [SerializeField] private PowerUpManager powerUpManager;
         [SerializeField] private EnemyManager enemyManager;
@@ -31,8 +29,11 @@ namespace SpaceXonix.Audio
 
         private void OnEnable()
         {
-            if (boardManager != null) boardManager.CaptureCompleted += OnCaptureCompleted;
-            if (inputRouter != null) inputRouter.DirectionChanged += OnDirectionChanged;
+            if (boardManager != null)
+            {
+                boardManager.CaptureCompleted += OnCaptureCompleted;
+                boardManager.TrailStateChanged += OnTrailStateChanged;
+            }
             if (powerMeter != null)
             {
                 powerMeter.PowerFull += OnPowerFull;
@@ -59,8 +60,11 @@ namespace SpaceXonix.Audio
 
         private void OnDisable()
         {
-            if (boardManager != null) boardManager.CaptureCompleted -= OnCaptureCompleted;
-            if (inputRouter != null) inputRouter.DirectionChanged -= OnDirectionChanged;
+            if (boardManager != null)
+            {
+                boardManager.CaptureCompleted -= OnCaptureCompleted;
+                boardManager.TrailStateChanged -= OnTrailStateChanged;
+            }
             if (powerMeter != null)
             {
                 powerMeter.PowerFull -= OnPowerFull;
@@ -95,9 +99,13 @@ namespace SpaceXonix.Audio
         private void OnCaptureCompleted(BoardCaptureResult result) =>
             Play(result.PercentageGained >= largeCapturePercentage ? GameSfx.LargeCapture : GameSfx.CaptureCompleted);
 
-        // Steering out of safe territory is what starts a trail, which is the moment worth hearing.
-        private void OnDirectionChanged(SpaceXonix.Player.CardinalDirection direction) =>
-            Play(boardManager != null && boardManager.IsPlayerExposed ? GameSfx.DirectionChanged : GameSfx.TrailStarted);
+        // Turning is deliberately silent: it happens constantly, and a sound on every turn grated
+        // within seconds. Leaving safe territory is the moment worth hearing, so the trail's actual
+        // start plays instead, driven by the board rather than guessed from input.
+        private void OnTrailStateChanged(BoardMoveResult result)
+        {
+            if (result == BoardMoveResult.TrailStarted) Play(GameSfx.TrailStarted);
+        }
 
         private void OnPowerFull() => Play(GameSfx.PowerMeterFull);
         private void OnShotFired(PowerShotProjectile shot) => Play(GameSfx.PowerShot);

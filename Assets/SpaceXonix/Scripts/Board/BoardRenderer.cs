@@ -13,10 +13,13 @@ namespace SpaceXonix.Board
         [SerializeField] private Material floorMaterial;
         [SerializeField] private Material territoryTopMaterial;
         [SerializeField] private Material territoryWallMaterial;
+        [SerializeField] private Material territoryRimMaterial;
         [SerializeField] private Material trailMaterial;
         [Tooltip("World units covered by one repeat of the floor and territory textures. 2 units of a 32-pixel tile is 16 pixels per unit, the sprites' density.")]
         [SerializeField, Min(.01f)] private float textureWorldSize = 2f;
         [SerializeField, Min(.01f)] private float territoryHeight = .35f;
+        [Tooltip("Width of the lit trim along captured territory's exposed edges. 0.125 is two pixels at the sprites' 16 per unit.")]
+        [SerializeField, Min(0f)] private float rimWidth = .125f;
         [SerializeField, Min(.001f)] private float trailLift = .02f;
         [SerializeField, Min(.01f)] private float riseSeconds = .3f;
         [SerializeField, Min(1)] private int chunkSize = 9;
@@ -139,6 +142,7 @@ namespace SpaceXonix.Board
                 chunkDirty[chunk] = false;
                 int xMin = cx * chunkSize, yMin = cy * chunkSize;
                 buffers.UvScale = 1f / textureWorldSize;
+                buffers.RimWidth = rimWidth;
                 BoardMeshBuilder.BuildRaisedCells(heights, width, height, cellSize, xMin, yMin,
                     Mathf.Min(width, xMin + chunkSize), Mathf.Min(height, yMin + chunkSize), buffers);
                 BoardMeshBuilder.Apply(chunkMeshes[chunk], buffers);
@@ -198,6 +202,7 @@ namespace SpaceXonix.Board
             chunkRenderers = new MeshRenderer[chunkMeshes.Length];
             var top = territoryTopMaterial != null ? territoryTopMaterial : RuntimeMaterial(new Color(.08f, .55f, .78f));
             var wall = territoryWallMaterial != null ? territoryWallMaterial : RuntimeMaterial(new Color(.03f, .28f, .42f));
+            var rim = territoryRimMaterial != null ? territoryRimMaterial : RuntimeMaterial(new Color(.5f, .95f, 1f));
             for (var i = 0; i < chunkMeshes.Length; i++)
             {
                 var chunk = new GameObject($"TerritoryChunk_{i % chunksX}_{i / chunksX}") { hideFlags = HideFlags.DontSave };
@@ -205,7 +210,7 @@ namespace SpaceXonix.Board
                 chunkMeshes[i] = new Mesh { name = chunk.name, hideFlags = HideFlags.DontSave };
                 chunk.AddComponent<MeshFilter>().sharedMesh = chunkMeshes[i];
                 var chunkRenderer = chunk.AddComponent<MeshRenderer>();
-                chunkRenderer.sharedMaterials = new[] { top, wall };
+                chunkRenderer.sharedMaterials = new[] { top, wall, rim };
                 chunkRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 chunkRenderer.receiveShadows = false;
                 chunkRenderers[i] = chunkRenderer;

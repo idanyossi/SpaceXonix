@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 327
-- Passed: 327
+- EditMode discovered: 330
+- Passed: 330
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -549,6 +549,13 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - **The difficulty panel stretched to the full screen**, which left most of it empty in portrait. It is now a fixed 920×790 centred card, sized to its content. The Hard description was shortened so it no longer runs into the best score.
 - **Capture note:** the MCP's screenshot of an overlay canvas double-encodes gamma, so the dark hull came out grey. Rendering the canvas through the camera into an sRGB texture read exactly `#161A2B`, the palette value, so the game itself is correct. Menu checks were done with those camera renders at 540×960 portrait.
 - Tests: 4 new EditMode tests fail if any button, panel label or text in the main menu, the game scene or the settings overlay is left unskinned, or if a UI sprite loses its nine-slice border or point filtering. Full suite: 327 passed, 0 failed.
+
+### Playtest fixes (2026-09-25)
+
+- **The turn sound was grating** (*"god awful and squirmy"*): every turn played a clip with ±12% random pitch, and it fires constantly. Turning is now **silent**. The binder also used to play the trail-start sound on any turn made inside safe territory, whether or not a trail began; the trail-start sound now plays from the board's own `TrailStarted` event, at the moment a trail actually starts. `GameSfx.DirectionChanged` stays in the enum because scenes store these values as numbers, but it has no clip, and its three audition candidates were removed from the shortlist and the repository.
+- **Raised territory looked cut out.** The plating texture repeats every 2 units in world space, and a cell is 0.18 units, so each plate spans about five and a half cells and every staircase edge sliced straight through a plate. `BoardMeshBuilder` now lays a trim strip (submesh 2) along every top edge that drops to a lower neighbour. It is 0.125 units deep, two pixels at 16 per unit: a lit outer edge with a dark groove inside it, so every captured region ends on a finished edge. The trim's UVs run along the edge in world space, so its pattern continues unbroken across cells. The texture clamps across its depth, so the inner edge cannot wrap round to the lit row. Verified on a staircase edge, a lone island and a one-cell line; the board's outer frame gets the same trim.
+- **The controls panel overflowed.** At size 40 in the pixel font, 17 lines needed about 880 px of the 810 available. The manual line breaks also stranded "and" and "75%" once the wider font rewrapped them. The body is now short paragraphs at size 34, with headings in the title cyan; it needs 658 px.
+- Tests: 3 new EditMode tests check that trim appears on every exposed edge and nowhere else, that it lies on the top face inside the edge and faces the camera, and that a width of 0 builds none. Full suite: 330 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 

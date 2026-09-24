@@ -48,6 +48,53 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void Trim_RunsAlongEveryExposedEdgeAndNowhereElse()
+        {
+            // A plus shape: the centre cell is enclosed on all four sides, the arms are not.
+            var heights = new float[9];
+            foreach (var i in new[] { 1, 3, 4, 5, 7 }) heights[i] = .35f;
+            var buffers = new BoardMeshBuilder.Buffers { UvScale = .5f, RimWidth = .05f };
+
+            BoardMeshBuilder.BuildRaisedCells(heights, 3, 3, .18f, 1, 1, 2, 2, buffers);
+            Assert.That(buffers.Rims, Is.Empty, "an enclosed cell has no exposed edge to trim");
+
+            BoardMeshBuilder.BuildRaisedCells(heights, 3, 3, .18f, 1, 0, 2, 1, buffers);
+            Assert.That(buffers.Rims.Count, Is.EqualTo(3 * 6), "an arm is exposed on three sides");
+            Assert.That(buffers.Uvs.Count, Is.EqualTo(buffers.Vertices.Count));
+        }
+
+        [Test]
+        public void Trim_LiesOnTheTopFaceInsideTheEdgeAndFacesTheCamera()
+        {
+            var heights = new float[1];
+            heights[0] = .35f;
+            var buffers = new BoardMeshBuilder.Buffers { UvScale = .5f, RimWidth = .05f };
+            BoardMeshBuilder.BuildRaisedCells(heights, 1, 1, .18f, 0, 0, 1, 1, buffers);
+            Assert.That(buffers.Rims.Count, Is.EqualTo(4 * 6), "a lone cell is trimmed on all four sides");
+
+            for (var t = 0; t < buffers.Rims.Count; t += 3)
+            {
+                Vector3 a = buffers.Vertices[buffers.Rims[t]], b = buffers.Vertices[buffers.Rims[t + 1]], c = buffers.Vertices[buffers.Rims[t + 2]];
+                Assert.That(Vector3.Dot(Vector3.Cross(b - a, c - a), Vector3.back), Is.GreaterThan(0f), "trim must face the camera");
+                foreach (var v in new[] { a, b, c })
+                {
+                    Assert.That(v.z, Is.EqualTo(-.35f - BoardMeshBuilder.RimLift).Within(.0001f), "just above the top face");
+                    Assert.That(v.x, Is.InRange(0f, .18f)); Assert.That(v.y, Is.InRange(0f, .18f));
+                }
+            }
+        }
+
+        [Test]
+        public void Trim_IsOffWhenItHasNoWidth()
+        {
+            var heights = new float[1];
+            heights[0] = .35f;
+            var buffers = new BoardMeshBuilder.Buffers { UvScale = .5f };
+            BoardMeshBuilder.BuildRaisedCells(heights, 1, 1, .18f, 0, 0, 1, 1, buffers);
+            Assert.That(buffers.Rims, Is.Empty);
+        }
+
+        [Test]
         public void Laser_TilesItsTextureAlongTheBeamInsteadOfStretchingIt()
         {
             var host = new GameObject("Laser");

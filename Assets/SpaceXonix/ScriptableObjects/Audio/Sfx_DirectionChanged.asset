@@ -13,8 +13,7 @@ MonoBehaviour:
   m_Name: Sfx_DirectionChanged
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Audio.SfxDefinition
   sfx: 0
-  clips:
-  - {fileID: 8300000, guid: 9460ffd4566207541874cdf8fedc97e1, type: 3}
+  clips: []
   volume: 1
   pitchVariance: 0.12
   minimumInterval: 0.06

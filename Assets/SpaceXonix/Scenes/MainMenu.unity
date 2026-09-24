@@ -1767,7 +1767,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 12800000, guid: 3a31c665afae51541adbd7b4fe033ada, type: 3}
-    m_FontSize: 40
+    m_FontSize: 34
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
@@ -1778,10 +1778,33 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "MOVE\n  WASD or arrow keys\n  Swipe on mobile\n\nPOWER SHOT\n  Space,
-    when the power meter is full\n\nUSE ABILITY\n  E, when one is stored\n\nPAUSE\n 
-    Esc, or the pause button\n\nGOAL\n  Leave safe territory to draw a trail and\n 
-    reconnect to capture space. Capture 75%\n  to clear the stage."
+  m_Text: '<color=#80F2FF>MOVE</color>
+
+    WASD or arrow keys. Swipe on mobile.
+
+
+    <color=#80F2FF>POWER
+    SHOT</color>
+
+    Space, when the power meter is full.
+
+
+    <color=#80F2FF>USE
+    ABILITY</color>
+
+    E, when one is stored.
+
+
+    <color=#80F2FF>PAUSE</color>
+
+    Esc,
+    or the pause button.
+
+
+    <color=#80F2FF>GOAL</color>
+
+    Leave safe territory
+    to draw a trail, then reconnect to capture space. Capture 75% to clear the stage.'
 --- !u!222 &908143712
 CanvasRenderer:
   m_ObjectHideFlags: 0
