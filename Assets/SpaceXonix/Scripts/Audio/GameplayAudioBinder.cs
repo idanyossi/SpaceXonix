@@ -49,7 +49,11 @@ namespace SpaceXonix.Audio
             if (enemyManager != null) enemyManager.ExplosionOccurred += OnExplosion;
             if (gameManager != null) gameManager.PlayerFailed += OnPlayerFailed;
             if (bossController != null) bossController.Defeated += OnBossDefeated;
-            if (campaignManager != null) campaignManager.StageLoaded += OnStageLoaded;
+            if (campaignManager != null)
+            {
+                campaignManager.StageLoaded += OnStageLoaded;
+                campaignManager.CampaignCompleted += OnCampaignCompleted;
+            }
             SubscribeLasers(true);
         }
 
@@ -73,7 +77,11 @@ namespace SpaceXonix.Audio
             if (enemyManager != null) enemyManager.ExplosionOccurred -= OnExplosion;
             if (gameManager != null) gameManager.PlayerFailed -= OnPlayerFailed;
             if (bossController != null) bossController.Defeated -= OnBossDefeated;
-            if (campaignManager != null) campaignManager.StageLoaded -= OnStageLoaded;
+            if (campaignManager != null)
+            {
+                campaignManager.StageLoaded -= OnStageLoaded;
+                campaignManager.CampaignCompleted -= OnCampaignCompleted;
+            }
             SubscribeLasers(false);
         }
 
@@ -127,6 +135,12 @@ namespace SpaceXonix.Audio
             var manager = audioManager != null ? audioManager : AudioManager.Instance;
             if (manager == null || stage == null) return;
             manager.PlayMusic(stage.IsBossStage ? MusicTrack.Boss : MusicTrack.Gameplay);
+        }
+
+        private void OnCampaignCompleted()
+        {
+            var manager = audioManager != null ? audioManager : AudioManager.Instance;
+            if (manager != null) manager.PlayMusic(MusicTrack.Victory);
         }
 
         private void SubscribeLasers(bool subscribe)

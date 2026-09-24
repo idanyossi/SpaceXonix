@@ -497,6 +497,18 @@
 - Tests: 5 new EditMode tests - the mode's effects, a separate record per difficulty that one mode cannot fill in for the other, difficulty surviving a settings reset, both records and the selected mode persisting, and a pre-difficulty save being read as the Hard record. Full suite: 292 passed, 0 failed.
 - Real Play Mode: the difficulty screen showed Easy "No run yet" and Hard "Best: 46162"; choosing Easy loaded the game with **4 lives, no modifier, score bonus 1.00**, and switching to Hard gave **3 lives, "Overclocked Swarm x1.15", bonus 1.15**.
 
+## Asset Pass 2 — Audio, Board, Background and Menus (2026-09-24)
+
+Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the board, trail and lasers looked out of place, the background was empty, and the menus were ugly.
+
+### Audio (done)
+
+- **Music: Juhani Junkala's 5 Chiptunes (Action), CC0**, chosen by the user after previewing. It maps one-to-one: Title Screen for the menu, Level 1 for normal stages, Level 3 for the boss, and Ending for a new **Victory** cue on campaign complete. `MusicTrack.Victory` was appended to the enum rather than inserted, because scenes store these values as numbers. Level 2 was left out to keep 13 MB of WAV out of the public repository. Music streams, and effects decompress on load.
+- **Effects: Juhani Junkala's 512 retro sound effects, CC0.** Chiptune effects fit pixel art, and smooth modern sci-fi effects never could; that mismatch was a large part of why the Kenney pass sounded so wrong.
+- **Chosen by ear this time.** The Kenney clips were picked from their file names, which is how they went wrong. **SpaceXonix > Sound Audition** now lists three shortlisted candidates for each of the 20 sounds: ▶ plays one, **Use** makes it the sound, and **+** adds it as a random variant. The first candidate is the default, so the game is fully voiced before anything is picked, and **Remove unused candidates** clears the rest out of the repository once the choices are final. Preview goes through Unity's internal `AudioUtil`, which the window reports rather than throws on if a future Unity version moves it.
+- The Kenney audio, the generated placeholders and both of their editor commands were removed.
+- The MCP blocks `AssetDatabase.DeleteAsset` from executed code as a safety measure; that was left in place and the files were removed through the filesystem instead, `.meta` files included.
+
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 
 **What blocked full completion:** this phase is about bringing in licensed third-party art and audio, which cannot be downloaded from here. The MCP's `generate_image` and `generate_model` tools exist but **both providers report `configured: false`**, so AI generation was not available either. The project had **zero** art and audio files before this phase.

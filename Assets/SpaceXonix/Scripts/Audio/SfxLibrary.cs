@@ -17,6 +17,7 @@ namespace SpaceXonix.Audio
         public AudioClip menuTrack;
         public AudioClip gameplayTrack;
         public AudioClip bossTrack;
+        public AudioClip victoryTrack;
 
         private Dictionary<GameSfx, SfxDefinition> lookup;
 
@@ -34,6 +35,7 @@ namespace SpaceXonix.Audio
                 case MusicTrack.Menu: return menuTrack;
                 case MusicTrack.Gameplay: return gameplayTrack;
                 case MusicTrack.Boss: return bossTrack;
+                case MusicTrack.Victory: return victoryTrack;
                 default: return null;
             }
         }

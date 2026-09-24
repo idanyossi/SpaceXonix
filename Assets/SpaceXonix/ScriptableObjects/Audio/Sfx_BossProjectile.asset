@@ -14,9 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Audio.SfxDefinition
   sfx: 17
   clips:
-  - {fileID: 8300000, guid: 42ed767ec8fd0d940a3a7a38004dc718, type: 3}
-  - {fileID: 8300000, guid: 460ef789ba5b5424392a35e6ea690d0c, type: 3}
-  - {fileID: 8300000, guid: 7e335700a75a4fa47912f04b2a04c2b1, type: 3}
+  - {fileID: 8300000, guid: 0c8ddd6933f635f40ad9110f7a200bca, type: 3}
   volume: 1
   pitchVariance: 0.1
   minimumInterval: 0.08

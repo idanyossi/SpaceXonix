@@ -29,12 +29,16 @@ namespace SpaceXonix.Audio
         UiInteraction
     }
 
-    /// <summary>The three music loops the GDD calls for.</summary>
+    /// <summary>
+    /// The GDD's three music loops, plus a victory cue for beating the campaign. New tracks are
+    /// only ever appended, because scenes store these as numbers.
+    /// </summary>
     public enum MusicTrack
     {
         None,
         Menu,
         Gameplay,
-        Boss
+        Boss,
+        Victory
     }
 }
