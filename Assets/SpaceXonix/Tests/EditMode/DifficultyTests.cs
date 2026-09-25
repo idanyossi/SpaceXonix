@@ -10,6 +10,37 @@ namespace SpaceXonix.Tests.EditMode
     public sealed class DifficultyTests
     {
         [Test]
+        public void BossStage_FiresLasersOnlyOnHard()
+        {
+            var stage = UnityEditor.AssetDatabase.LoadAssetAtPath<SpaceXonix.Campaign.StageDefinition>(
+                "Assets/SpaceXonix/ScriptableObjects/Stages/Stage5_AlienCore.asset");
+            Assert.That(stage, Is.Not.Null);
+            Assert.That(stage.IsBossStage, Is.True);
+            Assert.That(stage.LasersFor(DifficultyMode.Easy), Is.Empty, "Easy keeps the boss fight as it was");
+            var hard = stage.LasersFor(DifficultyMode.Hard);
+            Assert.That(hard, Has.Count.EqualTo(2));
+            foreach (var laser in hard) Assert.That(laser.definition, Is.Not.Null, "every Hard laser resolves to a real laser");
+            Assert.That(hard[0].definition.axis, Is.Not.EqualTo(hard[1].definition.axis), "one each way");
+        }
+
+        [Test]
+        public void HardLasers_AddToAStagesOwn()
+        {
+            var stage = UnityEngine.ScriptableObject.CreateInstance<SpaceXonix.Campaign.StageDefinition>();
+            try
+            {
+                stage.lasers = new[] { new SpaceXonix.Hazards.LaserPlacement() };
+                stage.hardModeLasers = new[] { new SpaceXonix.Hazards.LaserPlacement(), new SpaceXonix.Hazards.LaserPlacement() };
+                Assert.That(stage.LasersFor(DifficultyMode.Easy), Has.Count.EqualTo(1));
+                Assert.That(stage.LasersFor(DifficultyMode.Hard), Has.Count.EqualTo(3));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(stage);
+            }
+        }
+
+        [Test]
         public void Mode_EasyDropsModifiersAndAddsALifeWhileHardIsTheFullGame()
         {
             Assert.That(DifficultyMode.Easy.UsesStageModifiers(), Is.False);

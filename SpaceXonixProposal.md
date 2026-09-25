@@ -606,6 +606,8 @@ The player defeats the boss by capturing **75% of the arena**.
 
 Each successful capture visually damages the Alien Core.
 
+On Hard, the Alien Core stage also has two lasers, one horizontal and one vertical, firing from random lines near the ship like every other laser. Easy keeps the boss fight laser-free. (Added 2026-09-25 at the user's request.)
+
 At 75%:
 
 - boss attacks stop;

@@ -40,7 +40,8 @@ namespace SpaceXonix.Campaign
             if (stage == null) return false;
             // The boss stage has no standard aliens, so it draws only from the boss pool and never from the normal one.
             if (requiresBossStage != stage.IsBossStage) return false;
-            if (requiresLasers && (stage.lasers == null || stage.lasers.Length == 0)) return false;
+            // Modifiers only roll on Hard, so a stage's Hard-only lasers count.
+            if (requiresLasers && stage.LasersFor(Settings.DifficultyMode.Hard).Count == 0) return false;
             if (extraEnemies > 0 && (stage.enemySpawns == null || stage.enemySpawns.Length == 0)) return false;
             if (!requiresEnemyType) return true;
             return stage.GetEnemyTypes(buffer).Contains(requiredEnemyType);

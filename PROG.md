@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 353
-- Passed: 353
+- EditMode discovered: 355
+- Passed: 355
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -705,6 +705,14 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - **Behaviour change to note:** a trail that splits the field into three or more pieces now captures every alien-free piece rather than only the smallest. That is the classic rule, and the old code only ever tested two-way splits.
 - **Verified live:** with the real board, a 21-cell pocket blasted deep inside captured territory filled completely when a trail was closed through it (0 cells left open). The user was also playing during that run, which accounts for the other captures and deaths seen at the time.
 - Tests: 2 new BoardModel tests (a trail through a blasted pocket fills both halves, 8 cells, while the main field stays open; an empty-arena split with an untouched pocket elsewhere still keeps the larger side open and leaves the pocket alone). All existing capture tests pass unchanged. Full suite: 353 passed, 0 failed.
+
+### Hard-mode lasers on the boss stage (2026-09-25)
+
+- `StageDefinition.hardModeLasers` holds lasers a stage adds on top of its own on Hard only. `LasersFor(difficulty)` returns the combined list, and `CampaignManager.LoadCurrentStage`, the briefing's laser count and the debug HUD all use it.
+- The Alien Core stage has no lasers of its own and now has two Hard-only lasers, one horizontal and one vertical. Like every laser they fire from random lines within 12 of the ship. Easy is unchanged.
+- Stage modifiers only ever roll on Hard, so a modifier that needs lasers now counts a stage's Hard-only lasers too.
+- Verified live: on a Hard run jumped to the boss stage through the real `LoadCurrentStage`, the Alien Core was active with 2 lasers (horizontal and vertical), and the briefing read "Lasers: 2".
+- Tests: 2 new EditMode tests (the real boss stage asset has no lasers on Easy and two resolvable ones, one per axis, on Hard; Hard-only lasers add to a stage's own). Full suite: 355 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 

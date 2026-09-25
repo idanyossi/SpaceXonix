@@ -142,7 +142,7 @@ namespace SpaceXonix.Campaign
                 if (Difficulty.UsesStageModifiers()) modifierManager.SelectFor(stage);
                 else modifierManager.Clear();
             }
-            if (laserManager != null) laserManager.ConfigureStage(stage.lasers);
+            if (laserManager != null) laserManager.ConfigureStage(stage.LasersFor(Difficulty));
             if (enemyManager != null) enemyManager.SpawnAll(stage.enemySpawns);
             if (modifierManager != null) modifierManager.SpawnExtras(stage);
             // The boss stage has no standard aliens, so Arena Tilt would have nothing to act on.

@@ -19,4 +19,9 @@ MonoBehaviour:
     75% of the arena to destroy it.
   enemySpawns: []
   lasers: []
+  hardModeLasers:
+  - definition: {fileID: 11400000, guid: 3ff4a88e64a6ca940a37886ca958d3b1, type: 2}
+    line: 30
+  - definition: {fileID: 11400000, guid: 892521462e2ed6f4bb957ce24846d62f, type: 2}
+    line: 27
   boss: {fileID: 11400000, guid: 5fa6f7c5bc09fdb47bcec5124b9cc7f5, type: 2}

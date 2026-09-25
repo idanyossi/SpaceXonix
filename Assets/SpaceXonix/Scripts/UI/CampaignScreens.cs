@@ -72,7 +72,7 @@ namespace SpaceXonix.UI
             body.Append(stage.IsBossStage
                 ? $"Boss: {stage.boss.displayName} — capture {gameManager.CaptureTargetPercentage:0}% to destroy it"
                 : $"Enemies: {DescribeEnemies(stage)}").AppendLine();
-            body.Append($"Lasers: {(stage.lasers != null ? stage.lasers.Length : 0)}").AppendLine();
+            body.Append($"Lasers: {stage.LasersFor(campaignManager.Difficulty).Count}").AppendLine();
             body.Append($"Difficulty: {campaignManager.Difficulty.DisplayName()}").AppendLine();
             // Easy has no modifiers at all, so the line would always read "none" and only add noise.
             if (campaignManager.Difficulty.UsesStageModifiers())
