@@ -16,6 +16,14 @@ namespace SpaceXonix.Enemies
         [SerializeField] private EnemySpawnRequest[] initialSpawns;
         [Tooltip("How close, in cells, a hybrid must come to built territory for its charge to go off. Aliens bounce just short of territory, so this must be above zero.")]
         [SerializeField, Min(0f)] private float hybridContactCells = .5f;
+        [Tooltip("Largest blast multiplier a hybrid reaches by absorbing Volatiles. Each one absorbed doubles it.")]
+        [SerializeField, Min(1f)] private float maxHybridCharge = 4f;
+        [Tooltip("Regular aliens one of which arrives, at random, for every alien a Volatile turns into a hybrid, so the stage never runs short of aliens.")]
+        [SerializeField] private EnemySpawnRequest[] reinforcements;
+        [Tooltip("Reinforcements appear at least this many cells from the ship.")]
+        [SerializeField, Min(0)] private int reinforcementClearanceCells = 10;
+        [SerializeField] private int randomSeed;
+        private System.Random random;
         private readonly List<EnemyController> activeEnemies = new List<EnemyController>();
         private readonly List<GridCoordinate> occupancy = new List<GridCoordinate>();
         private readonly List<GridCoordinate> footprint = new List<GridCoordinate>();
@@ -28,6 +36,12 @@ namespace SpaceXonix.Enemies
         public SpaceXonix.Board.BoardManager BoardManager => boardManager;
         /// <summary>Definition of the most recent Volatile explosion, for presentation sizing.</summary>
         public EnemyDefinition LastExplosionDefinition { get; private set; }
+        /// <summary>
+        /// How much bigger than its definition the most recent explosion was: the stage modifier
+        /// times a supercharged hybrid's charge. Presentation multiplies its sizes by this.
+        /// </summary>
+        public float LastExplosionScale { get; private set; } = 1f;
+        public event Action<EnemyController> HybridSupercharged;
         public event Action<VolatileEnemy> DetonationStarted;
         public event Action<Vector3, int, int> ExplosionOccurred;
         private void Awake()
@@ -75,6 +89,15 @@ namespace SpaceXonix.Enemies
                 if (!(activeEnemies[i] is VolatileEnemy volatileEnemy) || !volatileEnemy.IsArmed) continue;
                 for (var j = 0; j < activeEnemies.Count; j++)
                 {
+                    if (!volatileEnemy.CanSuperchargeHybrid(activeEnemies[j])) continue;
+                    var hybrid = activeEnemies[j];
+                    if (!hybrid.Supercharge(maxHybridCharge)) continue;
+                    Despawn(volatileEnemy);
+                    HybridSupercharged?.Invoke(hybrid);
+                    return;
+                }
+                for (var j = 0; j < activeEnemies.Count; j++)
+                {
                     if (!volatileEnemy.CanDetonateWith(activeEnemies[j])) continue;
                     ResolveVolatileExplosion(volatileEnemy);
                     return;
@@ -107,7 +130,10 @@ namespace SpaceXonix.Enemies
             Debug.DrawLine(position - Vector3.up * radius, position + Vector3.up * radius, Color.yellow, 1f);
             var destroyedTerritory = boardManager.RemoveCapturedWithinRadius(source.LogicalCell, definition.volatileTerritoryRadiusCells * VolatileRadiusMultiplier);
             Despawn(source);
+            // One fresh regular alien per hybrid, so a Volatile never thins the stage out.
+            for (var i = 0; i < destroyedEnemies; i++) SpawnReinforcement();
             LastExplosionDefinition = definition;
+            LastExplosionScale = VolatileRadiusMultiplier;
             ExplosionOccurred?.Invoke(position, destroyedEnemies, destroyedTerritory);
             if (hitsPlayer && gameManager.CanProcessPlayerContact(lifecycleGeneration))
                 gameManager.ReportPlayerFailure(PlayerFailureReason.VolatileExplosion);
@@ -128,17 +154,43 @@ namespace SpaceXonix.Enemies
             // The blast, its ring and its reach to the ship all come from where the hole is.
             var position = boardManager.GetWorldPosition(contact);
             position.z = hybrid.transform.position.z;
-            var radius = definition.volatileBlastRadius * VolatileRadiusMultiplier;
+            var scale = VolatileRadiusMultiplier * hybrid.HybridCharge;
+            var radius = definition.volatileBlastRadius * scale;
             var hitsPlayer = gameManager != null && playerController != null &&
                 gameManager.CanProcessPlayerContact(lifecycleGeneration) &&
                 Vector2.Distance(position, playerController.transform.position) <= radius + playerController.CollisionRadius;
-            var destroyedTerritory = boardManager.RemoveCapturedWithinRadius(contact, definition.volatileTerritoryRadiusCells * VolatileRadiusMultiplier);
+            var destroyedTerritory = boardManager.RemoveCapturedWithinRadius(contact, definition.volatileTerritoryRadiusCells * scale);
             Despawn(hybrid);
             LastExplosionDefinition = definition;
+            LastExplosionScale = scale;
             ExplosionOccurred?.Invoke(position, 0, destroyedTerritory);
             if (hitsPlayer && gameManager.CanProcessPlayerContact(lifecycleGeneration))
                 gameManager.ReportPlayerFailure(PlayerFailureReason.VolatileExplosion);
             return true;
+        }
+
+        /// <summary>
+        /// Brings in one regular alien, chosen at random from <see cref="reinforcements"/>, on a free
+        /// cell away from the ship. Returns false when none is configured or no cell was found.
+        /// </summary>
+        public bool SpawnReinforcement()
+        {
+            if (reinforcements == null || reinforcements.Length == 0 || boardManager == null || boardManager.Model == null) return false;
+            random ??= randomSeed != 0 ? new System.Random(randomSeed) : new System.Random();
+            var request = reinforcements[random.Next(reinforcements.Length)];
+            if (request == null || request.prefab == null || request.definition == null) return false;
+            var player = playerController != null ? boardManager.WorldToGrid(playerController.transform.position) : new GridCoordinate(-1000, -1000);
+            // Plenty of attempts: a late stage can have most of the board captured.
+            for (var attempt = 0; attempt < 64; attempt++)
+            {
+                var cell = new GridCoordinate(1 + random.Next(boardManager.Columns - 2), 1 + random.Next(boardManager.Rows - 2));
+                var dx = cell.X - player.X; var dy = cell.Y - player.Y;
+                if (dx * dx + dy * dy < reinforcementClearanceCells * reinforcementClearanceCells) continue;
+                var angle = random.NextDouble() * Math.PI * 2d;
+                var direction = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle));
+                if (Spawn(request.prefab, request.definition, cell, direction)) return true;
+            }
+            return false;
         }
 
         public void Register(EnemyController enemy)

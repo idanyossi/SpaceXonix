@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 342
-- Passed: 342
+- EditMode discovered: 343
+- Passed: 343
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -604,6 +604,25 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
   - After a row was captured below it, the hybrid hit it and removed 29 cells.
   - The captured share went from 28.72% to 28.13%, and the player kept all lives.
 - **Tests:** 2 EditMode tests updated from "destroyed" to "converted", and 2 new ones. The first checks that the border is ignored, that the hole reaches exactly the radius into built territory, that bystanders are untouched and that pooled reuse clears the hybrid. The second checks that a Volatile does not detonate on a hybrid. Full suite: 342 passed, 0 failed.
+
+### Hybrid follow-ups and lasers near the ship (2026-09-25)
+
+- **Reinforcements:** every alien turned into a hybrid brings one new regular alien, picked at random from `EnemyManager.reinforcements` (Bouncer, horizontal Linear, vertical Linear, Unstable). It arrives on a free cell at least 10 cells from the ship. The user reported stages still ran short of aliens, because each Volatile and, later, each hybrid is used up.
+- **Much bigger territory blast:** the Volatile's `volatileTerritoryRadiusCells` went from 4 to 9. It applies to Volatile explosions and hybrid charges alike. The explosion ring and camera shake scale with the actual size through a new `EnemyManager.LastExplosionScale`, the stage modifier times the hybrid's charge.
+- **Supercharged hybrids:**
+  - An armed Volatile that touches a hybrid is absorbed without exploding, and the hybrid's charge doubles, up to `maxHybridCharge` (4).
+  - The blast, the ship-kill radius, the hole, the ring and the shake all scale with the charge.
+  - At the cap, a Volatile just passes through.
+  - `HybridTint` doubles its pulse rate with each doubling of charge. Once supercharged it switches from a soft fade to a hard on/off blink.
+  - The `HybridSupercharged` event is available for a future sound.
+- **Lasers near the ship:** each line is picked within 12 rows or columns of the ship (`LaserManager.playerVicinity`). It stays random within that window and still respects the edge margin and the gap from other lasers and the previous shot.
+- **Verified live:**
+  - A Volatile converted a bouncer and a new Linear alien arrived.
+  - A second Volatile was absorbed, raising the charge to 2.
+  - The ×2 hybrid then hit a captured row and removed 497 cells, dropping the captured share from 28.7% to 18.6%.
+  - With the ship in the corner at (0,1), laser rows were 4–16 and columns 4–16.
+- **Balance note:** a ×4 hybrid (radius 36) can erase most of the board. It needs two Volatiles absorbed into one hybrid, which is rare, and its hard blink warns the player. Lower `maxHybridCharge` to 2 if it feels unfair.
+- **Tests:** "Volatile does not detonate on a hybrid" became a supercharge test, covering absorption, doubling to ×4, the cap, the ×4 hole reaching exactly 8 cells for a 2-cell radius, and the scale reported to presentation. A new test covers one regular reinforcement per hybrid, kept away from the ship. The line-picker test gained the ship-vicinity window. Full suite: 343 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 

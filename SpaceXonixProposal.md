@@ -506,7 +506,9 @@ Destroying caught aliens made Volatile Aliens clear the board for the player. In
 - it pulses in the Volatile's orange so the player can tell it is charged;
 - its charge goes off when it touches territory the player captured, never the permanent border: it blows a hole of the Volatile's territory radius centred on the territory it touched, hits the ship if it is inside the blast, and uses the hybrid up;
 - it gets the same short protection a new Volatile does, so the blast that made it cannot set it off;
-- hybrids never explode on other aliens, and Volatile Aliens neither detonate on nor convert hybrids, so explosions cannot chain.
+- hybrids never explode on other aliens, and Volatile Aliens never detonate on or convert hybrids, so explosions cannot chain;
+- every alien turned into a hybrid brings one new regular alien (Bouncer, Linear or Unstable, at random) onto a free cell away from the ship, so a Volatile never thins the stage out;
+- a Volatile Alien that runs into a hybrid is absorbed into it and doubles its charge (up to four times), doubling the size of its eventual blast; the more charged a hybrid is, the faster and harder it blinks.
 
 ## Laser Hazard
 

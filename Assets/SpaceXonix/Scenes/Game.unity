@@ -5968,6 +5968,7 @@ MonoBehaviour:
   randomizeLines: 1
   edgeMargin: 4
   separation: 8
+  playerVicinity: 12
   randomSeed: 0
 --- !u!4 &1884602790
 Transform:
@@ -6496,6 +6497,31 @@ MonoBehaviour:
   playerController: {fileID: 1987019904147353759}
   poolService: {fileID: 296692061}
   initialSpawns: []
+  hybridContactCells: 0.5
+  maxHybridCharge: 4
+  reinforcements:
+  - prefab: {fileID: 6461552448834079123, guid: 0cb255ada51aba94c9ba572e412bef09, type: 3}
+    definition: {fileID: 11400000, guid: c9142e5760c99b44893e01c6c842faa2, type: 2}
+    column: 0
+    row: 0
+    direction: {x: 1, y: 0}
+  - prefab: {fileID: 2198234542537271096, guid: 226502bdaf4b2b7439fac18918897532, type: 3}
+    definition: {fileID: 11400000, guid: aafc7ce75a8a6974bbce5d115e0cc72d, type: 2}
+    column: 0
+    row: 0
+    direction: {x: 1, y: 0}
+  - prefab: {fileID: 2198234542537271096, guid: 226502bdaf4b2b7439fac18918897532, type: 3}
+    definition: {fileID: 11400000, guid: 5c3bb54ddc00a354ebb908a1199b0f49, type: 2}
+    column: 0
+    row: 0
+    direction: {x: 1, y: 0}
+  - prefab: {fileID: 7951906493875139093, guid: bdb6b5feb9a93724282df9f1ab806e53, type: 3}
+    definition: {fileID: 11400000, guid: 6a5c03cfcac169f4e9aab476e9295209, type: 2}
+    column: 0
+    row: 0
+    direction: {x: 1, y: 0}
+  reinforcementClearanceCells: 10
+  randomSeed: 0
 --- !u!4 &2088577236
 Transform:
   m_ObjectHideFlags: 0

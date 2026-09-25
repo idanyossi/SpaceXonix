@@ -105,7 +105,7 @@ namespace SpaceXonix.Presentation
         private void OnExplosion(Vector3 position, int destroyedEnemies, int destroyedTerritory)
         {
             var definition = enemyManager != null ? enemyManager.LastExplosionDefinition : null;
-            var radius = definition != null ? definition.volatileBlastRadius : explosionReferenceRadius;
+            var radius = definition != null ? definition.volatileBlastRadius * enemyManager.LastExplosionScale : explosionReferenceRadius;
             Shake(ShakeStrength.ForExplosion(radius, explosionReferenceRadius, explosionForce));
         }
 

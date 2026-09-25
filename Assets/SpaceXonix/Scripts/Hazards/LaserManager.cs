@@ -30,6 +30,8 @@ namespace SpaceXonix.Hazards
         [SerializeField, Min(0)] private int edgeMargin = 4;
         [Tooltip("Preferred gap, in cells, from other lasers on the same axis.")]
         [SerializeField, Min(0)] private int separation = 8;
+        [Tooltip("Lines are picked within this many rows or columns of the ship. 0 lets them fire anywhere.")]
+        [SerializeField, Min(0)] private int playerVicinity = 12;
         [SerializeField] private int randomSeed;
 
         private readonly List<int> occupiedLines = new List<int>();
@@ -123,7 +125,14 @@ namespace SpaceXonix.Hazards
                     other.Definition.axis == emitter.Definition.axis)
                     occupiedLines.Add(other.Line);
             var count = emitter.Definition.axis == LaserAxis.Horizontal ? boardManager.Rows : boardManager.Columns;
-            return linePicker.Pick(count, edgeMargin, separation, occupiedLines);
+            var focus = -1;
+            var player = gameManager != null ? gameManager.PlayerController : null;
+            if (player != null)
+            {
+                var cell = boardManager.WorldToGrid(player.transform.position);
+                focus = emitter.Definition.axis == LaserAxis.Horizontal ? cell.Y : cell.X;
+            }
+            return linePicker.Pick(count, edgeMargin, separation, occupiedLines, focus, playerVicinity);
         }
 
         private void Start()

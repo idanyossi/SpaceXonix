@@ -22,4 +22,4 @@ MonoBehaviour:
   volatileSpawnProtection: 0.75
   volatileCollisionRadius: 0.22
   volatileBlastRadius: 0.75
-  volatileTerritoryRadiusCells: 4
+  volatileTerritoryRadiusCells: 9

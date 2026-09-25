@@ -45,8 +45,12 @@ namespace SpaceXonix.Presentation
         private void Update()
         {
             if (enemy == null || !enemy.IsHybrid) return;
-            var pulse = .5f + .5f * Mathf.Sin(Time.time * pulseRate * Mathf.PI * 2f);
-            Apply(Mathf.Lerp(minimumCharge, 1f, pulse));
+            // Each doubling of the charge doubles the pulse rate. Once supercharged it stops fading
+            // and hard-blinks between its own colour and full orange, so it reads as about to blow.
+            var rate = pulseRate * enemy.HybridCharge;
+            var wave = Mathf.Sin(Time.time * rate * Mathf.PI * 2f);
+            if (enemy.HybridCharge > 1f) Apply(wave >= 0f ? 1f : 0f);
+            else Apply(Mathf.Lerp(minimumCharge, 1f, .5f + .5f * wave));
         }
 
         /// <summary>0 shows the alien's own colours, 1 the full charge colour.</summary>

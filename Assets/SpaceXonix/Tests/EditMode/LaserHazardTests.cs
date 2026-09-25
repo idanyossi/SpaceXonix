@@ -250,6 +250,17 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(Math.Abs(line - 40), Is.GreaterThanOrEqualTo(8), "kept apart from the other laser when there is room");
             }
             Assert.That(picker.Pick(5, 4, 8, null), Is.EqualTo(2), "a board too small for the margin falls back to the middle");
+
+            for (var i = 0; i < 200; i++)
+            {
+                var line = picker.Pick(96, 4, 8, null, 50, 12);
+                Assert.That(line, Is.InRange(38, 62), "near the ship");
+            }
+            var seen = new HashSet<int>();
+            for (var i = 0; i < 200; i++) seen.Add(picker.Pick(96, 4, 8, null, 50, 12));
+            Assert.That(seen.Count, Is.GreaterThan(10), "still random within that window");
+            for (var i = 0; i < 50; i++)
+                Assert.That(picker.Pick(96, 4, 8, null, 1, 12), Is.InRange(4, 16), "a ship on the border still gets lines inside the margin");
         }
 
         private sealed class Fixture : IDisposable

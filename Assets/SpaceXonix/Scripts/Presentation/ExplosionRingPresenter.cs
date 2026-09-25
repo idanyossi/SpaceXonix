@@ -61,7 +61,7 @@ namespace SpaceXonix.Presentation
             var cellSize = enemyManager != null && enemyManager.BoardManager != null ? enemyManager.BoardManager.CellWorldSize : 0f;
             var definition = enemyManager != null ? enemyManager.LastExplosionDefinition : null;
             if (definition == null || cellSize <= 0f) return fallbackRadius * radiusScale;
-            return definition.volatileTerritoryRadiusCells * cellSize * radiusScale;
+            return definition.volatileTerritoryRadiusCells * cellSize * radiusScale * enemyManager.LastExplosionScale;
         }
 
         private void Release(int index)

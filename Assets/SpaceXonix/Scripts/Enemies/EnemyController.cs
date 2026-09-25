@@ -37,6 +37,8 @@ namespace SpaceXonix.Enemies
         /// <summary>The Volatile whose blast made this a hybrid; its blast sizes the hybrid's.</summary>
         public EnemyDefinition HybridSource { get; private set; }
         public float HybridProtectionRemaining { get; private set; }
+        /// <summary>Blast size multiplier: 1 for a new hybrid, doubled each time a Volatile is absorbed.</summary>
+        public float HybridCharge { get; private set; } = 1f;
         public bool IsHybridArmed => IsActiveEnemy && IsHybrid && HybridProtectionRemaining <= 0f;
         public event Action<EnemyController> HybridChanged;
 
@@ -45,9 +47,22 @@ namespace SpaceXonix.Enemies
             if (!IsActiveEnemy || source == null) return;
             IsHybrid = true;
             HybridSource = source;
+            HybridCharge = 1f;
             // The same grace a new Volatile gets, so it cannot go off in the blast that made it.
             HybridProtectionRemaining = source.volatileSpawnProtection;
             HybridChanged?.Invoke(this);
+        }
+
+        /// <summary>
+        /// A Volatile ran into this hybrid and was absorbed: the charge doubles, up to
+        /// <paramref name="maximum"/>. Returns false when it is already at the maximum.
+        /// </summary>
+        public bool Supercharge(float maximum)
+        {
+            if (!IsActiveEnemy || !IsHybrid || HybridCharge * 2f > maximum) return false;
+            HybridCharge *= 2f;
+            HybridChanged?.Invoke(this);
+            return true;
         }
 
         public void AdvanceHybridProtection(float deltaTime)
@@ -81,7 +96,7 @@ namespace SpaceXonix.Enemies
         private void ClearHybrid()
         {
             var was = IsHybrid;
-            IsHybrid = false; HybridSource = null; HybridProtectionRemaining = 0f;
+            IsHybrid = false; HybridSource = null; HybridProtectionRemaining = 0f; HybridCharge = 1f;
             if (was) HybridChanged?.Invoke(this);
         }
         public virtual void Activate(EnemyDefinition data, BoardManager boardManager, GameManager gameManager, Vector3 position, Vector2 direction)

@@ -243,21 +243,78 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
-        public void Volatile_DoesNotDetonateOnAHybrid()
+        public void Volatile_IsAbsorbedByAHybrid_DoublingItsChargeUpToTheCap()
         {
             using (var fixture = new Fixture())
             {
+                fixture.CaptureColumn(30);
                 var first = fixture.SpawnVolatile(new GridCoordinate(10, 10));
                 var hybrid = fixture.SpawnTarget(typeof(BasicBouncer), new GridCoordinate(11, 10));
                 hybrid.transform.position = first.transform.position;
                 fixture.Manager.SimulateVolatileInteractions(.5f);
                 Assert.That(hybrid.IsHybrid, Is.True);
+                Assert.That(hybrid.HybridCharge, Is.EqualTo(1f));
+                var supercharged = 0;
+                fixture.Manager.HybridSupercharged += _ => supercharged++;
 
-                var second = fixture.SpawnVolatile(new GridCoordinate(20, 20));
+                foreach (var expected in new[] { 2f, 4f })
+                {
+                    var volatileEnemy = fixture.SpawnVolatile(new GridCoordinate(20, 20));
+                    fixture.Manager.SimulateVolatileInteractions(.5f);
+                    volatileEnemy.transform.position = hybrid.transform.position;
+                    fixture.Manager.SimulateVolatileInteractions(.01f);
+                    Assert.That(volatileEnemy.IsActiveEnemy, Is.False, "the Volatile is absorbed");
+                    Assert.That(volatileEnemy.HasDetonated, Is.False, "absorbed, not exploded");
+                    Assert.That(hybrid.HybridCharge, Is.EqualTo(expected));
+                }
+                Assert.That(supercharged, Is.EqualTo(2));
+
+                var extra = fixture.SpawnVolatile(new GridCoordinate(20, 20));
                 fixture.Manager.SimulateVolatileInteractions(.5f);
-                second.transform.position = hybrid.transform.position;
-                fixture.Manager.SimulateVolatileInteractions(.1f);
-                Assert.That(second.HasDetonated, Is.False, "a hybrid already carries a charge, so it cannot chain");
+                extra.transform.position = hybrid.transform.position;
+                fixture.Manager.SimulateVolatileInteractions(.01f);
+                Assert.That(extra.IsActiveEnemy, Is.True, "at the cap, a Volatile just passes");
+                Assert.That(hybrid.HybridCharge, Is.EqualTo(4f));
+                fixture.Manager.Despawn(extra);
+
+                // A x4 charge blows a hole four times the radius: 8 cells instead of 2.
+                var edge = fixture.Board.GetWorldPosition(new GridCoordinate(29, 40));
+                hybrid.Relocate(edge + Vector3.right * fixture.Board.CellWorldSize * .5f);
+                fixture.Manager.SimulateVolatileInteractions(.01f);
+                Assert.That(hybrid.IsActiveEnemy, Is.False);
+                Assert.That(fixture.Board.Model.GetCell(new GridCoordinate(38, 40)), Is.EqualTo(BoardCellState.Uncaptured));
+                Assert.That(fixture.Board.Model.GetCell(new GridCoordinate(39, 40)), Is.EqualTo(BoardCellState.Captured));
+                Assert.That(fixture.Manager.LastExplosionScale, Is.EqualTo(4f), "the ring and shake grow with it");
+            }
+        }
+
+        [Test]
+        public void EachHybrid_BringsARegularReinforcementAwayFromTheShip()
+        {
+            using (var fixture = new Fixture())
+            {
+                var reinforcement = fixture.UseReinforcement(typeof(UnstableEnemy));
+                var volatileEnemy = fixture.SpawnVolatile(new GridCoordinate(20, 40));
+                var a = fixture.SpawnTarget(typeof(BasicBouncer), new GridCoordinate(21, 40));
+                var b = fixture.SpawnTarget(typeof(LinearEnemy), new GridCoordinate(19, 40));
+                a.transform.position = volatileEnemy.transform.position;
+                b.transform.position = volatileEnemy.transform.position;
+
+                fixture.Manager.SimulateVolatileInteractions(.5f);
+
+                Assert.That(a.IsHybrid && b.IsHybrid, Is.True);
+                var fresh = new List<EnemyController>();
+                foreach (var enemy in fixture.Manager.ActiveEnemies) if (enemy != a && enemy != b) fresh.Add(enemy);
+                Assert.That(fresh, Has.Count.EqualTo(2), "one regular alien per hybrid, so the Volatile never thins the stage");
+                var ship = fixture.Board.WorldToGrid(fixture.Player.transform.position);
+                foreach (var enemy in fresh)
+                {
+                    Assert.That(enemy, Is.InstanceOf<UnstableEnemy>());
+                    Assert.That(enemy.IsHybrid, Is.False);
+                    Assert.That(enemy.Definition, Is.SameAs(reinforcement));
+                    var dx = enemy.LogicalCell.X - ship.X; var dy = enemy.LogicalCell.Y - ship.Y;
+                    Assert.That(dx * dx + dy * dy, Is.GreaterThanOrEqualTo(100), "not dropped on the ship");
+                }
             }
         }
 
@@ -319,6 +376,16 @@ namespace SpaceXonix.Tests.EditMode
             {
                 for (var row = 1; row < Board.Rows - 1; row++) Board.Model.MoveTo(new GridCoordinate(column, row));
                 Board.Model.MoveTo(new GridCoordinate(column, Board.Rows - 1));
+            }
+
+            /// <summary>Configures the regular alien that arrives for each hybrid.</summary>
+            public EnemyDefinition UseReinforcement(Type type)
+            {
+                var prefab = new GameObject(type.Name + "Reinforcement"); prefab.AddComponent(type); prefab.SetActive(false); owned.Add(prefab);
+                var definition = Definition(type == typeof(UnstableEnemy) ? EnemyType.Unstable : EnemyType.BasicBouncer, 1f);
+                SetField(Manager, "reinforcements", new[] { new EnemySpawnRequest { prefab = prefab, definition = definition } });
+                SetField(Manager, "randomSeed", 99);
+                return definition;
             }
 
             public VolatileEnemy SpawnVolatile(GridCoordinate cell)

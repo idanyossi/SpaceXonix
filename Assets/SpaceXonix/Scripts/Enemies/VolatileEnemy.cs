@@ -28,6 +28,15 @@ namespace SpaceXonix.Enemies
         {
             // Hybrids already carry a charge; setting them off again would chain forever.
             if (!IsArmed || other == null || other == this || !other.IsActiveEnemy || other is VolatileEnemy || other.IsHybrid) return false;
+            return IsTouching(other);
+        }
+
+        /// <summary>An armed Volatile that runs into a hybrid is absorbed and supercharges it.</summary>
+        public bool CanSuperchargeHybrid(EnemyController other) =>
+            IsArmed && other != null && other != this && other.IsActiveEnemy && other.IsHybrid && IsTouching(other);
+
+        private bool IsTouching(EnemyController other)
+        {
             var touching = Mathf.Max(definition.volatileCollisionRadius, CollisionRadius + other.CollisionRadius);
             return Vector2.Distance(transform.position, other.transform.position) <= touching;
         }
