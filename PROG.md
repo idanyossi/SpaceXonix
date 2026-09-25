@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 346
-- Passed: 346
+- EditMode discovered: 351
+- Passed: 351
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -650,6 +650,48 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
   - A real Power Shot killed an alien at (8,1), and the explosion played there.
   - With the Alien Core active and a captured band between it and the ship, three middle shots broke 13, 15 and 12 cells at (4,12), (3,9) and (2,6), digging toward the ship.
 - Tests: 3 new EditMode tests (the middle shot breaking a small patch and being spent, side shots leaving territory alone, and a shot alien exploding once where it was), plus the volley test now checks only the middle shot breaks territory. Full suite: 346 passed, 0 failed.
+
+### Power gauge, charged boss shots and upgrade cards (2026-09-25)
+
+- **The Power Shot meter never looked full.** The fill was a filled `Image` of the 8-pixel `UI_Fill` sprite. A filled image cannot nine-slice, so the sprite's frame stretched into thick dark ends. `PowerGauge` now drives a nine-sliced fill by its right anchor, so it reaches exactly the track's edge:
+  - Energy stripes (`UI_EnergyStripes`) stream through it under a `RectMask2D`. They span the whole track and are uncovered as it fills, so they never squash.
+  - Nine dividers cut it into ten cells.
+  - The colour climbs from deep blue to cyan while charging.
+  - At full it throbs white-hot, and a nine-sliced glow frame (`UI_GaugeGlow`) and the "POWER READY" label pulse with it.
+  - `GameHud` uses the gauge when assigned and keeps the plain fill as a fallback.
+- **The boss's charged shot is random and looks charged.**
+  - One of the three shots in every volley is charged, picked at random with a seedable random, instead of always the middle one.
+  - It is drawn 1.6× bigger (its hit radius is unchanged) with a pulsing halo behind it, a child of the visual so it billboards with it.
+  - Its core throbs white-hot.
+  - Breaking territory now plays a 2-unit explosion, shakes the camera and plays the blast sound.
+- **Upgrades are holographic cards.** `UpgradeCardPanel` deals three `UpgradeCard`s in from below, staggered, on unscaled time, since the game is paused. Each card has:
+  - a chamfered frame with corner brackets, plus hover and pressed states;
+  - a header band in the upgrade's colour;
+  - a 48×48 pixel-art picture shown at exactly 5×, behind faint scrolling scanlines;
+  - diamond pips for owned stacks, with the pip the card would add blinking;
+  - the effect text and a "TAP TO INSTALL" footer.
+- **Card behaviour:**
+  - Cards cannot be tapped until they have landed.
+  - A double tap takes one upgrade.
+  - The campaign screens re-show the choice every frame, so the panel re-deals only when the offer changes.
+- **Card pictures:** drawn by `UpgradeCardBuilder` from the game's own ansimuz frames on a star-grid backdrop with a dithered glow in the card's colour:
+  - Reinforced Hull: the ship between riveted plates.
+  - Improved Thrusters: the ship with speed streaks.
+  - Rapid Capacitor: three bolts over an energy arc.
+  - Shield Capacitor: an orb in a shield ring.
+  - Cryogenic Core: an orb washed icy, with frost.
+  - Gravity Stabilizer: an orb washed violet between level bars.
+  - Scavenger Protocol: three orbs in a reticle.
+  - Two orbs are washed toward their colour, not multiplied by it, which had turned them muddy.
+- **Builder:** **SpaceXonix > Build Upgrade Cards and Power Gauge** builds both in the game scene and can be re-run. `UiSkin` skips card subtrees, and the skin test accepts `UI_Card` frames on cards.
+- **Import fix:** `UiSkin.IsUiSprite` matched `Generated/UI_Scanlines.png` because it tested the prefix without the folder's slash, which imported the tiling textures as clamped sprites.
+- **Verified live:**
+  - A real stage cleared at 76.6% dealt Cryogenic Core, Rapid Capacitor and Gravity Stabilizer.
+  - Tapping Rapid Capacitor twice gave 1 stack and moved to the next briefing.
+  - The gauge rendered at 55% (blue, striped, cells) and full (edge to edge, glowing).
+  - A live Alien Core volley showed one big glowing charged shot beside two small side shots.
+- **Harness note:** with the Unity window unfocused, Play Mode runs no frames between MCP calls, so `LateUpdate` work, such as hiding the card overlay, only happens once the editor ticks. A render taken straight after a scripted phase change can therefore show stale UI.
+- Tests: 5 new EditMode tests (cards showing the offer and pips, dealing once and landing before a tap, one pick per offer, the gauge filling exactly and glowing when ready, the charged shot moving across all three lanes), plus the volley test now checks exactly one charged shot. Full suite: 351 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 

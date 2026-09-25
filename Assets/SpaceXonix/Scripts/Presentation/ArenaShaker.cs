@@ -17,6 +17,7 @@ namespace SpaceXonix.Presentation
         [SerializeField] private BoardManager boardManager;
         [SerializeField] private EnemyManager enemyManager;
         [SerializeField] private GameManager gameManager;
+        [SerializeField] private SpaceXonix.Boss.BossController bossController;
 
         [Header("Large capture")]
         [Tooltip("Captures below this percentage do not shake at all.")]
@@ -61,6 +62,7 @@ namespace SpaceXonix.Presentation
             }
             if (boardManager != null) boardManager.CaptureCompleted += OnCaptureCompleted;
             if (enemyManager != null) enemyManager.ExplosionOccurred += OnExplosion;
+            if (bossController != null) bossController.TerritoryBroken += OnTerritoryBroken;
             if (gameManager != null) gameManager.PlayerFailed += OnPlayerFailed;
         }
 
@@ -70,6 +72,7 @@ namespace SpaceXonix.Presentation
             boundSettings = null;
             if (boardManager != null) boardManager.CaptureCompleted -= OnCaptureCompleted;
             if (enemyManager != null) enemyManager.ExplosionOccurred -= OnExplosion;
+            if (bossController != null) bossController.TerritoryBroken -= OnTerritoryBroken;
             if (gameManager != null) gameManager.PlayerFailed -= OnPlayerFailed;
         }
 
@@ -108,6 +111,10 @@ namespace SpaceXonix.Presentation
             var radius = definition != null ? definition.volatileBlastRadius * enemyManager.LastExplosionScale : explosionReferenceRadius;
             Shake(ShakeStrength.ForExplosion(radius, explosionReferenceRadius, explosionForce));
         }
+
+        /// <summary>A charged boss shot breaking territory kicks like a small explosion.</summary>
+        private void OnTerritoryBroken(Vector3 position, int cells) =>
+            Shake(ShakeStrength.ForExplosion(explosionReferenceRadius * .6f, explosionReferenceRadius, explosionForce));
 
         private void OnPlayerFailed(PlayerFailureReason reason)
         {

@@ -24,6 +24,9 @@ namespace SpaceXonix.Boss
 
         private readonly List<BossProjectile> activeProjectiles = new List<BossProjectile>();
         private readonly List<GridCoordinate> traversedCells = new List<GridCoordinate>();
+        [Tooltip("Seeds which shot of each volley is the charged one; 0 picks a new seed each run.")]
+        [SerializeField] private int randomSeed;
+        private System.Random random;
         private BossAttackModel attack;
         private float fireIntervalMultiplier = 1f;
         private float projectileSpeedMultiplier = 1f;
@@ -142,8 +145,10 @@ namespace SpaceXonix.Boss
             var step = count > 1 ? definition.volleySpreadDegrees / (count - 1) : 0f;
             var start = count > 1 ? -definition.volleySpreadDegrees * .5f : 0f;
             var speed = definition.projectileSpeed * projectileSpeedMultiplier;
-            // Only an odd volley has a middle shot, the one aimed straight at the ship.
-            var middle = count % 2 == 1 ? count / 2 : -1;
+            // One shot of every volley, chosen at random, is charged to break territory, so the player
+            // cannot just step out of the middle lane.
+            random ??= randomSeed != 0 ? new System.Random(randomSeed) : new System.Random();
+            var charged = random.Next(count);
             for (var i = 0; i < count; i++)
             {
                 var direction = (Vector2)(Quaternion.Euler(0f, 0f, start + step * i) * aim);
@@ -158,7 +163,7 @@ namespace SpaceXonix.Boss
                 var origin = transform.position + (Vector3)(direction * definition.bodyRadius);
                 origin.z = transform.position.z - .01f;
                 projectile.Launch(origin, direction * speed, definition.projectileRadius,
-                    i == middle ? definition.middleShotTerritoryRadiusCells : 0f);
+                    i == charged ? definition.middleShotTerritoryRadiusCells : 0f);
                 activeProjectiles.Add(projectile);
             }
             VolleyFired?.Invoke();

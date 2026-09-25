@@ -19,6 +19,8 @@ namespace SpaceXonix.UI
         [SerializeField] private GameManager gameManager;
         [SerializeField] private ScoreManager scoreManager;
         [SerializeField] private UpgradeManager upgradeManager;
+        [Tooltip("Holographic cards for the upgrade choice. Without them the choice falls back to the plain panel.")]
+        [SerializeField] private UpgradeCardPanel upgradeCards;
         [SerializeField] private CampaignPanel panel;
 
         private readonly List<EnemyType> enemyTypes = new List<EnemyType>();
@@ -39,8 +41,10 @@ namespace SpaceXonix.UI
             if (phase == CampaignPhase.Playing)
             {
                 if (shownPhase != null) { panel.Hide(); shownPhase = null; }
+                if (upgradeCards != null && upgradeCards.IsShown) upgradeCards.Hide();
                 return;
             }
+            if (phase != CampaignPhase.UpgradeChoice && upgradeCards != null && upgradeCards.IsShown) upgradeCards.Hide();
             // The upgrade offer changes its captions without changing phase, so it always rebuilds.
             if (shownPhase == phase && phase != CampaignPhase.UpgradeChoice) return;
             shownPhase = phase;
@@ -94,6 +98,12 @@ namespace SpaceXonix.UI
         private void ShowUpgradeChoice()
         {
             var offer = upgradeManager.CurrentOffer;
+            if (upgradeCards != null)
+            {
+                panel.Hide();
+                upgradeCards.Show(offer, type => upgradeManager.Run.GetStacks(type), index => campaignManager.ChooseUpgrade(index));
+                return;
+            }
             captions.Clear();
             for (var i = 0; i < offer.Count && i < panel.ButtonCount; i++)
             {

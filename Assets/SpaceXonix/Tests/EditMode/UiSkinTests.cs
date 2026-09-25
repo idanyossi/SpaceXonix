@@ -60,6 +60,13 @@ namespace SpaceXonix.Tests.EditMode
             var problems = new List<string>();
             foreach (var button in root.GetComponentsInChildren<Button>(true))
             {
+                // Upgrade cards are buttons with their own card frame, built by their own tool.
+                if (button.GetComponent<SpaceXonix.UI.UpgradeCard>() != null)
+                {
+                    if (!(button.targetGraphic is Image card) || card.sprite == null || !card.sprite.name.StartsWith("UI_Card"))
+                        problems.Add($"card {button.name}");
+                    continue;
+                }
                 var image = button.targetGraphic as Image;
                 if (image == null || image.sprite == null || !image.sprite.name.StartsWith("UI_Button"))
                     problems.Add($"button {button.name}");

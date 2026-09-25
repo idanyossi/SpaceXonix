@@ -17,3 +17,5 @@ MonoBehaviour:
   effectText: +25% Shield duration
   maxStacks: 3
   perStack: 0.25
+  cardArt: {fileID: 21300000, guid: 7ab2496dedef3434f9fa4aa969d65eb9, type: 3}
+  cardAccent: {r: 0.35, g: 0.8, b: 1, a: 1}

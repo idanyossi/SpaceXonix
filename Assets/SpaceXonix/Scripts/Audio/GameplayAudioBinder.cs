@@ -49,7 +49,11 @@ namespace SpaceXonix.Audio
             }
             if (enemyManager != null) enemyManager.ExplosionOccurred += OnExplosion;
             if (gameManager != null) gameManager.PlayerFailed += OnPlayerFailed;
-            if (bossController != null) bossController.Defeated += OnBossDefeated;
+            if (bossController != null)
+            {
+                bossController.Defeated += OnBossDefeated;
+                bossController.TerritoryBroken += OnTerritoryBroken;
+            }
             if (campaignManager != null)
             {
                 campaignManager.StageLoaded += OnStageLoaded;
@@ -80,7 +84,11 @@ namespace SpaceXonix.Audio
             }
             if (enemyManager != null) enemyManager.ExplosionOccurred -= OnExplosion;
             if (gameManager != null) gameManager.PlayerFailed -= OnPlayerFailed;
-            if (bossController != null) bossController.Defeated -= OnBossDefeated;
+            if (bossController != null)
+            {
+                bossController.Defeated -= OnBossDefeated;
+                bossController.TerritoryBroken -= OnTerritoryBroken;
+            }
             if (campaignManager != null)
             {
                 campaignManager.StageLoaded -= OnStageLoaded;
@@ -108,6 +116,8 @@ namespace SpaceXonix.Audio
         }
 
         private void OnPowerFull() => Play(GameSfx.PowerMeterFull);
+        // A charged boss shot breaking territory is a blast, and should sound like one.
+        private void OnTerritoryBroken(Vector3 position, int cells) => Play(GameSfx.VolatileExplosion);
         private void OnShotFired(PowerShotProjectile shot) => Play(GameSfx.PowerShot);
         private void OnEnemyDestroyed(EnemyController enemy) => Play(GameSfx.EnemyDestroyed);
         private void OnPickupSpawned(PowerUpPickup pickup) => Play(GameSfx.PickupSpawned);

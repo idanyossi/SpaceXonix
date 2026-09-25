@@ -76,6 +76,8 @@ namespace SpaceXonix.EditorTools
         {
             // A prefab instance inside a scene is styled through its prefab, not with overrides.
             if (node.parent != null && PrefabUtility.IsOutermostPrefabInstanceRoot(node.gameObject)) return;
+            // Upgrade cards have their own look, built by SpaceXonix > Build Upgrade Cards.
+            if (node.GetComponent<SpaceXonix.UI.UpgradeCard>() != null) return;
 
             var image = node.GetComponent<Image>();
             var button = node.GetComponent<Button>();
@@ -184,11 +186,14 @@ namespace SpaceXonix.EditorTools
                 case "UI_Panel": return 7;
                 case "UI_Button": case "UI_ButtonHover": case "UI_ButtonPressed": case "UI_ButtonDisabled": return 5;
                 case "UI_Slot": case "UI_Fill": return 3;
+                case "UI_Card": case "UI_CardHover": case "UI_CardPressed": return 12;
+                case "UI_CardBand": return 4;
+                case "UI_GaugeGlow": return 6;
                 default: return 0;
             }
         }
 
-        public static bool IsUiSprite(string assetPath) => assetPath.StartsWith(Folder);
+        public static bool IsUiSprite(string assetPath) => assetPath.StartsWith(Folder + "/");
 
         private static void GenerateSprites()
         {

@@ -22,7 +22,7 @@ namespace SpaceXonix.Boss
         [Tooltip("Total spread of a volley in degrees, centred on the aim direction.")]
         [Min(0f)] public float volleySpreadDegrees = 24f;
         [Min(.01f)] public float projectileRadius = .28f;
-        [Tooltip("The middle shot of each volley, the one aimed straight at the ship, breaks captured territory within this many cells of where it lands. 0 turns it off.")]
+        [Tooltip("One shot of each volley, chosen at random, is charged: it breaks captured territory within this many cells of where it lands. 0 turns it off. (The name predates the random choice; it was always the middle shot.)")]
         [Min(0f)] public float middleShotTerritoryRadiusCells = 2.5f;
         [Tooltip("How long a Power Shot hit stops the attack cycle.")]
         [Min(0f)] public float interruptDuration = 2f;

@@ -111,15 +111,35 @@ namespace SpaceXonix.Tests.EditMode
                     Assert.That(projectile.Velocity.magnitude, Is.EqualTo(fixture.Definition.projectileSpeed).Within(.001f));
                     angles.Add(Vector2.SignedAngle(Vector2.down, projectile.Velocity));
                 }
-                foreach (var projectile in fixture.Boss.ActiveProjectiles)
-                {
-                    var middle = Mathf.Abs(Vector2.SignedAngle(Vector2.down, projectile.Velocity)) < .01f;
-                    Assert.That(projectile.BreaksTerritory, Is.EqualTo(middle), "only the middle shot breaks territory");
-                }
+                var charged = 0;
+                foreach (var projectile in fixture.Boss.ActiveProjectiles) if (projectile.BreaksTerritory) charged++;
+                Assert.That(charged, Is.EqualTo(1), "exactly one shot of each volley is charged");
                 angles.Sort();
                 Assert.That(angles[0], Is.EqualTo(-12f).Within(.01f));
                 Assert.That(angles[1], Is.EqualTo(0f).Within(.01f), "the middle shot goes straight at the ship");
                 Assert.That(angles[2], Is.EqualTo(12f).Within(.01f));
+            }
+        }
+
+        [Test]
+        public void ChargedShot_MovesBetweenTheThreeLanesAcrossVolleys()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.StartPlaying();
+                fixture.Boss.transform.position = fixture.Board.GetWorldPosition(new GridCoordinate(27, 70));
+                fixture.Player.transform.position = fixture.Boss.transform.position + Vector3.down * 5f;
+                var lanes = new HashSet<int>();
+                for (var volley = 0; volley < 30; volley++)
+                {
+                    fixture.ClearProjectiles();
+                    fixture.Boss.Tick(fixture.Definition.fireInterval - .01f);
+                    fixture.Boss.Tick(.01f);
+                    foreach (var projectile in fixture.Boss.ActiveProjectiles)
+                        if (projectile.BreaksTerritory)
+                            lanes.Add(Mathf.RoundToInt(Vector2.SignedAngle(Vector2.down, projectile.Velocity)));
+                }
+                Assert.That(lanes, Is.EquivalentTo(new[] { -12, 0, 12 }), "any of the three shots can be the charged one");
             }
         }
 
@@ -374,6 +394,11 @@ namespace SpaceXonix.Tests.EditMode
 
             /// <summary>Puts one projectile just short of the ship, travelling into it.</summary>
             public void FireAtPlayer() => FireAt(Player.transform.position);
+
+            /// <summary>Drops every projectile in flight, so the next volley can be inspected alone.</summary>
+            public void ClearProjectiles() =>
+                ((List<BossProjectile>)typeof(BossController)
+                    .GetField("activeProjectiles", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Boss)).Clear();
 
             public void FireAtCell(GridCoordinate cell, float territoryRadiusCells = 0f) => FireAt(Board.GetWorldPosition(cell), territoryRadiusCells);
 

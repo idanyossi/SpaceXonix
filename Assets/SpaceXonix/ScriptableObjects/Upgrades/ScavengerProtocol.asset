@@ -17,3 +17,5 @@ MonoBehaviour:
   effectText: +10% pickup chance
   maxStacks: 3
   perStack: 0.1
+  cardArt: {fileID: 21300000, guid: 744a61c73dfd1634bbf60800400e8494, type: 3}
+  cardAccent: {r: 0.45, g: 1, b: 0.58, a: 1}

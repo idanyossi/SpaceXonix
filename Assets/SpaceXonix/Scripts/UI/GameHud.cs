@@ -39,6 +39,8 @@ namespace SpaceXonix.UI
         [SerializeField] private Image[] lifeIcons = new Image[0];
 
         [Header("Power meter")]
+        [Tooltip("The animated energy gauge. When set it replaces the plain fill image below.")]
+        [SerializeField] private PowerGauge powerGauge;
         [SerializeField] private Image powerFill;
         [SerializeField] private Color powerChargingColor = new Color(.2f, .6f, 1f);
         [SerializeField] private Color powerReadyColor = new Color(.2f, 1f, 1f);
@@ -113,7 +115,8 @@ namespace SpaceXonix.UI
         {
             if (powerMeter == null) return;
             var fill = powerMeter.MaxPower > 0f ? Mathf.Clamp01(powerMeter.Power / powerMeter.MaxPower) : 0f;
-            if (powerFill != null)
+            if (powerGauge != null) powerGauge.Show(fill, powerMeter.IsReady);
+            else if (powerFill != null)
             {
                 powerFill.fillAmount = fill;
                 powerFill.color = powerMeter.IsReady ? powerReadyColor : powerChargingColor;
