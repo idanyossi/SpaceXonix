@@ -26,7 +26,8 @@ namespace SpaceXonix.Enemies
 
         public bool CanDetonateWith(EnemyController other)
         {
-            if (!IsArmed || other == null || other == this || !other.IsActiveEnemy || other is VolatileEnemy) return false;
+            // Hybrids already carry a charge; setting them off again would chain forever.
+            if (!IsArmed || other == null || other == this || !other.IsActiveEnemy || other is VolatileEnemy || other.IsHybrid) return false;
             var touching = Mathf.Max(definition.volatileCollisionRadius, CollisionRadius + other.CollisionRadius);
             return Vector2.Distance(transform.position, other.transform.position) <= touching;
         }

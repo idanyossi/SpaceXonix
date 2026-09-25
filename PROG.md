@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 340
-- Passed: 340
+- EditMode discovered: 342
+- Passed: 342
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -586,6 +586,24 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
   - Live check with Stage 3's two lasers: horizontal shots at rows 14, 35, 23, 71, 22, 66, 5, 78 and vertical at columns 39, 28, 44, 33, 23, 35, 23, 48.
 - **Board width left as is.** The board is 54×96 cells, exactly 9:16, the shape of a portrait phone. The camera fits it to the screen's width, so a wider board would shrink the whole playfield on phones; 60 columns would make it about 10% smaller. Taller phones (9:19.5 and up) have spare height, not width. The user chose to keep it if widening hurt mobile.
 - Tests: 2 new EditMode tests. One checks that each warning moves the laser and that the beam hits the new line and not the old; the other checks the picker's edge margin, separation and small-board fallback. Full suite: 340 passed, 0 failed.
+
+### Hybrid aliens (2026-09-25)
+
+- **Problem:** Volatile blasts destroyed every alien in range, which cleared the board for the player and made stages too easy.
+- **User's choice:** out of three options, *"kills spawn a hybrid"*. The GDD's Volatile section was updated to match.
+- **How it works now:** an alien caught in a Volatile blast becomes a hybrid instead of dying.
+  - It is converted in place: the same object, the same movement code (bouncer, linear or unstable) and the same heading. Converting in place avoids a new class for every combination and any trouble spawning into freshly blasted cells.
+  - Its charge goes off when it comes within half a cell of territory the player built. The permanent border never counts.
+  - It removes captured cells within the Volatile's territory radius (4 cells), **centred on the territory cell it touched**, hits the ship if it is inside the blast, and is used up.
+  - It gets the Volatile's spawn protection (0.75 s), so the blast that made it cannot set it off.
+  - Hybrids never explode on aliens, Volatile Aliens neither detonate on nor convert hybrids, and a pooled alien comes back normal. Explosions therefore cannot chain.
+- **Why the hole is centred on the contact:** the first live run centred it on the hybrid, which bounces about two cells short of territory. Only the circle's edge reached: 1 cell in one run, 13 in another. Centred on the contact cell, the next live run removed 29 cells, a clear half-circle bite. The explosion ring and the ship check use the same point.
+- **Look:** `HybridTint` (presentation only, on the Bouncer, Linear and Unstable prefabs) pulses the sprite between the alien's own colour and the Volatile's orange (1, .65, .3), three times a second. The shadow is a mesh, so it is not tinted.
+- **Verified live in Stage 1:**
+  - A real Volatile converted a real bouncer, which turned orange and armed while the other bouncer was untouched.
+  - After a row was captured below it, the hybrid hit it and removed 29 cells.
+  - The captured share went from 28.72% to 28.13%, and the player kept all lives.
+- **Tests:** 2 EditMode tests updated from "destroyed" to "converted", and 2 new ones. The first checks that the border is ignored, that the hole reaches exactly the radius into built territory, that bystanders are untouched and that pooled reuse clears the hybrid. The second checks that a Volatile does not detonate on a hybrid. Full suite: 342 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 

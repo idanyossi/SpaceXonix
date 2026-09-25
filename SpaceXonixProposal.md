@@ -481,7 +481,7 @@ When it collides with another standard alien, it explodes.
 The explosion:
 
 - destroys the Volatile Alien;
-- destroys nearby standard aliens;
+- turns nearby standard aliens into hybrids (see below) instead of destroying them;
 - kills the player if the ship is inside the blast radius;
 - removes part of already captured territory inside the blast radius;
 - does not automatically end the stage.
@@ -497,6 +497,16 @@ The Volatile Alien creates a deliberate risk/reward interaction:
 Explosion range is clearly telegraphed before or during detonation through VFX.
 
 Volatile Aliens are immune to their own initial collision trigger for a short spawn period to prevent immediate accidental explosions.
+
+### Hybrid Aliens (changed after playtesting, 2026-09-25)
+
+Destroying caught aliens made Volatile Aliens clear the board for the player. Instead, an alien caught in a Volatile blast becomes a hybrid:
+
+- it keeps its own type and movement (a hybrid Bouncer still bounces, a hybrid Unstable still changes speed);
+- it pulses in the Volatile's orange so the player can tell it is charged;
+- its charge goes off when it touches territory the player captured, never the permanent border: it blows a hole of the Volatile's territory radius centred on the territory it touched, hits the ship if it is inside the blast, and uses the hybrid up;
+- it gets the same short protection a new Volatile does, so the blast that made it cannot set it off;
+- hybrids never explode on other aliens, and Volatile Aliens neither detonate on nor convert hybrids, so explosions cannot chain.
 
 ## Laser Hazard
 

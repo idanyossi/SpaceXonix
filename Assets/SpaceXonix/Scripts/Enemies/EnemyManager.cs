@@ -14,6 +14,8 @@ namespace SpaceXonix.Enemies
         [SerializeField] private PlayerController playerController;
         [SerializeField] private PoolService poolService;
         [SerializeField] private EnemySpawnRequest[] initialSpawns;
+        [Tooltip("How close, in cells, a hybrid must come to built territory for its charge to go off. Aliens bounce just short of territory, so this must be above zero.")]
+        [SerializeField, Min(0f)] private float hybridContactCells = .5f;
         private readonly List<EnemyController> activeEnemies = new List<EnemyController>();
         private readonly List<GridCoordinate> occupancy = new List<GridCoordinate>();
         private readonly List<GridCoordinate> footprint = new List<GridCoordinate>();
@@ -55,7 +57,17 @@ namespace SpaceXonix.Enemies
             if (IsMovementSuspended) return;
             var lifecycleGeneration = gameManager != null ? gameManager.PlayerLifecycleGeneration : 0;
             for (var i = activeEnemies.Count - 1; i >= 0; i--)
+            {
                 if (activeEnemies[i] is VolatileEnemy volatileEnemy) volatileEnemy.AdvanceSpawnProtection(deltaTime);
+                activeEnemies[i].AdvanceHybridProtection(deltaTime);
+            }
+            var reach = boardManager != null ? boardManager.CellWorldSize * hybridContactCells : 0f;
+            for (var i = 0; i < activeEnemies.Count; i++)
+            {
+                if (!activeEnemies[i].IsHybridArmed || !activeEnemies[i].IsTouchingBuiltTerritory(reach, out var contact)) continue;
+                ResolveHybridDetonation(activeEnemies[i], contact);
+                return;
+            }
 
             for (var i = 0; i < activeEnemies.Count; i++)
             {
@@ -79,13 +91,15 @@ namespace SpaceXonix.Enemies
             var hitsPlayer = gameManager != null && playerController != null &&
                 gameManager.CanProcessPlayerContact(lifecycleGeneration) &&
                 Vector2.Distance(position, playerController.transform.position) <= definition.volatileBlastRadius * VolatileRadiusMultiplier + playerController.CollisionRadius;
+            // Aliens caught in the blast are not destroyed, which made Volatiles a board-clearer:
+            // each one comes back as a hybrid that keeps its movement and carries the charge.
             var destroyedEnemies = 0;
             for (var i = activeEnemies.Count - 1; i >= 0; i--)
             {
                 var enemy = activeEnemies[i];
-                if (enemy == source || enemy is VolatileEnemy) continue;
+                if (enemy == source || enemy is VolatileEnemy || enemy.IsHybrid) continue;
                 if (Vector2.Distance(position, enemy.transform.position) > definition.volatileBlastRadius * VolatileRadiusMultiplier + enemy.CollisionRadius) continue;
-                Despawn(enemy);
+                enemy.BecomeHybrid(definition);
                 destroyedEnemies++;
             }
             var radius = definition.volatileBlastRadius * VolatileRadiusMultiplier;
@@ -99,6 +113,34 @@ namespace SpaceXonix.Enemies
                 gameManager.ReportPlayerFailure(PlayerFailureReason.VolatileExplosion);
             return true;
         }
+        /// <summary>
+        /// A hybrid's charge goes off against the player's territory: it blows a hole the size of
+        /// the Volatile blast that made it, hits the ship if close, and uses the hybrid up. It never
+        /// affects other aliens, so hybrids cannot chain. The hole is centred on the territory it
+        /// touched, not on the alien: aliens bounce short of territory, so a hole centred on the
+        /// alien would only graze the edge.
+        /// </summary>
+        public bool ResolveHybridDetonation(EnemyController hybrid, GridCoordinate contact)
+        {
+            if (hybrid == null || !hybrid.IsHybrid || !activeEnemies.Contains(hybrid)) return false;
+            var definition = hybrid.HybridSource;
+            var lifecycleGeneration = gameManager != null ? gameManager.PlayerLifecycleGeneration : 0;
+            // The blast, its ring and its reach to the ship all come from where the hole is.
+            var position = boardManager.GetWorldPosition(contact);
+            position.z = hybrid.transform.position.z;
+            var radius = definition.volatileBlastRadius * VolatileRadiusMultiplier;
+            var hitsPlayer = gameManager != null && playerController != null &&
+                gameManager.CanProcessPlayerContact(lifecycleGeneration) &&
+                Vector2.Distance(position, playerController.transform.position) <= radius + playerController.CollisionRadius;
+            var destroyedTerritory = boardManager.RemoveCapturedWithinRadius(contact, definition.volatileTerritoryRadiusCells * VolatileRadiusMultiplier);
+            Despawn(hybrid);
+            LastExplosionDefinition = definition;
+            ExplosionOccurred?.Invoke(position, 0, destroyedTerritory);
+            if (hitsPlayer && gameManager.CanProcessPlayerContact(lifecycleGeneration))
+                gameManager.ReportPlayerFailure(PlayerFailureReason.VolatileExplosion);
+            return true;
+        }
+
         public void Register(EnemyController enemy)
         {
             if (enemy != null && enemy.IsActiveEnemy && !activeEnemies.Contains(enemy))

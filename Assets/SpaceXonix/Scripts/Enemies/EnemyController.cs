@@ -28,6 +28,62 @@ namespace SpaceXonix.Enemies
         /// <summary>Set when this alien touched a shielded ship; its trail hits are ignored until its body has fully left the trail.</summary>
         public bool HasShieldPassThroughGrace { get; private set; }
         public event Action<EnemyController> LogicalCellChanged;
+
+        /// <summary>
+        /// A hybrid is an alien a Volatile blast caught. It keeps its own movement but carries the
+        /// Volatile's charge, which goes off when it touches territory the player built.
+        /// </summary>
+        public bool IsHybrid { get; private set; }
+        /// <summary>The Volatile whose blast made this a hybrid; its blast sizes the hybrid's.</summary>
+        public EnemyDefinition HybridSource { get; private set; }
+        public float HybridProtectionRemaining { get; private set; }
+        public bool IsHybridArmed => IsActiveEnemy && IsHybrid && HybridProtectionRemaining <= 0f;
+        public event Action<EnemyController> HybridChanged;
+
+        public void BecomeHybrid(EnemyDefinition source)
+        {
+            if (!IsActiveEnemy || source == null) return;
+            IsHybrid = true;
+            HybridSource = source;
+            // The same grace a new Volatile gets, so it cannot go off in the blast that made it.
+            HybridProtectionRemaining = source.volatileSpawnProtection;
+            HybridChanged?.Invoke(this);
+        }
+
+        public void AdvanceHybridProtection(float deltaTime)
+        {
+            if (IsHybrid && deltaTime > 0f) HybridProtectionRemaining = Mathf.Max(0f, HybridProtectionRemaining - deltaTime);
+        }
+
+        /// <summary>
+        /// True when territory the player captured lies within <paramref name="reach"/> of the body,
+        /// with <paramref name="contact"/> the nearest such cell. The permanent border does not count:
+        /// it was never the player's to lose.
+        /// </summary>
+        public bool IsTouchingBuiltTerritory(float reach, out GridCoordinate contact)
+        {
+            contact = default;
+            if (!IsActiveEnemy || board == null || board.Model == null) return false;
+            board.GetCellsOverlappingCircle(transform.position, CollisionRadius + Mathf.Max(0f, reach), FootprintBuffer);
+            var found = false;
+            var nearest = float.MaxValue;
+            for (var i = 0; i < FootprintBuffer.Count; i++)
+            {
+                var cell = FootprintBuffer[i];
+                if (board.Model.GetCell(cell) != BoardCellState.Captured || board.Model.IsStructural(cell)) continue;
+                var distance = ((Vector2)(board.GetWorldPosition(cell) - transform.position)).sqrMagnitude;
+                if (distance >= nearest) continue;
+                nearest = distance; contact = cell; found = true;
+            }
+            return found;
+        }
+
+        private void ClearHybrid()
+        {
+            var was = IsHybrid;
+            IsHybrid = false; HybridSource = null; HybridProtectionRemaining = 0f;
+            if (was) HybridChanged?.Invoke(this);
+        }
         public virtual void Activate(EnemyDefinition data, BoardManager boardManager, GameManager gameManager, Vector3 position, Vector2 direction)
         {
             definition = data; board = boardManager; game = gameManager;
@@ -36,9 +92,10 @@ namespace SpaceXonix.Enemies
             traversedCells.Clear();
             LastTrailHitAccepted = false;
             HasShieldPassThroughGrace = false;
+            ClearHybrid();
             IsActiveEnemy = true; gameObject.SetActive(true);
         }
-        public virtual void Deactivate() { IsActiveEnemy = false; traversedCells.Clear(); LastTrailHitAccepted = false; HasShieldPassThroughGrace = false; gameObject.SetActive(false); }
+        public virtual void Deactivate() { IsActiveEnemy = false; traversedCells.Clear(); LastTrailHitAccepted = false; HasShieldPassThroughGrace = false; ClearHybrid(); gameObject.SetActive(false); }
         public void SetMovementSuspended(bool suspended) { if (movement != null) movement.MovementEnabled = !suspended; }
 
         /// <summary>Applies a stage modifier's speed scale, rescaling current motion without touching the definition.</summary>

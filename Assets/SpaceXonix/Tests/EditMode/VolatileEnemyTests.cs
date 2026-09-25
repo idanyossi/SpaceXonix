@@ -17,7 +17,7 @@ namespace SpaceXonix.Tests.EditMode
         [TestCase(typeof(BasicBouncer))]
         [TestCase(typeof(LinearEnemy))]
         [TestCase(typeof(UnstableEnemy))]
-        public void ProtectedVolatile_ArmsThenDetonatesWithNormalEnemy(Type targetType)
+        public void ProtectedVolatile_ArmsThenTurnsNormalEnemyIntoHybrid(Type targetType)
         {
             using (var fixture = new Fixture())
             {
@@ -30,20 +30,21 @@ namespace SpaceXonix.Tests.EditMode
                 fixture.Manager.SimulateVolatileInteractions(.01f);
 
                 Assert.That(volatileEnemy.IsActiveEnemy, Is.False);
-                Assert.That(target.IsActiveEnemy, Is.False);
-                Assert.That(fixture.Manager.ActiveEnemies, Is.Empty);
-                Assert.That(fixture.Occupancy, Is.Empty);
+                Assert.That(target.IsActiveEnemy, Is.True, "caught aliens are no longer destroyed");
+                Assert.That(target.IsHybrid, Is.True);
+                Assert.That(target.GetType(), Is.EqualTo(targetType), "a hybrid keeps its own movement");
+                Assert.That(fixture.Manager.ActiveEnemies, Has.Exactly(1).SameAs(target));
+                Assert.That(fixture.Occupancy, Has.Member(target.LogicalCell));
             }
         }
 
         [Test]
-        public void Explosion_FiresOnceDestroysNearEnemyAndLeavesDistantEnemy()
+        public void Explosion_FiresOnceConvertsNearEnemyAndLeavesDistantEnemy()
         {
             using (var fixture = new Fixture())
             {
                 var volatileEnemy = fixture.SpawnVolatile(new GridCoordinate(10, 10));
                 var near = fixture.SpawnTarget(typeof(BasicBouncer), new GridCoordinate(11, 10));
-                var nearPrefab = fixture.LastTargetPrefab; var nearDefinition = fixture.LastTargetDefinition;
                 var far = fixture.SpawnTarget(typeof(BasicBouncer), new GridCoordinate(20, 20));
                 near.transform.position = volatileEnemy.transform.position;
                 var explosions = 0;
@@ -52,14 +53,12 @@ namespace SpaceXonix.Tests.EditMode
                 fixture.Manager.SimulateVolatileInteractions(.5f);
                 fixture.Manager.SimulateVolatileInteractions(10f);
 
-                Assert.That(explosions, Is.EqualTo(1));
-                Assert.That(near.IsActiveEnemy, Is.False);
-                Assert.That(far.IsActiveEnemy, Is.True);
-                Assert.That(fixture.Manager.ActiveEnemies, Has.Exactly(1).SameAs(far));
+                Assert.That(explosions, Is.EqualTo(1), "the permanent border never sets a hybrid off");
+                Assert.That(near.IsActiveEnemy, Is.True);
+                Assert.That(near.IsHybrid, Is.True);
+                Assert.That(far.IsHybrid, Is.False, "outside the blast");
+                Assert.That(fixture.Manager.ActiveEnemies, Has.Count.EqualTo(2));
                 Assert.That(fixture.Occupancy, Has.Member(far.LogicalCell));
-                Assert.That(fixture.Manager.Spawn(nearPrefab, nearDefinition, new GridCoordinate(25, 25), Vector2.up), Is.True);
-                Assert.That(fixture.Manager.ActiveEnemies, Has.Member(near));
-                Assert.That(near.LogicalCell, Is.EqualTo(new GridCoordinate(25, 25)));
             }
         }
 
@@ -200,6 +199,68 @@ namespace SpaceXonix.Tests.EditMode
             }
         }
 
+        [Test]
+        public void Hybrid_BlowsAHoleInBuiltTerritoryButIgnoresTheBorder()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.CaptureColumn(30);
+                Assert.That(fixture.Board.Model.GetCell(new GridCoordinate(40, 20)), Is.EqualTo(BoardCellState.Captured));
+
+                var volatileEnemy = fixture.SpawnVolatile(new GridCoordinate(10, 10));
+                var hybrid = fixture.SpawnTarget(typeof(BasicBouncer), new GridCoordinate(11, 10));
+                var prefab = fixture.LastTargetPrefab; var definition = fixture.LastTargetDefinition;
+                var bystander = fixture.SpawnTarget(typeof(BasicBouncer), new GridCoordinate(20, 40));
+                hybrid.transform.position = volatileEnemy.transform.position;
+                var explosions = 0;
+                fixture.Manager.ExplosionOccurred += (_, __, ___) => explosions++;
+                fixture.Manager.SimulateVolatileInteractions(.5f);
+                Assert.That(hybrid.IsHybrid, Is.True);
+
+                // Right against the permanent border, armed: nothing happens.
+                hybrid.Relocate(fixture.Board.GetWorldPosition(new GridCoordinate(1, 20)));
+                fixture.Manager.SimulateVolatileInteractions(1f);
+                Assert.That(hybrid.IsActiveEnemy, Is.True);
+                Assert.That(explosions, Is.EqualTo(1));
+
+                // Touching territory the player built: it goes off and takes a bite out of it.
+                var edge = fixture.Board.GetWorldPosition(new GridCoordinate(29, 20));
+                hybrid.Relocate(edge + Vector3.right * fixture.Board.CellWorldSize * .5f);
+                fixture.Manager.SimulateVolatileInteractions(.01f);
+                Assert.That(explosions, Is.EqualTo(2));
+                Assert.That(hybrid.IsActiveEnemy, Is.False, "the charge is used up");
+                Assert.That(fixture.Board.Model.GetCell(new GridCoordinate(30, 20)), Is.EqualTo(BoardCellState.Uncaptured));
+                Assert.That(fixture.Board.Model.GetCell(new GridCoordinate(32, 20)), Is.EqualTo(BoardCellState.Uncaptured),
+                    "the hole is centred on the territory it hit, so it reaches the full radius in, not just the edge");
+                Assert.That(fixture.Board.Model.GetCell(new GridCoordinate(33, 20)), Is.EqualTo(BoardCellState.Captured), "and no further");
+                Assert.That(bystander.IsActiveEnemy && !bystander.IsHybrid, Is.True, "hybrid blasts never touch other aliens");
+
+                // Pooled aliens come back as ordinary ones.
+                Assert.That(fixture.Manager.Spawn(prefab, definition, new GridCoordinate(12, 12), Vector2.up), Is.True);
+                Assert.That(hybrid.IsActiveEnemy, Is.True);
+                Assert.That(hybrid.IsHybrid, Is.False);
+            }
+        }
+
+        [Test]
+        public void Volatile_DoesNotDetonateOnAHybrid()
+        {
+            using (var fixture = new Fixture())
+            {
+                var first = fixture.SpawnVolatile(new GridCoordinate(10, 10));
+                var hybrid = fixture.SpawnTarget(typeof(BasicBouncer), new GridCoordinate(11, 10));
+                hybrid.transform.position = first.transform.position;
+                fixture.Manager.SimulateVolatileInteractions(.5f);
+                Assert.That(hybrid.IsHybrid, Is.True);
+
+                var second = fixture.SpawnVolatile(new GridCoordinate(20, 20));
+                fixture.Manager.SimulateVolatileInteractions(.5f);
+                second.transform.position = hybrid.transform.position;
+                fixture.Manager.SimulateVolatileInteractions(.1f);
+                Assert.That(second.HasDetonated, Is.False, "a hybrid already carries a charge, so it cannot chain");
+            }
+        }
+
         private sealed class Fixture : IDisposable
         {
             private readonly GameObject root = new GameObject("VolatileFixture");
@@ -251,6 +312,13 @@ namespace SpaceXonix.Tests.EditMode
                 SetField(Game, "failureGateReleaseFrame", Time.frameCount - 1);
                 Invoke(Game, "LateUpdate");
                 return true;
+            }
+
+            /// <summary>Cuts a full column and reconnects, a real capture that fills the smaller side.</summary>
+            public void CaptureColumn(int column)
+            {
+                for (var row = 1; row < Board.Rows - 1; row++) Board.Model.MoveTo(new GridCoordinate(column, row));
+                Board.Model.MoveTo(new GridCoordinate(column, Board.Rows - 1));
             }
 
             public VolatileEnemy SpawnVolatile(GridCoordinate cell)

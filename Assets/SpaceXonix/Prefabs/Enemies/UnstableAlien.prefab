@@ -121,6 +121,7 @@ GameObject:
   - component: {fileID: 1140334788981069864}
   - component: {fileID: 1159450555293636049}
   - component: {fileID: 2592262976845322858}
+  - component: {fileID: 8018622248440206833}
   m_Layer: 0
   m_Name: UnstableAlien
   m_TagString: Untagged
@@ -197,6 +198,22 @@ MonoBehaviour:
   faceCamera: 1
   shadowLift: 0.01
   shadowScale: 0.8
+--- !u!114 &8018622248440206833
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7951906493875139093}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ee2ff0472b9b464e9fbc3bc52a5ccfe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Presentation.HybridTint
+  enemy: {fileID: 1159450555293636049}
+  chargeColor: {r: 1, g: 0.65, b: 0.3, a: 1}
+  pulseRate: 3
+  minimumCharge: 0.45
 --- !u!1 &7989984601955226368
 GameObject:
   m_ObjectHideFlags: 0
