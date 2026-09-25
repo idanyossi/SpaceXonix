@@ -37,6 +37,8 @@ namespace SpaceXonix.UI
         [Header("Lives")]
         [Tooltip("One ship icon per life, left to right. Lives beyond the row show as +N in the lives label.")]
         [SerializeField] private Image[] lifeIcons = new Image[0];
+        [Tooltip("When set, the life icons show the ship the player is flying.")]
+        [SerializeField] private SpaceXonix.Presentation.PlayerShipSkin playerSkin;
 
         [Header("Power meter")]
         [Tooltip("The animated energy gauge. When set it replaces the plain fill image below.")]
@@ -48,6 +50,14 @@ namespace SpaceXonix.UI
         [SerializeField, Min(0f)] private float captureAwardDisplaySeconds = 2f;
 
         private float awardShownAt = float.NegativeInfinity;
+
+        private void Start()
+        {
+            // The skin is applied in the player's Awake, so it is known by now.
+            var icon = playerSkin != null && playerSkin.Current != null ? playerSkin.Current.Preview : null;
+            if (icon == null || lifeIcons == null) return;
+            foreach (var life in lifeIcons) if (life != null) life.sprite = icon;
+        }
 
         private void OnEnable()
         {

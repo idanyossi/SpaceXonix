@@ -1,0 +1,7 @@
+16x16 Ship Collection by Master484 (M484 Games)
+https://opengameart.org/content/1616-ship-collection
+
+License: Public Domain / CC0. "These graphics are in the Public Domain. Attribution is not needed."
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Modified for SpaceXonix: ships cut from the sheet, rotated nose-up, with thruster frames added.

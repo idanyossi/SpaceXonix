@@ -130,11 +130,14 @@ namespace SpaceXonix.Tests.EditMode
         {
             private readonly Dictionary<string, float> floats = new Dictionary<string, float>();
             private readonly Dictionary<string, int> ints = new Dictionary<string, int>();
+            private readonly Dictionary<string, string> strings = new Dictionary<string, string>();
 
             public float GetFloat(string key, float defaultValue) => floats.TryGetValue(key, out var value) ? value : defaultValue;
             public void SetFloat(string key, float value) => floats[key] = value;
             public int GetInt(string key, int defaultValue) => ints.TryGetValue(key, out var value) ? value : defaultValue;
             public void SetInt(string key, int value) => ints[key] = value;
+            public string GetString(string key, string defaultValue) => strings.TryGetValue(key, out var value) ? value : defaultValue;
+            public void SetString(string key, string value) { strings[key] = value; }
             public void Save() { }
         }
 

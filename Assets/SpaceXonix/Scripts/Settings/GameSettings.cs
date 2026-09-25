@@ -20,6 +20,7 @@ namespace SpaceXonix.Settings
         private const string HardHighScoreKey = "spacexonix.campaign.highscore";
         private const string EasyHighScoreKey = "spacexonix.campaign.highscore.easy";
         private const string DifficultyKey = "spacexonix.campaign.difficulty";
+        private const string ShipSkinKey = "spacexonix.ship.skin";
 
         [Tooltip("Keeps this service alive across scene loads. Turn off for scene-local test rigs.")]
         [SerializeField] private bool persistAcrossScenes = true;
@@ -78,6 +79,7 @@ namespace SpaceXonix.Settings
             model.VibrationEnabled = store.GetInt(VibrationKey, 1) != 0;
             model.CameraShakeEnabled = store.GetInt(CameraShakeKey, 1) != 0;
             model.Difficulty = (DifficultyMode)store.GetInt(DifficultyKey, (int)DifficultyMode.Hard);
+            model.ShipSkin = store.GetString(ShipSkinKey, string.Empty);
             model.LoadHighScore(DifficultyMode.Hard, store.GetInt(HardHighScoreKey, 0));
             model.LoadHighScore(DifficultyMode.Easy, store.GetInt(EasyHighScoreKey, 0));
             suppressSave = false;
@@ -93,6 +95,7 @@ namespace SpaceXonix.Settings
             store.SetInt(VibrationKey, model.VibrationEnabled ? 1 : 0);
             store.SetInt(CameraShakeKey, model.CameraShakeEnabled ? 1 : 0);
             store.SetInt(DifficultyKey, (int)model.Difficulty);
+            store.SetString(ShipSkinKey, model.ShipSkin);
             store.SetInt(HardHighScoreKey, model.GetHighScore(DifficultyMode.Hard));
             store.SetInt(EasyHighScoreKey, model.GetHighScore(DifficultyMode.Easy));
             store.Save();

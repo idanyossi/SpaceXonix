@@ -18,6 +18,8 @@ only be used when their licence permits use in the project."*
 
 | `Assets/SpaceXonix/Art/ThirdParty/Ansimuz/Background/*.png` (5 layers) | Luis Zuno ([@ansimuz](https://ansimuz.com)) | [Space Background](https://opengameart.org/content/space-background-3), OpenGameArt | **CC0 1.0** | The drifting space backdrop behind the arena and menus |
 
+| `Assets/SpaceXonix/Art/ThirdParty/Master484/Skins/*.png` (6 ships, 2 frames each) | Master484 (M484 Games) | [16x16 Ship Collection](https://opengameart.org/content/1616-ship-collection), OpenGameArt | **CC0 1.0** ("These graphics are in the Public Domain. Attribution is not needed.") | Ship skins: Cobalt Delta, Viper, Ember Talon, Solar Hornet, Nebula Dart, Phantom Rail. Cut from the sheet, turned nose-up and given thruster frames by **SpaceXonix > Build Ship Skins**; the sheet itself stays in the git-ignored `AssetSources/` |
+
 The licence text ships beside the art in `Art/ThirdParty/Ansimuz/LICENSE.txt` and `Art/ThirdParty/Ansimuz/Background/LICENSE.txt`. CC0 needs no
 attribution; it is recorded here anyway, and ansimuz asks that you *"spread the word"*.
 
@@ -70,6 +72,11 @@ The game runs without these, using the stand-ins listed.
 Section 12 of `IMPLEMENTATION_PLAN.md` settled the visual direction: **pixel-art sprites** on a
 diagonal-down perspective camera, with gameplay staying on the XY plane. New art should match
 ansimuz's style: a 16-pixel grid, a limited palette, and a top-down view.
+
+### Considered for ship skins and not used
+
+- **Kenney Pixel Shmup** (CC0): licence-compatible, but its heavy dark outline and larger 32-pixel ships clash with ansimuz's outline-free 16-pixel art. Master484's collection matches it far more closely.
+- **Kenney Space Shooter Redux / Remastered ships** (CC0): smooth vector art, the same mismatch that ruled out Kenney's effects.
 
 ### Why most itch.io packs were ruled out
 

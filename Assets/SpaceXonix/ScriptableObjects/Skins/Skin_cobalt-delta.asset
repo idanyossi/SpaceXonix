@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73abe8a90eb8bc64ea14e2eda9af69c0, type: 3}
+  m_Name: Skin_cobalt-delta
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Presentation.ShipSkinDefinition
+  id: cobalt-delta
+  displayName: Cobalt Delta
+  frames:
+  - {fileID: 21300000, guid: b6d9bc25633dc5940b7285522e246977, type: 3}
+  - {fileID: 21300000, guid: 3e7ea75ee13b40f4c9bfbd4f9622dee0, type: 3}
+  framesPerSecond: 12

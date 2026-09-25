@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb7fdccd954cf0d45985cd19863e396a, type: 3}
+  m_Name: ShipSkinLibrary
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Presentation.ShipSkinLibrary
+  skins:
+  - {fileID: 11400000, guid: 1c20e236fad88154d81abc60955c7add, type: 2}
+  - {fileID: 11400000, guid: c2c3bf625ffdf0449a074137e3edc0fe, type: 2}
+  - {fileID: 11400000, guid: 19774fc364578ea4abe5c24e2a23a5d3, type: 2}
+  - {fileID: 11400000, guid: 796abf18258ee684f8ff501d673a5a41, type: 2}
+  - {fileID: 11400000, guid: 0edb1a90021122942a9f8768a9b6523f, type: 2}
+  - {fileID: 11400000, guid: 28036d4ed87ba694e8556145a372bdde, type: 2}
+  - {fileID: 11400000, guid: d00bead62de7829488027144dae50301, type: 2}

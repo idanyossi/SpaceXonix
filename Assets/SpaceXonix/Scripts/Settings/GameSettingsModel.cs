@@ -21,6 +21,7 @@ namespace SpaceXonix.Settings
         private bool vibrationEnabled = true;
         private bool cameraShakeEnabled = true;
         private DifficultyMode difficulty = DifficultyMode.Hard;
+        private string shipSkin = string.Empty;
         // One record per difficulty: Hard's modifier bonuses inflate its scores, so a shared
         // record would make an Easy run permanently uncompetitive.
         private readonly int[] campaignHighScores = new int[2];
@@ -64,6 +65,22 @@ namespace SpaceXonix.Settings
             set => Assign(ref difficulty, value);
         }
 
+        /// <summary>
+        /// The id of the ship skin the player picked, or empty for the default ship. Like the
+        /// difficulty it is a choice rather than a preference, so resetting the settings keeps it.
+        /// </summary>
+        public string ShipSkin
+        {
+            get => shipSkin;
+            set
+            {
+                value ??= string.Empty;
+                if (shipSkin == value) return;
+                shipSkin = value;
+                Changed?.Invoke();
+            }
+        }
+
         /// <summary>Best campaign score on the selected difficulty.</summary>
         public int CampaignHighScore => GetHighScore(difficulty);
 
@@ -96,8 +113,8 @@ namespace SpaceXonix.Settings
             sfxVolume = DefaultSfxVolume;
             vibrationEnabled = true;
             cameraShakeEnabled = true;
-            // Difficulty and the high scores are run choices and records, not preferences,
-            // so resetting the settings leaves both alone.
+            // Difficulty, the ship skin and the high scores are choices and records, not
+            // preferences, so resetting the settings leaves them alone.
             Changed?.Invoke();
         }
 

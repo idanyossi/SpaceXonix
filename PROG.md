@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 355
-- Passed: 355
+- EditMode discovered: 360
+- Passed: 360
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -713,6 +713,33 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - Stage modifiers only ever roll on Hard, so a modifier that needs lasers now counts a stage's Hard-only lasers too.
 - Verified live: on a Hard run jumped to the boss stage through the real `LoadCurrentStage`, the Alien Core was active with 2 lasers (horizontal and vertical), and the briefing read "Lasers: 2".
 - Tests: 2 new EditMode tests (the real boss stage asset has no lasers on Easy and two resolvable ones, one per axis, on Hard; Hard-only lasers add to a stage's own). Full suite: 355 passed, 0 failed.
+
+### Ship skins and the hangar (2026-09-25)
+
+- **Seven skins:**
+  - The default is **Crimson Vanguard**, ansimuz's original ship.
+  - Six come from **Master484's 16x16 Ship Collection** (OpenGameArt, CC0), one fighter from each colour group plus a second red: Cobalt Delta, Viper, Ember Talon, Solar Hornet, Nebula Dart, Phantom Rail.
+  - They are 16 pixels wide like ansimuz's ship, with the same flat, outline-free style.
+  - **Rejected:** Kenney Pixel Shmup, whose heavy outline and 32-pixel ships clashed, and Kenney's vector ships.
+- **`ShipSkinBuilder` (SpaceXonix > Build Ship Skins):**
+  - Finds the sheet's grid (white-framed 16-pixel cells on a 20-pixel stride, five 110-pixel colour groups).
+  - Cuts each chosen ship and turns it a quarter turn from nose-right to nose-up, which is lossless.
+  - Draws a two-frame thruster under the rearmost row, white-hot to orange to red, with the outer columns shorter. Every skin then animates like the default.
+  - Writes `ShipSkinDefinition` assets plus a `ShipSkinLibrary`, and builds the hangar and the game-scene wiring.
+- **Menu:** a **SKINS** button in the main menu's top-right corner opens `SkinSelectPanel`, "CHOOSE YOUR SHIP".
+  - It is a three-column grid of card-framed tiles, each with the ship animating at 8× on a slot screen and its name.
+  - Tapping a tile equips it and saves the choice. The equipped tile is lit and carries an "EQUIPPED" badge.
+- **Saving:** the choice is stored in `GameSettingsModel.ShipSkin` under the PlayerPrefs key `spacexonix.ship.skin`. `ISettingsStore` gained string get/set for it. Like the difficulty, it survives a settings reset, and an unknown id falls back to the default ship.
+- **In game:**
+  - `PlayerShipSkin` swaps the player's frames in `Awake` and rescales the visual so it keeps its authored width. The visual-equals-hitbox rule holds for every skin (checked live: Viper visual 0.75 = hitbox 0.75).
+  - The HUD's life icons show the equipped ship.
+- **Builder bug found:** the first build saved empty library references in both scenes. Opening a scene unloads assets nothing references yet, so the loaded library object was dead by the time it was assigned. The builder now re-loads the library by path after each scene opens.
+- **Verified live:**
+  - The menu shows SKINS top-right; the hangar grid showed all seven ships animating.
+  - Tapping Viper equipped it and wrote `viper` to PlayerPrefs.
+  - The game then flew the Viper at hitbox width, with Viper life icons.
+  - The saved choice was reset to the default afterwards, so the user's own setting is untouched.
+- Tests: 5 new EditMode tests (at least five distinct, animated, 16-pixel point-filtered skins with Crimson Vanguard as default; an unknown or empty choice falls back to the default; every skin keeps the ship exactly its hitbox width; the hangar equips the tapped ship, saves it and marks only that tile; the choice survives a settings reset). Full suite: 360 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 

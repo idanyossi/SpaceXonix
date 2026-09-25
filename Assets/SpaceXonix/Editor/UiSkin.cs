@@ -76,8 +76,10 @@ namespace SpaceXonix.EditorTools
         {
             // A prefab instance inside a scene is styled through its prefab, not with overrides.
             if (node.parent != null && PrefabUtility.IsOutermostPrefabInstanceRoot(node.gameObject)) return;
-            // Upgrade cards have their own look, built by SpaceXonix > Build Upgrade Cards.
+            // Upgrade cards and hangar tiles have their own card frame, built by their own tools.
             if (node.GetComponent<SpaceXonix.UI.UpgradeCard>() != null) return;
+            if (node.GetComponent<Button>() != null && node.GetComponent<Image>() is Image framed &&
+                framed.sprite != null && framed.sprite.name.StartsWith("UI_Card")) return;
 
             var image = node.GetComponent<Image>();
             var button = node.GetComponent<Button>();

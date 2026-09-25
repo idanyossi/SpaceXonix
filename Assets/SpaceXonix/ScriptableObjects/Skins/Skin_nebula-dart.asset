@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73abe8a90eb8bc64ea14e2eda9af69c0, type: 3}
+  m_Name: Skin_nebula-dart
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Presentation.ShipSkinDefinition
+  id: nebula-dart
+  displayName: Nebula Dart
+  frames:
+  - {fileID: 21300000, guid: 56d28a3b63416b94fa9f0e6cc6f41559, type: 3}
+  - {fileID: 21300000, guid: 9186e57c65bfc8b45a8504586ad9b9e8, type: 3}
+  framesPerSecond: 12

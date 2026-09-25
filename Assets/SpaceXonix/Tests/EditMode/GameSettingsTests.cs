@@ -152,6 +152,7 @@ namespace SpaceXonix.Tests.EditMode
         {
             private readonly Dictionary<string, float> floats = new Dictionary<string, float>();
             private readonly Dictionary<string, int> ints = new Dictionary<string, int>();
+            private readonly Dictionary<string, string> strings = new Dictionary<string, string>();
 
             public int Writes { get; private set; }
             public int Saves { get; private set; }
@@ -160,6 +161,8 @@ namespace SpaceXonix.Tests.EditMode
             public void SetFloat(string key, float value) { floats[key] = value; Writes++; }
             public int GetInt(string key, int defaultValue) => ints.TryGetValue(key, out var value) ? value : defaultValue;
             public void SetInt(string key, int value) { ints[key] = value; Writes++; }
+            public string GetString(string key, string defaultValue) => strings.TryGetValue(key, out var value) ? value : defaultValue;
+            public void SetString(string key, string value) { strings[key] = value; Writes++; }
             public void Save() => Saves++;
         }
 

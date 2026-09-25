@@ -8346,6 +8346,7 @@ MonoBehaviour:
   - {fileID: 1938180959}
   - {fileID: 887453635}
   - {fileID: 1301700306}
+  playerSkin: {fileID: 1987019904147353762}
   powerGauge: {fileID: 1168304701}
   powerFill: {fileID: 857047164}
   powerChargingColor: {r: 0.2, g: 0.6, b: 1, a: 1}
@@ -11370,14 +11371,17 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8572948225031617858, guid: 51b08254de47fa54086d614da13c194f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1987019904147353762}
   m_SourcePrefab: {fileID: 100100000, guid: 51b08254de47fa54086d614da13c194f, type: 3}
 --- !u!114 &1987019904147353759 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 9073928944180646172, guid: 51b08254de47fa54086d614da13c194f, type: 3}
   m_PrefabInstance: {fileID: 1987019904147353758}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1987019904147353761}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 60a20dd71444aa14d92b85de870873ad, type: 3}
@@ -11388,12 +11392,31 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7869575738276991704, guid: 51b08254de47fa54086d614da13c194f, type: 3}
   m_PrefabInstance: {fileID: 1987019904147353758}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1987019904147353761}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7655a0163d27daf4f81697b2d1b5ee1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Presentation.ActorVisual
+--- !u!1 &1987019904147353761 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8572948225031617858, guid: 51b08254de47fa54086d614da13c194f, type: 3}
+  m_PrefabInstance: {fileID: 1987019904147353758}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1987019904147353762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1987019904147353761}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e89495a59f6c5dc4a887f870aa26c7e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Presentation.PlayerShipSkin
+  library: {fileID: 11400000, guid: cfa4b977e28b4944f950509c8eaa3ed4, type: 2}
+  actorVisual: {fileID: 1987019904147353760}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
