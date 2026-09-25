@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using SpaceXonix.Board;
@@ -214,6 +215,41 @@ namespace SpaceXonix.Tests.EditMode
         {
             for (var i = 0; i < parent.childCount; i++) if (parent.GetChild(i).gameObject.activeSelf) return parent.GetChild(i).gameObject;
             return null;
+        }
+
+        [Test]
+        public void RandomLines_MoveAtEachWarningAndTheBeamFollows()
+        {
+            using (var fixture = new Fixture(LaserAxis.Horizontal))
+            {
+                var lines = new Queue<int>(new[] { 30, 55 });
+                fixture.Emitter.SetLinePicker(_ => lines.Dequeue());
+
+                fixture.Emitter.Tick(2.01f);
+                Assert.That(fixture.Emitter.State, Is.EqualTo(LaserState.Warning));
+                Assert.That(fixture.Emitter.Line, Is.EqualTo(30), "the warning appears on the newly picked row");
+                fixture.Emitter.Tick(.8f);
+                Assert.That(fixture.Emitter.State, Is.EqualTo(LaserState.Firing));
+                Assert.That(fixture.Emitter.ContainsPoint(fixture.Board.GetWorldPosition(new GridCoordinate(5, 30))), Is.True, "the beam fires where it warned");
+                Assert.That(fixture.Emitter.ContainsPoint(fixture.Board.GetWorldPosition(new GridCoordinate(5, 10))), Is.False, "the placed row is no longer dangerous");
+
+                fixture.Emitter.Tick(.3f + 2.01f);
+                Assert.That(fixture.Emitter.Line, Is.EqualTo(55), "the next shot comes from somewhere new");
+            }
+        }
+
+        [Test]
+        public void LinePicker_KeepsClearOfEdgesAndOtherLasers()
+        {
+            var picker = new LaserLinePicker(1234);
+            var occupied = new List<int> { 40 };
+            for (var i = 0; i < 200; i++)
+            {
+                var line = picker.Pick(96, 4, 8, occupied);
+                Assert.That(line, Is.InRange(4, 91), "never on the captured border");
+                Assert.That(Math.Abs(line - 40), Is.GreaterThanOrEqualTo(8), "kept apart from the other laser when there is room");
+            }
+            Assert.That(picker.Pick(5, 4, 8, null), Is.EqualTo(2), "a board too small for the margin falls back to the middle");
         }
 
         private sealed class Fixture : IDisposable

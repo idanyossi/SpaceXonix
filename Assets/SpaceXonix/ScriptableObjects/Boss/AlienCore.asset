@@ -16,7 +16,7 @@ MonoBehaviour:
   columnFraction: 0.5
   rowFraction: 0.78
   bodyRadius: 1.6
-  fireInterval: 2.2
+  fireInterval: 1.9
   projectileSpeed: 4.5
   projectilesPerVolley: 3
   volleySpreadDegrees: 24

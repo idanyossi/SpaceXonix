@@ -5965,6 +5965,10 @@ MonoBehaviour:
   emitters:
   - {fileID: 1078973437}
   - {fileID: 1786466342}
+  randomizeLines: 1
+  edgeMargin: 4
+  separation: 8
+  randomSeed: 0
 --- !u!4 &1884602790
 Transform:
   m_ObjectHideFlags: 0

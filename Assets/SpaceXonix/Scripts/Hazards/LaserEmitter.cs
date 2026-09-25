@@ -21,6 +21,7 @@ namespace SpaceXonix.Hazards
         private GameObject activeBeam;
         private LaserCycleModel cycle;
         private bool playerHitThisFiringPhase;
+        private Func<LaserEmitter, int> linePicker;
 
         public LaserState State => cycle != null ? cycle.State : LaserState.Cooldown;
         public LaserAxis Axis => definition.axis;
@@ -34,6 +35,33 @@ namespace SpaceXonix.Hazards
 
         /// <summary>Stage modifier (Laser Storm): scales the cooldown of the next built cycle.</summary>
         public void SetCooldownMultiplier(float multiplier) => CooldownMultiplier = Mathf.Max(.05f, multiplier);
+
+        /// <summary>Row for a horizontal laser, column for a vertical one.</summary>
+        public int Line
+        {
+            get
+            {
+                if (board == null) return 0;
+                var cell = board.WorldToGrid(transform.position);
+                return definition.axis == LaserAxis.Horizontal ? cell.Y : cell.X;
+            }
+        }
+
+        /// <summary>
+        /// When set, the laser moves to the line this returns at the start of every warning, so each
+        /// shot comes from somewhere new. Null keeps it on its placed line.
+        /// </summary>
+        public void SetLinePicker(Func<LaserEmitter, int> picker) => linePicker = picker;
+
+        /// <summary>Places the laser on a row (horizontal) or column (vertical).</summary>
+        public void MoveToLine(int line)
+        {
+            if (board == null) return;
+            var cell = definition.axis == LaserAxis.Horizontal ? new GridCoordinate(0, line) : new GridCoordinate(line, 0);
+            var position = board.GetWorldPosition(cell);
+            position.z = transform.position.z;
+            transform.position = position;
+        }
 
         public void SetDefinition(LaserDefinition laserDefinition)
         {
@@ -85,6 +113,9 @@ namespace SpaceXonix.Hazards
         {
             if (state == LaserState.Warning)
             {
+                // Moving only here, before the warning shows, keeps the warning, the beam and the hit
+                // test on one line for the whole shot.
+                if (linePicker != null) MoveToLine(linePicker(this));
                 ReleaseBeam(); activeWarning = Acquire(warningPrefab); Configure(activeWarning, warningHeight); WarningStarted?.Invoke();
             }
             else if (state == LaserState.Firing)

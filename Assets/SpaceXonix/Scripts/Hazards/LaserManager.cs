@@ -23,6 +23,17 @@ namespace SpaceXonix.Hazards
         [SerializeField] private GameObject warningPrefab;
         [SerializeField] private GameObject beamPrefab;
         [SerializeField] private LaserEmitter[] emitters;
+        [Header("Random lines")]
+        [Tooltip("Move each laser to a new row or column at every warning, instead of firing along its placed line all stage.")]
+        [SerializeField] private bool randomizeLines;
+        [Tooltip("Rows or columns kept clear at each edge. The border is always captured, so a beam there threatens nothing.")]
+        [SerializeField, Min(0)] private int edgeMargin = 4;
+        [Tooltip("Preferred gap, in cells, from other lasers on the same axis.")]
+        [SerializeField, Min(0)] private int separation = 8;
+        [SerializeField] private int randomSeed;
+
+        private readonly List<int> occupiedLines = new List<int>();
+        private LaserLinePicker linePicker;
 
         public LaserEmitter[] Emitters => emitters;
         public float CooldownMultiplier { get; private set; } = 1f;
@@ -87,7 +98,32 @@ namespace SpaceXonix.Hazards
                 position.z = emitter.transform.position.z;
                 emitter.transform.position = position;
                 emitter.Initialize(boardManager, gameManager, poolService, warningPrefab, beamPrefab);
+                emitter.SetLinePicker(randomizeLines ? PickLine : (Func<LaserEmitter, int>)null);
             }
+        }
+
+        /// <summary>Turns random lines on or off. Public for tests and tuning.</summary>
+        public void SetRandomizeLines(bool value, int seed = 0)
+        {
+            randomizeLines = value;
+            randomSeed = seed;
+            linePicker = null;
+            if (emitters == null) return;
+            foreach (var emitter in emitters)
+                if (emitter != null) emitter.SetLinePicker(value ? PickLine : (Func<LaserEmitter, int>)null);
+        }
+
+        private int PickLine(LaserEmitter emitter)
+        {
+            linePicker ??= new LaserLinePicker(randomSeed);
+            occupiedLines.Clear();
+            // The laser's own line counts too, so consecutive shots never repeat the same lane.
+            foreach (var other in emitters)
+                if (other != null && other.gameObject.activeInHierarchy && other.Definition != null &&
+                    other.Definition.axis == emitter.Definition.axis)
+                    occupiedLines.Add(other.Line);
+            var count = emitter.Definition.axis == LaserAxis.Horizontal ? boardManager.Rows : boardManager.Columns;
+            return linePicker.Pick(count, edgeMargin, separation, occupiedLines);
         }
 
         private void Start()
@@ -95,7 +131,11 @@ namespace SpaceXonix.Hazards
             if (gameManager != null) gameManager.StageCompleted += ShutdownEmitters;
             if (emitters == null) return;
             for (var i = 0; i < emitters.Length; i++)
-                if (emitters[i] != null) emitters[i].Initialize(boardManager, gameManager, poolService, warningPrefab, beamPrefab);
+            {
+                if (emitters[i] == null) continue;
+                emitters[i].Initialize(boardManager, gameManager, poolService, warningPrefab, beamPrefab);
+                emitters[i].SetLinePicker(randomizeLines ? PickLine : (Func<LaserEmitter, int>)null);
+            }
         }
 
         private void OnDestroy()

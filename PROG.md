@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 338
-- Passed: 338
+- EditMode discovered: 340
+- Passed: 340
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -575,6 +575,17 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - **Lives are shown as ships.** The top-left number and its "LIVES" caption were replaced by a row of six player-ship icons (`ship_2` at exactly 3×, 48×72, so the pixels stay crisp), one per life. Reinforced Hull can raise lives past six, so the old lives label now sits after the row and shows `+N` for any beyond it. With no icons assigned, the HUD falls back to the number.
 - Verified live: two menu clicks each played `UiInteraction`, and a stage showed five ships for Easy's four lives plus one granted.
 - Tests: 4 new EditMode tests. They cover the ship row with its overflow count, menu buttons and toggles clicking while the gameplay buttons stay silent, and every root canvas in both scenes carrying the click sound. Full suite: 338 passed, 0 failed.
+
+### Playtest tuning (2026-09-25)
+
+- **Boss fires a little more often:** Alien Core `fireInterval` went from 2.2 s to 1.9 s, about 16% more volleys, because its shots are small and easy to miss. The volley size, spread and speed are unchanged.
+- **Lasers fire from random lines.** A stage's `LaserPlacement.line` used to fix each laser to one row or column all stage, so players learned the safe lanes. With `LaserManager.randomizeLines` on in the game scene, each laser moves to a newly picked row (horizontal) or column (vertical) at the start of every warning. Lines are never diagonal.
+  - Moving only at the warning keeps the warning line, the beam and the hit test on one line for the whole shot.
+  - `LaserLinePicker` keeps 4 lines clear of each edge, where the always-captured border makes a beam pointless. It also tries to keep 8 lines from every laser on the same axis, including the laser's own last line, so consecutive shots never repeat a lane.
+  - The placed line now serves only as the starting position.
+  - Live check with Stage 3's two lasers: horizontal shots at rows 14, 35, 23, 71, 22, 66, 5, 78 and vertical at columns 39, 28, 44, 33, 23, 35, 23, 48.
+- **Board width left as is.** The board is 54×96 cells, exactly 9:16, the shape of a portrait phone. The camera fits it to the screen's width, so a wider board would shrink the whole playfield on phones; 60 columns would make it about 10% smaller. Taller phones (9:19.5 and up) have spare height, not width. The user chose to keep it if widening hurt mobile.
+- Tests: 2 new EditMode tests. One checks that each warning moves the laser and that the beam hits the new line and not the old; the other checks the picker's edge margin, separation and small-board fallback. Full suite: 340 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 
