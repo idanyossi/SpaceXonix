@@ -7,9 +7,10 @@ using UnityEngine.UI;
 namespace SpaceXonix.UI
 {
     /// <summary>
-    /// The hangar: a grid of every ship skin, each tile showing the ship itself, animated, with its
-    /// name. Tapping a tile equips it at once and saves the choice; the equipped tile is lit and
-    /// marked. The tiles are laid out by the editor builder, one per skin in the library.
+    /// The hangar, shown after the difficulty is picked: a grid of every ship, each tile showing the
+    /// ship itself, animated, with its name, its perk and its drawback. Tapping a tile equips it and
+    /// saves the choice; the equipped tile is lit and marked. Launch starts the run in that ship.
+    /// The tiles are laid out by the editor builder, one per ship in the library.
     /// </summary>
     public sealed class SkinSelectPanel : MonoBehaviour
     {
@@ -20,6 +21,8 @@ namespace SpaceXonix.UI
             public Image frame;
             public UiSpriteAnimator preview;
             public Text nameLabel;
+            public Text perkLabel;
+            public Text drawbackLabel;
             public GameObject equippedBadge;
         }
 
@@ -28,8 +31,11 @@ namespace SpaceXonix.UI
         [SerializeField] private Tile[] tiles = new Tile[0];
         [SerializeField] private Sprite tileFrame;
         [SerializeField] private Sprite equippedFrame;
+        [SerializeField] private Button launchButton;
+        [SerializeField] private Button backButton;
 
         private GameSettingsModel settings;
+        private Action launch;
 
         public bool IsShown => root != null && root.activeSelf;
         public int TileCount => tiles.Length;
@@ -37,6 +43,8 @@ namespace SpaceXonix.UI
 
         private void Awake()
         {
+            if (launchButton != null) launchButton.onClick.AddListener(Launch);
+            if (backButton != null) backButton.onClick.AddListener(Hide);
             for (var i = 0; i < tiles.Length; i++)
             {
                 if (tiles[i]?.button == null) continue;
@@ -48,6 +56,8 @@ namespace SpaceXonix.UI
         private void OnDestroy()
         {
             foreach (var tile in tiles) if (tile?.button != null) tile.button.onClick.RemoveAllListeners();
+            if (launchButton != null) launchButton.onClick.RemoveListener(Launch);
+            if (backButton != null) backButton.onClick.RemoveListener(Hide);
         }
 
         /// <summary>Opens the hangar. The settings model is passed in so tests need no live service.</summary>
@@ -60,13 +70,23 @@ namespace SpaceXonix.UI
                 if (tiles[i] == null || skin == null) continue;
                 if (tiles[i].preview != null) tiles[i].preview.SetFrames(skin.frames, skin.framesPerSecond);
                 if (tiles[i].nameLabel != null) tiles[i].nameLabel.text = skin.displayName.ToUpperInvariant();
+                var stats = skin.stats ?? ShipStats.Neutral;
+                if (tiles[i].perkLabel != null) tiles[i].perkLabel.text = stats.perk;
+                if (tiles[i].drawbackLabel != null) tiles[i].drawbackLabel.text = stats.drawback;
             }
             RefreshEquipped();
             if (root != null) root.SetActive(true);
         }
 
-        /// <summary>For the menu button, which can only call a method without arguments.</summary>
-        public void Open() => Show();
+        /// <summary>Opens the hangar as the last step before a run; Launch then calls <paramref name="onLaunch"/>.</summary>
+        public void OpenForLaunch(Action onLaunch, GameSettingsModel model = null)
+        {
+            launch = onLaunch;
+            Show(model);
+        }
+
+        /// <summary>Starts the run in the equipped ship. Public so tests can launch without a click.</summary>
+        public void Launch() => launch?.Invoke();
 
         public void Hide()
         {

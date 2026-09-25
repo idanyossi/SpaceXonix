@@ -136,6 +136,50 @@ namespace SpaceXonix.Tests.EditMode
             }
         }
 
+        [Test]
+        public void Manager_MultipliesTheFlownShipsStatsOnTopOfUpgrades()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.FlyShip(new SpaceXonix.Presentation.ShipStats
+                {
+                    speed = .88f, safeSpeed = .8f, exposedSpeed = 1.25f, powerCharge = 1.4f, shotSpeed = .65f,
+                    pickupChance = 1.5f, abilityDuration = .75f
+                });
+                fixture.TakeByType(UpgradeType.ImprovedThrusters);
+                Assert.That(fixture.Player.MoveSpeed, Is.EqualTo(5f * 1.1f * .88f).Within(.0001f), "upgrade and ship multiply");
+                Assert.That(fixture.Player.SafeSpeedMultiplier, Is.EqualTo(.8f));
+                Assert.That(fixture.Player.ExposedSpeedMultiplier, Is.EqualTo(1.25f));
+                Assert.That(fixture.Meter.ShotSpeedMultiplier, Is.EqualTo(.65f));
+                Assert.That(fixture.MeterGainMultiplier, Is.EqualTo(1.4f).Within(.0001f));
+
+                fixture.TakeByType(UpgradeType.ShieldCapacitor);
+                Assert.That(fixture.PowerUps.GetEffectDuration(fixture.ShieldDefinition), Is.EqualTo(4f * 1.25f * .75f).Within(.0001f));
+                var shipPickup = (float)typeof(PowerUpManager).GetField("shipPickupChanceMultiplier", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(fixture.PowerUps);
+                Assert.That(shipPickup, Is.EqualTo(1.5f));
+            }
+        }
+
+        [Test]
+        public void Ship_FliesAtItsZoneSpeedOnTerritoryAndInTheOpen()
+        {
+            foreach (var (direction, exposed) in new[] { (SpaceXonix.Player.CardinalDirection.Up, false), (SpaceXonix.Player.CardinalDirection.Right, true) })
+            {
+                using (var fixture = new Fixture())
+                {
+                    fixture.FlyShip(new SpaceXonix.Presentation.ShipStats { safeSpeed = .8f, exposedSpeed = 1.25f });
+                    fixture.Steer(direction);
+                    // Leave the border first when heading into the open, so the ship is out drawing a trail.
+                    if (exposed) for (var i = 0; i < 10 && !fixture.Board.IsPlayerExposed; i++) fixture.Player.AdvanceMovement(.02f);
+                    Assert.That(fixture.Board.IsPlayerExposed, Is.EqualTo(exposed));
+                    var before = fixture.Player.transform.position;
+                    fixture.Player.AdvanceMovement(.01f);
+                    var moved = Vector3.Distance(before, fixture.Player.transform.position);
+                    Assert.That(moved, Is.EqualTo(5f * (exposed ? 1.25f : .8f) * .01f).Within(.002f), exposed ? "in the open" : "on territory");
+                }
+            }
+        }
+
         private static UpgradeDefinition Definition(UpgradeType type, float perStack, int maxStacks)
         {
             var definition = ScriptableObject.CreateInstance<UpgradeDefinition>();
@@ -155,6 +199,31 @@ namespace SpaceXonix.Tests.EditMode
             public readonly PowerUpManager PowerUps;
             public readonly UpgradeManager Manager;
             public readonly PowerUpDefinition ShieldDefinition;
+            public readonly PowerMeter Meter;
+            public readonly SpaceXonix.Board.BoardManager Board;
+
+            public float MeterGainMultiplier
+            {
+                get
+                {
+                    var model = typeof(PowerMeter).GetField("model", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Meter);
+                    return (float)model.GetType().GetProperty("GainMultiplier").GetValue(model);
+                }
+            }
+
+            /// <summary>Puts the player in a ship with these stats and re-applies the run.</summary>
+            public void FlyShip(SpaceXonix.Presentation.ShipStats stats)
+            {
+                var skin = Own(ScriptableObject.CreateInstance<SpaceXonix.Presentation.ShipSkinDefinition>());
+                skin.stats = stats;
+                var ship = Player.gameObject.AddComponent<SpaceXonix.Presentation.PlayerShipSkin>();
+                ship.Apply(skin);
+                Set(Manager, "playerShip", ship);
+                Manager.ApplyToSystems();
+            }
+
+            public void Steer(SpaceXonix.Player.CardinalDirection direction) =>
+                typeof(PlayerController).GetMethod("RequestDirection", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(Player, new object[] { direction });
 
             public Fixture()
             {
@@ -167,11 +236,12 @@ namespace SpaceXonix.Tests.EditMode
                 var boardObject = Own(new GameObject("Board"));
                 var board = boardObject.AddComponent<SpaceXonix.Board.BoardManager>();
                 board.Initialize();
+                Board = board;
                 Game = root.AddComponent<SpaceXonix.Core.GameManager>();
                 Set(Game, "inputRouter", input); Set(Game, "playerController", Player); Set(Game, "boardManager", board);
                 Invoke(Game, "Awake");
                 PowerUps = root.AddComponent<PowerUpManager>();
-                var meter = root.AddComponent<PowerMeter>();
+                var meter = Meter = root.AddComponent<PowerMeter>();
                 var powerDefinition = Own(ScriptableObject.CreateInstance<PowerDefinition>());
                 Set(meter, "definition", powerDefinition);
                 meter.Initialize();

@@ -119,6 +119,56 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void EveryShipButTheDefault_TradesAStrengthForAWeakness()
+        {
+            var library = AssetDatabase.LoadAssetAtPath<ShipSkinLibrary>(LibraryPath);
+            var neutral = library.Default.stats;
+            Assert.That(Multipliers(neutral), Is.All.EqualTo(1f), "the default ship is the balanced baseline");
+            Assert.That(neutral.extraLives, Is.Zero);
+            for (var i = 1; i < library.skins.Length; i++)
+            {
+                var stats = library.skins[i].stats;
+                var name = library.skins[i].displayName;
+                Assert.That(stats.perk, Is.Not.Empty, name);
+                Assert.That(stats.drawback, Is.Not.Empty, name);
+                var multipliers = Multipliers(stats);
+                Assert.That(multipliers.Exists(value => value > 1f) || stats.extraLives > 0, Is.True, $"{name} has no strength");
+                Assert.That(multipliers.Exists(value => value < 1f), Is.True, $"{name} has no weakness");
+            }
+        }
+
+        [Test]
+        public void Hangar_LaunchesTheRunInTheEquippedShip()
+        {
+            var library = AssetDatabase.LoadAssetAtPath<ShipSkinLibrary>(LibraryPath);
+            var root = new GameObject("Hangar");
+            try
+            {
+                root.SetActive(false);
+                var panel = root.AddComponent<SkinSelectPanel>();
+                Set(panel, "root", root);
+                Set(panel, "library", library);
+                var launched = 0;
+                panel.OpenForLaunch(() => launched++, new GameSettingsModel());
+                Assert.That(panel.IsShown, Is.True, "the difficulty choice leads to the hangar");
+                Assert.That(launched, Is.Zero, "nothing starts until the player launches");
+                panel.Launch();
+                Assert.That(launched, Is.EqualTo(1));
+                panel.Hide();
+                Assert.That(panel.IsShown, Is.False, "back returns to the difficulty choice");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        private static List<float> Multipliers(ShipStats stats) => new List<float>
+        {
+            stats.speed, stats.safeSpeed, stats.exposedSpeed, stats.powerCharge, stats.shotSpeed, stats.pickupChance, stats.abilityDuration
+        };
+
+        [Test]
         public void SkinChoice_SurvivesASettingsReset()
         {
             var settings = new GameSettingsModel { ShipSkin = "viper" };

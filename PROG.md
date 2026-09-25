@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 360
-- Passed: 360
+- EditMode discovered: 364
+- Passed: 364
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -740,6 +740,28 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
   - The game then flew the Viper at hitbox width, with Viper life icons.
   - The saved choice was reset to the default afterwards, so the user's own setting is untouched.
 - Tests: 5 new EditMode tests (at least five distinct, animated, 16-pixel point-filtered skins with Crimson Vanguard as default; an unknown or empty choice falls back to the default; every skin keeps the ship exactly its hitbox width; the hangar equips the tapped ship, saves it and marks only that tile; the choice survives a settings reset). Full suite: 360 passed, 0 failed.
+
+### Ship stats, hangar after the difficulty choice, and a hangar that fits (2026-09-25)
+
+- **The hangar did not fit the screen** in a landscape Game view: it was a 1500-unit-tall panel on a canvas about 1140 units tall. `UniformFit` now shrinks the panel evenly to fit its parent, with a margin, and never scales it up. Live, in an 1100x688 Game view, the panel sat at 64%, fully on screen (y 14 to 673).
+- **New flow:** Start Campaign, then Easy or Hard, then the hangar, then LAUNCH. The top-right SKINS button is gone.
+  - `DifficultyPanel.StartOn` stores the mode and opens the hangar with `OpenForLaunch(SceneRouter.StartCampaign)`. Without a hangar it still starts at once.
+  - The hangar has BACK, which returns to the difficulty choice, and LAUNCH.
+- **Ship stats (`ShipStats` on each `ShipSkinDefinition`):** every ship but the default trades a strength for a weakness. Perk and drawback appear on each tile in green and red. The table is in the GDD's new "Ships" section; for example, Cobalt Delta is +25% off territory and -20% on it, and Phantom Rail is +1 life and -12% speed.
+- **How the stats apply:**
+  - They multiply on top of upgrades inside `UpgradeManager.ApplyToSystems`, which runs at every stage load.
+  - Speed goes through `PlayerController.SetMoveSpeed`. The zone speeds are a new `SetZoneSpeedMultipliers(safe, exposed)`, applied each movement step by control state.
+  - Power charge goes through the meter's gain multiplier, and Power Shot speed through a new `PowerMeter.SetShotSpeedMultiplier`.
+  - Pickup chance goes through a new `SetShipPickupChanceMultiplier`, kept separate from the stage modifier's so neither overwrites the other.
+  - Ability duration multiplies Shield, Freeze and Arena Tilt.
+  - Extra lives are added to the run's first stage in `CampaignManager`.
+- `PlayerShipSkin.Apply` now records the ship even without a visual to dress, so stats never depend on art. The builder wires `UpgradeManager`, `CampaignManager` and `DifficultyPanel` to it.
+- **Verified live:**
+  - Start Campaign, then Easy, opened the hangar.
+  - Equipping Phantom Rail and pressing LAUNCH gave an Easy run with 5 lives (3, plus Easy's 1, plus the ship's 1), 5 ship icons and speed 4.4 (5 × 0.88).
+  - The user's saved ship was reset to the default afterwards.
+- **Harness note:** the editor had been left paused (`EditorApplication.isPaused`), which is why a first read showed stale defaults. It was unpaused to finish the check.
+- Tests: 4 new EditMode tests. They cover upgrades and ship multiplying (speed 5 × 1.1 × 0.88; shield 4 × 1.25 × 0.75; shot speed, gain and pickup), measured movement on territory and in the open at 0.8× and 1.25×, every non-default ship having a real strength and weakness with the default neutral, and LAUNCH starting the run while BACK returns. Full suite: 364 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 

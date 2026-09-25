@@ -42,6 +42,7 @@ namespace SpaceXonix.PowerUps
         private float tiltPenaltyMultiplier = 1f;
         private float pickupChanceBonus;
         private float pickupChanceMultiplier = 1f;
+        private float shipPickupChanceMultiplier = 1f;
         private readonly HashSet<PowerUpType> excludedTypes = new HashSet<PowerUpType>();
         private System.Random random;
         private PowerUpPickup activePickup;
@@ -111,6 +112,9 @@ namespace SpaceXonix.PowerUps
         /// <summary>Stage modifier (Resource Shortage): scales the rolled pickup chance.</summary>
         public void SetPickupChanceMultiplier(float multiplier) => pickupChanceMultiplier = Mathf.Max(0f, multiplier);
 
+        /// <summary>The flown ship's pickup multiplier. Kept apart from the stage modifier's so neither overwrites the other.</summary>
+        public void SetShipPickupChanceMultiplier(float multiplier) => shipPickupChanceMultiplier = Mathf.Max(0f, multiplier);
+
         /// <summary>Keeps a pickup type out of the roll for one stage, e.g. Arena Tilt on the alien-free boss stage.</summary>
         public void SetTypeExcluded(PowerUpType type, bool excluded)
         {
@@ -153,7 +157,7 @@ namespace SpaceXonix.PowerUps
             if (activePickup != null || spawnDefinition == null || pickupPrefab == null || poolService == null) return false;
             if (gameManager != null && gameManager.CurrentState != GameplayState.Playing) return false;
             var chance = spawnDefinition.GetSpawnChance(capturedPercentage);
-            if (chance > 0f) chance = Mathf.Min(spawnDefinition.maxChance, chance + pickupChanceBonus) * pickupChanceMultiplier;
+            if (chance > 0f) chance = Mathf.Min(spawnDefinition.maxChance, chance + pickupChanceBonus) * pickupChanceMultiplier * shipPickupChanceMultiplier;
             if (chance <= 0f || random.NextDouble() >= chance) return false;
             var definition = PickRandomDefinition();
             if (definition == null || !TryFindSpawnCell(out var cell)) return false;

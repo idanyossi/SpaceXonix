@@ -37,6 +37,8 @@ namespace SpaceXonix.Campaign
         [SerializeField] private UpgradeManager upgradeManager;
         [SerializeField] private StageModifierManager modifierManager;
         [SerializeField] private SpaceXonix.Boss.BossController bossController;
+        [Tooltip("The ship being flown; a ship with extra lives starts the run with them.")]
+        [SerializeField] private SpaceXonix.Presentation.PlayerShipSkin playerShip;
 
         private CampaignRunModel run;
         private bool runStarted;
@@ -133,7 +135,7 @@ namespace SpaceXonix.Campaign
             // where Easy adds its bonus life on top.
             gameManager.BeginStage(runStarted
                 ? Mathf.Max(1, gameManager.Lives)
-                : gameManager.StartingLives + Difficulty.BonusStartingLives());
+                : gameManager.StartingLives + Difficulty.BonusStartingLives() + (playerShip != null ? playerShip.Stats.extraLives : 0));
             runStarted = true;
             // The modifier is rolled before the stage is built so its multipliers reach the lasers and aliens as they spawn.
             // Easy runs without modifiers at all, which is the whole difference the difficulty makes to a stage.

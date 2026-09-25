@@ -18,3 +18,14 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 61c3b367d812833488833a72c78f8be7, type: 3}
   - {fileID: 21300000, guid: 2a01b4f0a56e9cf4496cb2b7ea6d8b06, type: 3}
   framesPerSecond: 12
+  stats:
+    perk: +40% power charge
+    drawback: Power Shot flies 35% slower
+    speed: 1
+    safeSpeed: 1
+    exposedSpeed: 1
+    powerCharge: 1.4
+    shotSpeed: 0.65
+    pickupChance: 1
+    abilityDuration: 1
+    extraLives: 0

@@ -19,6 +19,8 @@ namespace SpaceXonix.Campaign
         [SerializeField] private PlayerController playerController;
         [SerializeField] private PowerMeter powerMeter;
         [SerializeField] private PowerUpManager powerUpManager;
+        [Tooltip("The ship being flown; its stats multiply on top of the upgrades.")]
+        [SerializeField] private SpaceXonix.Presentation.PlayerShipSkin playerShip;
         [SerializeField, Min(1)] private int offerCount = 3;
         [Tooltip("0 uses a time-based seed.")]
         [SerializeField] private int randomSeed;
@@ -71,18 +73,27 @@ namespace SpaceXonix.Campaign
         /// <summary>Pushes the run's effective stats into the gameplay systems. Safe to call at every stage load.</summary>
         public void ApplyToSystems()
         {
+            // The flown ship's stats multiply on top of the run's upgrades.
+            var ship = playerShip != null ? playerShip.Stats : SpaceXonix.Presentation.ShipStats.Neutral;
             if (playerController != null)
             {
                 if (baseMoveSpeed < 0f) baseMoveSpeed = playerController.MoveSpeed;
-                playerController.SetMoveSpeed(baseMoveSpeed * run.MoveSpeedMultiplier);
+                playerController.SetMoveSpeed(baseMoveSpeed * run.MoveSpeedMultiplier * ship.speed);
+                playerController.SetZoneSpeedMultipliers(ship.safeSpeed, ship.exposedSpeed);
             }
-            if (powerMeter != null) powerMeter.SetGainMultiplier(run.PowerGainMultiplier);
+            if (powerMeter != null)
+            {
+                powerMeter.SetGainMultiplier(run.PowerGainMultiplier * ship.powerCharge);
+                powerMeter.SetShotSpeedMultiplier(ship.shotSpeed);
+            }
             if (powerUpManager != null)
             {
-                powerUpManager.SetDurationMultiplier(PowerUpType.Shield, run.ShieldDurationMultiplier);
-                powerUpManager.SetDurationMultiplier(PowerUpType.Freeze, run.FreezeDurationMultiplier);
+                powerUpManager.SetDurationMultiplier(PowerUpType.Shield, run.ShieldDurationMultiplier * ship.abilityDuration);
+                powerUpManager.SetDurationMultiplier(PowerUpType.Freeze, run.FreezeDurationMultiplier * ship.abilityDuration);
+                powerUpManager.SetDurationMultiplier(PowerUpType.ArenaTilt, ship.abilityDuration);
                 powerUpManager.SetTiltPenaltyMultiplier(run.TiltPenaltyMultiplier);
                 powerUpManager.SetPickupChanceBonus(run.PickupChanceBonus);
+                powerUpManager.SetShipPickupChanceMultiplier(ship.pickupChance);
             }
         }
 

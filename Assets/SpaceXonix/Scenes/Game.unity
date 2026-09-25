@@ -7760,6 +7760,7 @@ MonoBehaviour:
   upgradeManager: {fileID: 1599803374}
   modifierManager: {fileID: 1599803375}
   bossController: {fileID: 175233844}
+  playerShip: {fileID: 1987019904147353762}
 --- !u!114 &1599803371
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7872,6 +7873,7 @@ MonoBehaviour:
   playerController: {fileID: 1987019904147353759}
   powerMeter: {fileID: 1823213373}
   powerUpManager: {fileID: 91987429}
+  playerShip: {fileID: 1987019904147353762}
   offerCount: 3
   randomSeed: 0
 --- !u!114 &1599803375

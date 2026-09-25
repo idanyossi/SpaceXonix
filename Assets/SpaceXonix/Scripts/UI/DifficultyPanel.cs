@@ -5,8 +5,8 @@ using UnityEngine.UI;
 namespace SpaceXonix.UI
 {
     /// <summary>
-    /// The difficulty choice shown after Start Campaign. Picking a mode stores it and starts the run,
-    /// so the campaign always begins on exactly what was chosen here.
+    /// The difficulty choice shown after Start Campaign. Picking a mode stores it and opens the
+    /// hangar to choose a ship, which launches the run; without a hangar it starts the run at once.
     /// </summary>
     public sealed class DifficultyPanel : MonoBehaviour
     {
@@ -15,6 +15,8 @@ namespace SpaceXonix.UI
         [SerializeField] private Button backButton;
         [SerializeField] private Text easyBestLabel;
         [SerializeField] private Text hardBestLabel;
+        [Tooltip("The ship choice that follows the difficulty choice.")]
+        [SerializeField] private SkinSelectPanel hangar;
 
         private void OnEnable()
         {
@@ -43,12 +45,13 @@ namespace SpaceXonix.UI
 
         public void StartHard() => StartOn(DifficultyMode.Hard);
 
-        /// <summary>Stores the chosen mode, then loads the game scene. Public so tests can choose without a click.</summary>
+        /// <summary>Stores the chosen mode, then moves on to the ship choice. Public so tests can choose without a click.</summary>
         public void StartOn(DifficultyMode mode)
         {
             var settings = GameSettings.Current;
             if (settings != null) settings.Difficulty = mode;
-            SceneRouter.StartCampaign();
+            if (hangar != null) hangar.OpenForLaunch(SceneRouter.StartCampaign);
+            else SceneRouter.StartCampaign();
         }
 
         /// <summary>Each mode keeps its own record, because Hard's modifier bonuses inflate its scores.</summary>

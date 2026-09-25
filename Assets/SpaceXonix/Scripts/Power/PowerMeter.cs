@@ -67,6 +67,10 @@ namespace SpaceXonix.Power
 
         public void SetGainMultiplier(float multiplier) => model?.SetGainMultiplier(multiplier);
 
+        /// <summary>Scales how fast the Power Shot flies. Some ships charge faster but shoot slower.</summary>
+        public void SetShotSpeedMultiplier(float multiplier) => ShotSpeedMultiplier = Mathf.Max(.1f, multiplier);
+        public float ShotSpeedMultiplier { get; private set; } = 1f;
+
         /// <summary>Clears in-flight shots between stages; stored charge carries over.</summary>
         public void PrepareForStage() => ReleaseAllShots();
 
@@ -93,7 +97,7 @@ namespace SpaceXonix.Power
             }
             var origin = playerController.transform.position;
             origin.z -= .01f;
-            shot.Launch(origin, playerController.FacingDirection, definition.shotSpeed);
+            shot.Launch(origin, playerController.FacingDirection, definition.shotSpeed * ShotSpeedMultiplier);
             activeShots.Add(shot);
             PowerChanged?.Invoke(model.Power);
             ShotFired?.Invoke(shot);

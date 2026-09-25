@@ -3,7 +3,6 @@ using System.IO;
 using SpaceXonix.Presentation;
 using SpaceXonix.UI;
 using UnityEditor;
-using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
@@ -33,17 +32,25 @@ namespace SpaceXonix.EditorTools
         {
             public readonly string Id, Name;
             public readonly int Group, Index;
-            public SheetShip(string id, string name, int group, int index) { Id = id; Name = name; Group = group; Index = index; }
+            public readonly ShipStats Stats;
+            public SheetShip(string id, string name, int group, int index, ShipStats stats) { Id = id; Name = name; Group = group; Index = index; Stats = stats; }
         }
 
+        /// <summary>Every ship but the default trades one strength for one weakness.</summary>
         private static readonly SheetShip[] Ships =
         {
-            new SheetShip("cobalt-delta", "Cobalt Delta", 0, 7),
-            new SheetShip("viper", "Viper", 1, 66),
-            new SheetShip("ember-talon", "Ember Talon", 2, 17),
-            new SheetShip("solar-hornet", "Solar Hornet", 3, 78),
-            new SheetShip("nebula-dart", "Nebula Dart", 4, 81),
-            new SheetShip("phantom-rail", "Phantom Rail", 2, 69),
+            new SheetShip("cobalt-delta", "Cobalt Delta", 0, 7, new ShipStats
+                { perk = "+25% speed off your territory", drawback = "-20% speed on your territory", exposedSpeed = 1.25f, safeSpeed = .8f }),
+            new SheetShip("viper", "Viper", 1, 66, new ShipStats
+                { perk = "+15% ship speed", drawback = "-20% power charge", speed = 1.15f, powerCharge = .8f }),
+            new SheetShip("ember-talon", "Ember Talon", 2, 17, new ShipStats
+                { perk = "+40% power charge", drawback = "Power Shot flies 35% slower", powerCharge = 1.4f, shotSpeed = .65f }),
+            new SheetShip("solar-hornet", "Solar Hornet", 3, 78, new ShipStats
+                { perk = "+50% power-up spawns", drawback = "Abilities last 25% shorter", pickupChance = 1.5f, abilityDuration = .75f }),
+            new SheetShip("nebula-dart", "Nebula Dart", 4, 81, new ShipStats
+                { perk = "+30% power-up spawns", drawback = "-15% power charge", pickupChance = 1.3f, powerCharge = .85f }),
+            new SheetShip("phantom-rail", "Phantom Rail", 2, 69, new ShipStats
+                { perk = "+1 extra life", drawback = "-12% ship speed", extraLives = 1, speed = .88f }),
         };
 
         [MenuItem("SpaceXonix/Build Ship Skins")]
@@ -153,14 +160,15 @@ namespace SpaceXonix.EditorTools
             var skins = new List<ShipSkinDefinition>
             {
                 Skin("crimson-vanguard", "Crimson Vanguard",
-                    new[] { PixelArtImporter.LoadFrame("ship", 2), PixelArtImporter.LoadFrame("ship", 7) }, 12f)
+                    new[] { PixelArtImporter.LoadFrame("ship", 2), PixelArtImporter.LoadFrame("ship", 7) }, 12f,
+                    new ShipStats { perk = "Balanced all-rounder", drawback = "No weaknesses" })
             };
             foreach (var ship in Ships)
                 skins.Add(Skin(ship.Id, ship.Name, new[]
                 {
                     AssetDatabase.LoadAssetAtPath<Sprite>($"{FrameFolder}/{ship.Id}_0.png"),
                     AssetDatabase.LoadAssetAtPath<Sprite>($"{FrameFolder}/{ship.Id}_1.png")
-                }, 12f));
+                }, 12f, ship.Stats));
 
             var library = AssetDatabase.LoadAssetAtPath<ShipSkinLibrary>(LibraryPath);
             if (library == null)
@@ -174,7 +182,7 @@ namespace SpaceXonix.EditorTools
             return library;
         }
 
-        private static ShipSkinDefinition Skin(string id, string name, Sprite[] frames, float fps)
+        private static ShipSkinDefinition Skin(string id, string name, Sprite[] frames, float fps, ShipStats stats)
         {
             var path = $"{SkinFolder}/Skin_{id}.asset";
             var skin = AssetDatabase.LoadAssetAtPath<ShipSkinDefinition>(path);
@@ -187,6 +195,7 @@ namespace SpaceXonix.EditorTools
             skin.displayName = name;
             skin.frames = frames;
             skin.framesPerSecond = fps;
+            skin.stats = stats;
             EditorUtility.SetDirty(skin);
             return skin;
         }
@@ -217,7 +226,9 @@ namespace SpaceXonix.EditorTools
 
             var panel = NewImage("Panel", overlay.transform, Ui("UI_Panel"));
             panel.type = Image.Type.Sliced;
-            Place(panel.rectTransform, new Vector2(0f, 0f), new Vector2(1000f, 1500f));
+            Place(panel.rectTransform, new Vector2(0f, 0f), new Vector2(1000f, 1700f));
+            // Designed for a portrait phone; shrinks evenly to fit anything squatter.
+            panel.gameObject.AddComponent<UniformFit>();
 
             var heading = NewText("Title", panel.transform, title, 58, UiSkin.TitleColour);
             heading.text = "CHOOSE YOUR SHIP";
@@ -229,9 +240,9 @@ namespace SpaceXonix.EditorTools
 
             var grid = new GameObject("Grid", typeof(RectTransform));
             grid.transform.SetParent(panel.transform, false);
-            PlaceTop((RectTransform)grid.transform, -150f, new Vector2(912f, 1150f));
+            PlaceTop((RectTransform)grid.transform, -150f, new Vector2(912f, 1350f));
             var layout = grid.AddComponent<GridLayoutGroup>();
-            layout.cellSize = new Vector2(280f, 330f);
+            layout.cellSize = new Vector2(280f, 420f);
             layout.spacing = new Vector2(36f, 30f);
             layout.childAlignment = TextAnchor.UpperCenter;
             layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
@@ -241,11 +252,9 @@ namespace SpaceXonix.EditorTools
             for (var i = 0; i < tiles.Length; i++) tiles[i] = BuildTile(grid.transform, i, body, title);
 
             var back = NewButton("BackButton", panel.transform, "BACK", body);
-            var backRect = (RectTransform)back.transform;
-            backRect.anchorMin = backRect.anchorMax = new Vector2(.5f, 0f);
-            backRect.pivot = new Vector2(.5f, 0f);
-            backRect.anchoredPosition = new Vector2(0f, 40f);
-            backRect.sizeDelta = new Vector2(360f, 90f);
+            PlaceBottom((RectTransform)back.transform, new Vector2(-200f, 40f), new Vector2(340f, 96f));
+            var launch = NewButton("LaunchButton", panel.transform, "LAUNCH", body);
+            PlaceBottom((RectTransform)launch.transform, new Vector2(200f, 40f), new Vector2(340f, 96f));
 
             var hangar = overlay.AddComponent<SkinSelectPanel>();
             var serialized = new SerializedObject(hangar);
@@ -253,6 +262,8 @@ namespace SpaceXonix.EditorTools
             serialized.FindProperty("library").objectReferenceValue = library;
             serialized.FindProperty("tileFrame").objectReferenceValue = Ui("UI_Card");
             serialized.FindProperty("equippedFrame").objectReferenceValue = Ui("UI_CardHover");
+            serialized.FindProperty("launchButton").objectReferenceValue = launch;
+            serialized.FindProperty("backButton").objectReferenceValue = back;
             var array = serialized.FindProperty("tiles");
             array.arraySize = tiles.Length;
             for (var i = 0; i < tiles.Length; i++)
@@ -262,19 +273,21 @@ namespace SpaceXonix.EditorTools
                 element.FindPropertyRelative("frame").objectReferenceValue = tiles[i].frame;
                 element.FindPropertyRelative("preview").objectReferenceValue = tiles[i].preview;
                 element.FindPropertyRelative("nameLabel").objectReferenceValue = tiles[i].nameLabel;
+                element.FindPropertyRelative("perkLabel").objectReferenceValue = tiles[i].perkLabel;
+                element.FindPropertyRelative("drawbackLabel").objectReferenceValue = tiles[i].drawbackLabel;
                 element.FindPropertyRelative("equippedBadge").objectReferenceValue = tiles[i].equippedBadge;
             }
             serialized.ApplyModifiedPropertiesWithoutUndo();
-            UnityEventTools.AddPersistentListener(back.onClick, hangar.Hide);
 
-            // The button that opens it, in the top-right corner of the menu.
-            var open = NewButton("SkinsButton", safeArea, "SKINS", body);
-            var openRect = (RectTransform)open.transform;
-            openRect.anchorMin = openRect.anchorMax = openRect.pivot = new Vector2(1f, 1f);
-            openRect.anchoredPosition = new Vector2(-36f, -36f);
-            openRect.sizeDelta = new Vector2(230f, 96f);
-            UnityEventTools.AddPersistentListener(open.onClick, hangar.Open);
-            // Opened from the menu only; the overlay sits above everything else in the canvas.
+            // The hangar follows the difficulty choice, so it sits above that screen.
+            var difficulty = Object.FindFirstObjectByType<DifficultyPanel>(FindObjectsInactive.Include);
+            if (difficulty != null)
+            {
+                var difficultySerialized = new SerializedObject(difficulty);
+                difficultySerialized.FindProperty("hangar").objectReferenceValue = hangar;
+                difficultySerialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+            else Debug.LogWarning("No difficulty screen in the main menu; the hangar has no way in.");
             overlay.transform.SetAsLastSibling();
             overlay.SetActive(false);
 
@@ -303,23 +316,29 @@ namespace SpaceXonix.EditorTools
 
             var name = NewText("Name", frame.transform, body, 26, Color.white);
             name.resizeTextForBestFit = true; name.resizeTextMinSize = 14; name.resizeTextMaxSize = 26;
-            var nameRect = name.rectTransform;
-            nameRect.anchorMin = new Vector2(0f, 0f); nameRect.anchorMax = new Vector2(1f, 0f); nameRect.pivot = new Vector2(.5f, 0f);
-            nameRect.offsetMin = new Vector2(14f, 52f); nameRect.offsetMax = new Vector2(-14f, 92f);
+            PlaceTop(name.rectTransform, -238f, new Vector2(252f, 36f));
+
+            // The ship's strength in green and its weakness in red, so the trade is readable at a glance.
+            var perk = NewText("Perk", frame.transform, body, 17, new Color(.45f, 1f, .6f));
+            perk.resizeTextForBestFit = true; perk.resizeTextMinSize = 11; perk.resizeTextMaxSize = 17;
+            PlaceTop(perk.rectTransform, -278f, new Vector2(256f, 44f));
+            var drawback = NewText("Drawback", frame.transform, body, 17, new Color(1f, .5f, .45f));
+            drawback.resizeTextForBestFit = true; drawback.resizeTextMinSize = 11; drawback.resizeTextMaxSize = 17;
+            PlaceTop(drawback.rectTransform, -322f, new Vector2(256f, 44f));
 
             var badge = NewImage("Equipped", frame.transform, Ui("UI_CardBand"));
             badge.type = Image.Type.Sliced;
             badge.color = new Color(.5f, .95f, 1f);
             var badgeRect = badge.rectTransform;
             badgeRect.anchorMin = badgeRect.anchorMax = badgeRect.pivot = new Vector2(.5f, 0f);
-            badgeRect.anchoredPosition = new Vector2(0f, 14f);
+            badgeRect.anchoredPosition = new Vector2(0f, 10f);
             badgeRect.sizeDelta = new Vector2(190f, 34f);
             var badgeText = NewText("Label", badge.transform, body, 18, new Color(.03f, .04f, .08f));
             badgeText.text = "EQUIPPED";
             Stretch(badgeText.rectTransform, 0f);
             badge.gameObject.SetActive(false);
 
-            return new SkinSelectPanel.Tile { button = button, frame = frame, preview = animator, nameLabel = name, equippedBadge = badge.gameObject };
+            return new SkinSelectPanel.Tile { button = button, frame = frame, preview = animator, nameLabel = name, perkLabel = perk, drawbackLabel = drawback, equippedBadge = badge.gameObject };
         }
 
         // ---------------------------------------------------------------- game
@@ -341,6 +360,18 @@ namespace SpaceXonix.EditorTools
                 var hudSerialized = new SerializedObject(hud);
                 hudSerialized.FindProperty("playerSkin").objectReferenceValue = skin;
                 hudSerialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+            // The ship's stats reach the game through the upgrades and the campaign's starting lives.
+            foreach (var target in new Object[]
+            {
+                Object.FindFirstObjectByType<SpaceXonix.Campaign.UpgradeManager>(FindObjectsInactive.Include),
+                Object.FindFirstObjectByType<SpaceXonix.Campaign.CampaignManager>(FindObjectsInactive.Include)
+            })
+            {
+                if (target == null) { Debug.LogWarning("Missing a campaign manager in the game scene."); continue; }
+                var targetSerialized = new SerializedObject(target);
+                targetSerialized.FindProperty("playerShip").objectReferenceValue = skin;
+                targetSerialized.ApplyModifiedPropertiesWithoutUndo();
             }
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
@@ -409,6 +440,14 @@ namespace SpaceXonix.EditorTools
         private static void Place(RectTransform rect, Vector2 position, Vector2 size)
         {
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+        }
+
+        private static void PlaceBottom(RectTransform rect, Vector2 position, Vector2 size)
+        {
+            rect.anchorMin = rect.anchorMax = new Vector2(.5f, 0f);
+            rect.pivot = new Vector2(.5f, 0f);
             rect.anchoredPosition = position;
             rect.sizeDelta = size;
         }

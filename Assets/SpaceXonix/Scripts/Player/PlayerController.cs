@@ -33,6 +33,18 @@ namespace SpaceXonix.Player
         public CardinalDirection InitialDirection => initialDirection;
         public CardinalDirection FacingDirection => CurrentDirection;
         public float MoveSpeed => moveSpeed;
+        public float SafeSpeedMultiplier { get; private set; } = 1f;
+        public float ExposedSpeedMultiplier { get; private set; } = 1f;
+
+        /// <summary>
+        /// Scales speed by where the ship is: on its own territory or out in the open drawing a
+        /// trail. Some ships trade one for the other. 1 and 1 leave the ship as it was.
+        /// </summary>
+        public void SetZoneSpeedMultipliers(float safe, float exposed)
+        {
+            SafeSpeedMultiplier = Mathf.Max(.1f, safe);
+            ExposedSpeedMultiplier = Mathf.Max(.1f, exposed);
+        }
         public float CollisionRadius => collisionRadius;
         public bool MovementEnabled => controlState == PlayerControlState.SafeIdle ||
             controlState == PlayerControlState.SafeMoving || controlState == PlayerControlState.ExposedMoving;
@@ -70,6 +82,7 @@ namespace SpaceXonix.Player
             }
 
             var transformBefore = transform.position;
+            movementModel.MoveSpeed = moveSpeed * (controlState == PlayerControlState.ExposedMoving ? ExposedSpeedMultiplier : SafeSpeedMultiplier);
             var previousPosition = movementModel.Position;
             var position = movementModel.Advance(deltaTime);
             var candidate = new Vector3(position.x, position.y, transform.position.z);

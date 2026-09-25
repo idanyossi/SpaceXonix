@@ -18,3 +18,14 @@ MonoBehaviour:
   - {fileID: 21300000, guid: c76be9ab1757a164994d6d8f4245d584, type: 3}
   - {fileID: 21300000, guid: ffc5492ff7d7d3b41a74e0ec3382d57b, type: 3}
   framesPerSecond: 12
+  stats:
+    perk: +15% ship speed
+    drawback: -20% power charge
+    speed: 1.15
+    safeSpeed: 1
+    exposedSpeed: 1
+    powerCharge: 0.8
+    shotSpeed: 1
+    pickupChance: 1
+    abilityDuration: 1
+    extraLives: 0

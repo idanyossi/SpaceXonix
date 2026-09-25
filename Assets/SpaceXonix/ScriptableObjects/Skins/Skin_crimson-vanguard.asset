@@ -18,3 +18,14 @@ MonoBehaviour:
   - {fileID: 21300000, guid: cb443d84d9684cd45809628a1449e4e4, type: 3}
   - {fileID: 21300000, guid: f4c012ff97483b04cafee506e4eed99d, type: 3}
   framesPerSecond: 12
+  stats:
+    perk: Balanced all-rounder
+    drawback: No weaknesses
+    speed: 1
+    safeSpeed: 1
+    exposedSpeed: 1
+    powerCharge: 1
+    shotSpeed: 1
+    pickupChance: 1
+    abilityDuration: 1
+    extraLives: 0

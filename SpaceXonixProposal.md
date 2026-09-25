@@ -511,6 +511,22 @@ Destroying caught aliens made Volatile Aliens clear the board for the player. In
 - every alien turned into a hybrid brings one new regular alien (Bouncer, Linear or Unstable, at random) onto a free cell away from the ship, so a Volatile never thins the stage out;
 - a Volatile Alien that runs into a hybrid is absorbed into it and doubles its charge (up to four times), doubling the size of its eventual blast; the more charged a hybrid is, the faster and harder it blinks.
 
+## Ships (added 2026-09-25 at the user's request)
+
+After choosing a difficulty, the player picks a ship in the hangar and launches the run from there. Every ship is the same size, so the hitbox never changes, but every ship except the default trades one strength for one weakness. The ship's stats multiply on top of run upgrades and stage modifiers.
+
+| Ship | Strength | Weakness |
+|---|---|---|
+| Crimson Vanguard (default) | Balanced | None |
+| Cobalt Delta | +25% speed off your territory | -20% speed on your territory |
+| Viper | +15% ship speed | -20% power charge |
+| Ember Talon | +40% power charge | Power Shot flies 35% slower |
+| Solar Hornet | +50% power-up spawns | Abilities last 25% shorter |
+| Nebula Dart | +30% power-up spawns | -15% power charge |
+| Phantom Rail | +1 extra life | -12% ship speed |
+
+The chosen ship is remembered between sessions, and the HUD's life icons show it.
+
 ## Laser Hazard
 
 Laser emitters are positioned around arena boundaries.
