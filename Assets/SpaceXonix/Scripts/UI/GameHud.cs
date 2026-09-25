@@ -34,6 +34,10 @@ namespace SpaceXonix.UI
         [SerializeField] private Text awardLabel;
         [SerializeField] private Text powerLabel;
 
+        [Header("Lives")]
+        [Tooltip("One ship icon per life, left to right. Lives beyond the row show as +N in the lives label.")]
+        [SerializeField] private Image[] lifeIcons = new Image[0];
+
         [Header("Power meter")]
         [SerializeField] private Image powerFill;
         [SerializeField] private Color powerChargingColor = new Color(.2f, .6f, 1f);
@@ -60,13 +64,34 @@ namespace SpaceXonix.UI
         /// <summary>Pulls every displayed value. Public so tests can drive one frame deterministically.</summary>
         public void Refresh()
         {
-            if (livesLabel != null && gameManager != null) livesLabel.text = gameManager.Lives.ToString();
+            RefreshLives();
             if (scoreLabel != null && scoreManager != null) scoreLabel.text = scoreManager.Score.ToString();
             if (captureLabel != null && boardManager != null) captureLabel.text = $"{boardManager.CapturedPercentage:0.0}%";
             RefreshStage();
             RefreshPower();
             RefreshAbility();
             RefreshAward();
+        }
+
+        /// <summary>
+        /// Shows lives as a row of ships, like spare hulls in reserve. With no icons assigned it falls
+        /// back to the plain number.
+        /// </summary>
+        private void RefreshLives()
+        {
+            if (gameManager == null) return;
+            var lives = gameManager.Lives;
+            if (lifeIcons == null || lifeIcons.Length == 0)
+            {
+                if (livesLabel != null) livesLabel.text = lives.ToString();
+                return;
+            }
+            for (var i = 0; i < lifeIcons.Length; i++)
+                if (lifeIcons[i] != null && lifeIcons[i].enabled != i < lives) lifeIcons[i].enabled = i < lives;
+            if (livesLabel == null) return;
+            var extra = lives - lifeIcons.Length;
+            var text = extra > 0 ? $"+{extra}" : string.Empty;
+            if (livesLabel.text != text) livesLabel.text = text;
         }
 
         private void RefreshStage()

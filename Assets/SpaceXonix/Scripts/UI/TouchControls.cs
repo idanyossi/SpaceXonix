@@ -23,6 +23,9 @@ namespace SpaceXonix.UI
 
         public bool ButtonsVisible { get; private set; }
 
+        /// <summary>Whether a control is one of the on-screen gameplay buttons this owns.</summary>
+        public bool Owns(Selectable control) => control != null && (control == abilityButton || control == powerButton);
+
         private void OnEnable()
         {
             if (abilityButton != null) abilityButton.onClick.AddListener(UseAbility);

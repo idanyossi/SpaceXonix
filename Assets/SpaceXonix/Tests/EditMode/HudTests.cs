@@ -89,6 +89,27 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void Hud_ShowsLivesAsShipsWithOverflowCounted()
+        {
+            using (var fixture = new HudFixture())
+            {
+                var icons = fixture.UseLifeIcons(4);
+                fixture.Hud.Refresh();
+                Assert.That(Array.FindAll(icons, icon => icon.enabled), Has.Length.EqualTo(3), "one ship per life");
+                Assert.That(fixture.Lives.text, Is.Empty, "no overflow while every life has a ship");
+
+                fixture.Game.AddLives(3);
+                fixture.Hud.Refresh();
+                Assert.That(Array.TrueForAll(icons, icon => icon.enabled), "a full row");
+                Assert.That(fixture.Lives.text, Is.EqualTo("+2"), "lives beyond the row are counted, not lost");
+
+                fixture.Game.ReportPlayerFailure(PlayerFailureReason.EnemyContact);
+                fixture.Hud.Refresh();
+                Assert.That(fixture.Lives.text, Is.EqualTo("+1"));
+            }
+        }
+
+        [Test]
         public void Hud_TracksLivesLostAndTerritoryCaptured()
         {
             using (var fixture = new HudFixture())
@@ -210,6 +231,20 @@ namespace SpaceXonix.Tests.EditMode
                 Invoke(Game, "Start");
                 // ScoreManager subscribes to the board in OnEnable, which EditMode does not run.
                 Invoke(ScoreManager, "OnEnable");
+            }
+
+            /// <summary>Gives the HUD a row of ship icons, which replaces the plain lives number.</summary>
+            public Image[] UseLifeIcons(int count)
+            {
+                var icons = new Image[count];
+                for (var i = 0; i < count; i++)
+                {
+                    var go = new GameObject($"Life{i}", typeof(RectTransform));
+                    go.transform.SetParent(root.transform, false);
+                    icons[i] = go.AddComponent<Image>();
+                }
+                Set(Hud, "lifeIcons", icons);
+                return icons;
             }
 
             public void SetPower(float value)

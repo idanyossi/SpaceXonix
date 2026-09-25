@@ -28,9 +28,9 @@ namespace SpaceXonix.EditorTools
         private static readonly Dictionary<GameSfx, string[]> Shortlist = new Dictionary<GameSfx, string[]>
         {
             // DirectionChanged is left out on purpose: turning is silent, see GameplayAudioBinder.
-            // Steady-pitch blips only: the first shortlist here included a portal sweep, and even the
-            // mild Blip5 read as squirmy once random pitch was added on top.
-            { GameSfx.TrailStarted, new[] { "sfx_sounds_Blip2", "sfx_coin_single4", "sfx_sounds_Blip8" } },
+            // Trail start, button clicks and the laser warning are picked for being short, soft and
+            // steady in pitch: sweeps read as squirmy, and a long flat buzz grates when it repeats.
+            { GameSfx.TrailStarted, new[] { "sfx_menu_move4", "sfx_damage_hit2", "sfx_sounds_Blip7" } },
             { GameSfx.CaptureCompleted, new[] { "sfx_coin_double1", "sfx_coin_double3", "sfx_sounds_powerup2" } },
             { GameSfx.LargeCapture, new[] { "sfx_coin_cluster3", "sfx_sounds_fanfare1", "sfx_coin_cluster6" } },
             { GameSfx.PowerMeterFull, new[] { "sfx_sounds_powerup4", "sfx_sounds_powerup10", "sfx_sounds_powerup16" } },
@@ -44,11 +44,11 @@ namespace SpaceXonix.EditorTools
             { GameSfx.EnemyDestroyed, new[] { "sfx_exp_short_hard1", "sfx_exp_shortest_hard3", "sfx_exp_short_hard8" } },
             { GameSfx.VolatileExplosion, new[] { "sfx_exp_medium1", "sfx_exp_cluster2", "sfx_exp_medium7" } },
             { GameSfx.PlayerHit, new[] { "sfx_sounds_damage1", "sfx_damage_hit3", "sfx_deathscream_android1" } },
-            { GameSfx.LaserWarning, new[] { "sfx_sounds_error1", "sfx_alarm_loop1", "sfx_sounds_error7" } },
+            { GameSfx.LaserWarning, new[] { "sfx_alarm_loop6", "sfx_sounds_powerup13", "sfx_sounds_error3" } },
             { GameSfx.LaserFiring, new[] { "sfx_wpn_laser3", "sfx_wpn_laser7", "sfx_wpn_laser11" } },
             { GameSfx.BossProjectile, new[] { "sfx_weapon_singleshot1", "sfx_weapon_singleshot7", "sfx_weapon_singleshot14" } },
             { GameSfx.BossDestroyed, new[] { "sfx_exp_long1", "sfx_exp_long4", "sfx_exp_cluster9" } },
-            { GameSfx.UiInteraction, new[] { "sfx_menu_select1", "sfx_menu_select3", "sfx_menu_move4" } },
+            { GameSfx.UiInteraction, new[] { "sfx_menu_move1", "sfx_sounds_Blip10", "sfx_sounds_Blip4" } },
         };
 
         /// <summary>

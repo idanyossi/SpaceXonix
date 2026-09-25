@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 334
-- Passed: 334
+- EditMode discovered: 338
+- Passed: 338
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -563,6 +563,18 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - **The squirmy sound was the trail start**, not the turn. A pitch scan of the candidates (per-window zero-crossing pitch, summed movement in octaves) found that the second trail-start candidate, `sfx_movement_portal1`, moves about 71 octaves, the most of any sound scanned. `Blip5`, the one in use, was mild at 0.15, but it was played with ±10% random pitch on top. The shortlist is now three steady blips measured at no more than 0.02 octaves of movement (`Blip2`, `coin_single4`, `Blip8`), the sound defaults to `Blip2`, and its random pitch is off. The three old candidates were removed from the repository.
 - The menu music measured quiet in testing because the saved settings have master and music at about 20% each, which multiply to 0.044. That is the player's own setting, not a bug.
 - Tests: 4 new EditMode tests. One checks the manager owns exactly one listener even when woken twice; three check that no scene carries a listener of its own. Full suite: 334 passed, 0 failed.
+
+### Playtest fixes, round 3 (2026-09-25)
+
+- **Buttons were silent.** `GameSfx.UiInteraction` existed, but nothing played it. `UiClickSound` sits on each root canvas (the main menu, and the HUD, which holds the pause, campaign and settings screens). It hooks every button and toggle under it, so new screens click without any wiring. It skips only the two on-screen gameplay buttons that `TouchControls` owns, power shot and ability, because those have their own sounds. `TouchControls` sits on the same root as every other HUD button, so the skip asks it which buttons it owns rather than checking the hierarchy. The settings panel now refreshes its toggles with `SetIsOnWithoutNotify`, so opening it does not sound like a click.
+- **The laser warning and the trail start still sounded bad.** The second pitch scan also measured pitch height and loudness. `Blip2`, the last trail-start pick, is a 175 Hz square wave held flat for 0.17 s at full loudness: a buzz, not a cue. The warning was `error1`, a bendy 625 Hz buzzer. New defaults, all short, soft and steady:
+  - Trail start: `menu_move4`, a 0.05 s tick, at 70% volume.
+  - Laser warning: `alarm_loop6`, a soft steady tone of about 0.5 s inside the 0.75 s warning, at 70%.
+  - Button click: `menu_move1`, a quiet 0.04 s click, at 80%.
+  - Random pitch is off on all three. Each keeps two alternatives in **SpaceXonix > Sound Audition**, and five superseded candidates were removed.
+- **Lives are shown as ships.** The top-left number and its "LIVES" caption were replaced by a row of six player-ship icons (`ship_2` at exactly 3×, 48×72, so the pixels stay crisp), one per life. Reinforced Hull can raise lives past six, so the old lives label now sits after the row and shows `+N` for any beyond it. With no icons assigned, the HUD falls back to the number.
+- Verified live: two menu clicks each played `UiInteraction`, and a stage showed five ships for Easy's four lives plus one granted.
+- Tests: 4 new EditMode tests. They cover the ship row with its overflow count, menu buttons and toggles clicking while the gameplay buttons stay silent, and every root canvas in both scenes carrying the click sound. Full suite: 338 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 

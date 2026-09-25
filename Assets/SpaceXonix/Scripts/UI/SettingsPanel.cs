@@ -68,8 +68,9 @@ namespace SpaceXonix.UI
             if (masterVolumeSlider != null) masterVolumeSlider.value = model.MasterVolume;
             if (musicVolumeSlider != null) musicVolumeSlider.value = model.MusicVolume;
             if (sfxVolumeSlider != null) sfxVolumeSlider.value = model.SfxVolume;
-            if (vibrationToggle != null) vibrationToggle.isOn = model.VibrationEnabled;
-            if (cameraShakeToggle != null) cameraShakeToggle.isOn = model.CameraShakeEnabled;
+            // Silently, so opening the panel does not sound like the player clicked the toggles.
+            if (vibrationToggle != null) vibrationToggle.SetIsOnWithoutNotify(model.VibrationEnabled);
+            if (cameraShakeToggle != null) cameraShakeToggle.SetIsOnWithoutNotify(model.CameraShakeEnabled);
             refreshing = false;
         }
 
