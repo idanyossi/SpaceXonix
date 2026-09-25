@@ -116,11 +116,12 @@ namespace SpaceXonix.Board
         {
             var enemyIndices = new HashSet<int>();
             if (activeEnemyCells != null) foreach (var enemy in activeEnemyCells) if (IsInBounds(enemy)) enemyIndices.Add(ToIndex(enemy.X, enemy.Y));
-            var selected = FindSmallestEligibleRegionAdjacentToTrail(enemyIndices);
+            var selected = SelectRegionsToCapture(enemyIndices);
             var committedTrailCount = trail.Count;
             foreach (var index in trail) { cells[index] = BoardCellState.Captured; trailMarks[index] = false; capturedPlayableCells++; }
             trail.Clear();
             if (selected != null) foreach (var index in selected) { cells[index] = BoardCellState.Captured; capturedPlayableCells++; }
+            if (selected != null && selected.Count == 0) selected = null;
             var regionCount = selected?.Count ?? 0;
             var percentageGained = TotalPlayableCells == 0 ? 0f : (regionCount + committedTrailCount) * 100f / TotalPlayableCells;
             var result = new BoardCaptureResult(regionCount, committedTrailCount, selected != null, CapturedPercentage, percentageGained);
@@ -129,11 +130,20 @@ namespace SpaceXonix.Board
             TrailStateChanged?.Invoke(BoardMoveResult.Reconnected);
         }
 
-        private List<int> FindSmallestEligibleRegionAdjacentToTrail(HashSet<int> enemyIndices)
+        /// <summary>
+        /// Chooses which open regions the closing trail captures.
+        ///
+        /// When any region the trail touches holds an alien, every alien-free region it touches is
+        /// captured, which is classic Xonix. When none does, the one region kept open is the main
+        /// field - the largest open area on the board - so splitting an empty arena still takes only
+        /// the smaller side, as the GDD asks. A pocket blasted into the player's territory is never
+        /// the main field, so a trail through it fills the whole pocket rather than half of it.
+        /// </summary>
+        private List<int> SelectRegionsToCapture(HashSet<int> enemyIndices)
         {
-            if (currentVisitStamp == int.MaxValue) { Array.Clear(visitStamp, 0, visitStamp.Length); currentVisitStamp = 0; }
-            currentVisitStamp++;
-            List<int> best = null;
+            NextVisitStamp();
+            var regions = new List<List<int>>();
+            var anyEnemy = false;
             for (var trailIndex = 0; trailIndex < trail.Count; trailIndex++)
             {
                 var trailCell = ToCoordinate(trail[trailIndex]);
@@ -144,10 +154,43 @@ namespace SpaceXonix.Board
                     var seedIndex = ToIndex(seed.X, seed.Y);
                     if (cells[seedIndex] != BoardCellState.Uncaptured || visitStamp[seedIndex] == currentVisitStamp) continue;
                     var component = FloodComponent(seedIndex, enemyIndices, out var containsEnemy);
-                    if (!containsEnemy && (best == null || component.Count < best.Count)) best = component;
+                    if (containsEnemy) anyEnemy = true;
+                    else regions.Add(component);
                 }
             }
-            return best;
+            if (regions.Count == 0) return null;
+
+            List<int> kept = null;
+            if (!anyEnemy)
+            {
+                var biggest = regions[0];
+                foreach (var region in regions) if (region.Count > biggest.Count) biggest = region;
+                // Only the main field stays open. Every cell of these regions is already flooded, so
+                // the largest open area elsewhere is measured without them.
+                if (biggest.Count >= LargestOpenAreaExcludingVisited()) kept = biggest;
+            }
+            var selected = new List<int>();
+            foreach (var region in regions) if (region != kept) selected.AddRange(region);
+            return selected;
+        }
+
+        /// <summary>The size of the largest open area not already visited in this pass.</summary>
+        private int LargestOpenAreaExcludingVisited()
+        {
+            var largest = 0;
+            for (var index = 0; index < cells.Length; index++)
+            {
+                if (cells[index] != BoardCellState.Uncaptured || visitStamp[index] == currentVisitStamp) continue;
+                var size = FloodComponent(index, null, out _).Count;
+                if (size > largest) largest = size;
+            }
+            return largest;
+        }
+
+        private void NextVisitStamp()
+        {
+            if (currentVisitStamp == int.MaxValue) { Array.Clear(visitStamp, 0, visitStamp.Length); currentVisitStamp = 0; }
+            currentVisitStamp++;
         }
 
         private List<int> FloodComponent(int start, HashSet<int> enemyIndices, out bool containsEnemy)
@@ -156,7 +199,7 @@ namespace SpaceXonix.Board
             floodQueue.Enqueue(start); visitStamp[start] = currentVisitStamp;
             while (floodQueue.Count > 0)
             {
-                var index = floodQueue.Dequeue(); component.Add(index); if (enemyIndices.Contains(index)) containsEnemy = true;
+                var index = floodQueue.Dequeue(); component.Add(index); if (enemyIndices != null && enemyIndices.Contains(index)) containsEnemy = true;
                 var coordinate = ToCoordinate(index);
                 foreach (var offset in Neighbours)
                 {

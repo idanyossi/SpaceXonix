@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 351
-- Passed: 351
+- EditMode discovered: 353
+- Passed: 353
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -692,6 +692,19 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
   - A live Alien Core volley showed one big glowing charged shot beside two small side shots.
 - **Harness note:** with the Unity window unfocused, Play Mode runs no frames between MCP calls, so `LateUpdate` work, such as hiding the card overlay, only happens once the editor ticks. A render taken straight after a scripted phase change can therefore show stale UI.
 - Tests: 5 new EditMode tests (cards showing the offer and pips, dealing once and landing before a tap, one pick per offer, the gauge filling exactly and glowing when ready, the charged shot moving across all three lanes), plus the volley test now checks exactly one charged shot. Full suite: 351 passed, 0 failed.
+
+### Capture fix: pockets blasted into territory (2026-09-25)
+
+- **Bug (playtest):** a charged boss shot (and equally a Volatile or hybrid blast) can leave an enclosed pocket in the player's territory. Closing a trail through the pocket filled only half of it and left the rest as a hole.
+- **Cause:** capture only ever took the single smallest alien-free region beside the trail. A trail through a pocket splits it into two alien-free halves, so only the smaller half filled.
+- **Fix (`BoardModel.SelectRegionsToCapture`):**
+  - When any region the trail touches contains an alien, every alien-free region it touches is captured (classic Xonix).
+  - When none does, only the main field is kept open: the largest open area on the whole board, measured by flooding what the trail's regions did not already cover. Every other touched region is captured.
+  - Splitting an empty arena, as on the boss stage, still takes the smaller side, as the GDD requires. A pocket is never the main field, so it fills completely.
+  - The GDD's capture rule gained the precise wording.
+- **Behaviour change to note:** a trail that splits the field into three or more pieces now captures every alien-free piece rather than only the smallest. That is the classic rule, and the old code only ever tested two-way splits.
+- **Verified live:** with the real board, a 21-cell pocket blasted deep inside captured territory filled completely when a trail was closed through it (0 cells left open). The user was also playing during that run, which accounts for the other captures and deaths seen at the time.
+- Tests: 2 new BoardModel tests (a trail through a blasted pocket fills both halves, 8 cells, while the main field stays open; an empty-arena split with an untouched pocket elsewhere still keeps the larger side open and leaves the pocket alone). All existing capture tests pass unchanged. Full suite: 353 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 

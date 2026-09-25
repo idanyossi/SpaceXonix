@@ -85,6 +85,48 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
+        public void TrailThroughABlastedPocket_FillsTheWholePocket()
+        {
+            // A band of territory along the bottom, then a boss shot blows a pocket into it.
+            var board = new BoardModel(20, 20);
+            var alien = new[] { new GridCoordinate(9, 15) };
+            for (var x = 1; x < 19; x++) board.MoveTo(new GridCoordinate(x, 6), alien);
+            board.MoveTo(new GridCoordinate(19, 6), alien);
+            Assert.That(board.GetCell(new GridCoordinate(9, 3)), Is.EqualTo(BoardCellState.Captured));
+            var blasted = board.RemoveCapturedWithinRadius(new GridCoordinate(9, 3), 2f);
+            Assert.That(blasted, Is.EqualTo(13));
+
+            // A trail straight down through the pocket splits it into two alien-free halves.
+            for (var y = 5; y >= 1; y--) board.MoveTo(new GridCoordinate(9, y), alien);
+            var result = default(BoardCaptureResult);
+            board.CaptureCompleted += captured => result = captured;
+            board.MoveTo(new GridCoordinate(9, 0), alien);
+
+            for (var y = 1; y <= 5; y++)
+            for (var x = 7; x <= 11; x++)
+                Assert.That(board.GetCell(new GridCoordinate(x, y)), Is.EqualTo(BoardCellState.Captured), $"({x},{y}) left open");
+            Assert.That(result.RegionCellsCaptured, Is.EqualTo(8), "both halves, not just the smaller one");
+            Assert.That(board.GetCell(new GridCoordinate(9, 12)), Is.EqualTo(BoardCellState.Uncaptured), "the main field stays open");
+        }
+
+        [Test]
+        public void EmptyArena_WithAPocketElsewhere_StillKeepsTheLargerSideOfASplitOpen()
+        {
+            // The pocket must not make the main field look like "just another region".
+            var board = new BoardModel(20, 20);
+            for (var x = 1; x < 19; x++) board.MoveTo(new GridCoordinate(x, 4));
+            board.MoveTo(new GridCoordinate(19, 4));
+            board.RemoveCapturedWithinRadius(new GridCoordinate(9, 2), 1f);
+
+            for (var y = 5; y < 19; y++) board.MoveTo(new GridCoordinate(6, y));
+            board.MoveTo(new GridCoordinate(6, 19));
+
+            Assert.That(board.GetCell(new GridCoordinate(3, 10)), Is.EqualTo(BoardCellState.Captured), "the smaller side fills");
+            Assert.That(board.GetCell(new GridCoordinate(12, 10)), Is.EqualTo(BoardCellState.Uncaptured), "the larger side stays open");
+            Assert.That(board.GetCell(new GridCoordinate(9, 2)), Is.EqualTo(BoardCellState.Uncaptured), "a pocket the trail never touched is left alone");
+        }
+
+        [Test]
         public void EnemyInEveryRegion_CommitsTrailButCapturesNoRegion()
         {
             var board = new BoardModel(8, 8);

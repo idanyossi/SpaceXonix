@@ -100,6 +100,7 @@ stateDiagram-v2
 - Reconnecting a valid trail captures the enclosed region according to classic AirXonix behaviour.
 - A region containing an active alien cannot be captured.
 - If both regions are valid, the smaller valid region is captured.
+- More precisely (clarified 2026-09-25, after boss and Volatile blasts started leaving pockets in the player's territory): when a region touched by the trail contains an alien, every alien-free region the trail touches is captured; when none does, only the main field - the largest open area on the board - is kept open, and every other region the trail touches is captured. Splitting an empty arena still takes the smaller side, but a trail through a blasted pocket fills the whole pocket.
 - Normal stages end when captured territory reaches **75%**.
 - Losing all lives ends the entire Campaign run and returns the player to the Main Menu.
 
