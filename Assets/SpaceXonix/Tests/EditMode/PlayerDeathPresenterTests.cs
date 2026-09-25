@@ -24,7 +24,15 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(fixture.Presenter.ShipHidden, Is.True, "the ship disappears on the hit");
                 Assert.That(fixture.PlayerVisual.Visual.gameObject.activeSelf, Is.False);
                 Assert.That(fixture.PlayerVisual.Shadow.gameObject.activeSelf, Is.False);
-                Assert.That(fixture.Rings.ActiveRings.Count, Is.EqualTo(1), "a burst marks the death spot");
+                var explosion = fixture.Presenter.ActiveExplosion;
+                Assert.That(explosion, Is.Not.Null, "the ship blows up");
+                Assert.That(explosion.IsPlaying, Is.True);
+                Assert.That(explosion.transform.position, Is.EqualTo(fixture.PlayerVisual.Visual.position), "where the ship was seen, at hover height");
+
+                fixture.Presenter.Tick(explosion.Duration * .5f);
+                Assert.That(explosion.CurrentFrame, Is.EqualTo(2), "it animates through the fireball");
+                fixture.Presenter.Tick(explosion.Duration);
+                Assert.That(fixture.Presenter.ActiveExplosion, Is.Null, "it plays once and goes back to the pool");
 
                 fixture.CompleteRespawn();
                 Assert.That(fixture.Presenter.ShipHidden, Is.False, "the ship returns with the respawn");
@@ -61,6 +69,7 @@ namespace SpaceXonix.Tests.EditMode
             private readonly GameObject root = new GameObject("DeathPresenterFixture");
             private readonly GameObject playerObject = new GameObject("Player");
             private readonly GameObject ringPrefab;
+            private readonly GameObject explosionPrefab;
             public readonly GameManager Game;
             public readonly ActorVisual PlayerVisual;
             public readonly ExplosionRingPresenter Rings;
@@ -93,10 +102,18 @@ namespace SpaceXonix.Tests.EditMode
                 Set(Rings, "poolService", pool);
                 Set(Rings, "ringPrefab", ringPrefab);
 
+                explosionPrefab = new GameObject("ExplosionPrefab");
+                var burst = explosionPrefab.AddComponent<SpriteBurst>();
+                var frames = new Sprite[5];
+                for (var i = 0; i < frames.Length; i++) frames[i] = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), Vector2.one * .5f);
+                Set(burst, "frames", frames);
+                explosionPrefab.SetActive(false);
+
                 Presenter = root.AddComponent<PlayerDeathPresenter>();
                 Set(Presenter, "gameManager", Game);
                 Set(Presenter, "playerVisual", PlayerVisual);
-                Set(Presenter, "ringPresenter", Rings);
+                Set(Presenter, "poolService", pool);
+                Set(Presenter, "explosionPrefab", explosionPrefab);
 
                 Invoke(Game, "Awake");
                 root.SetActive(true);
@@ -117,6 +134,7 @@ namespace SpaceXonix.Tests.EditMode
                 UnityEngine.Object.DestroyImmediate(root);
                 UnityEngine.Object.DestroyImmediate(playerObject);
                 UnityEngine.Object.DestroyImmediate(ringPrefab);
+                UnityEngine.Object.DestroyImmediate(explosionPrefab);
             }
 
             private static void Set(object target, string name, object value) =>

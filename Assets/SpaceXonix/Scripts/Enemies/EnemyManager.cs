@@ -22,6 +22,8 @@ namespace SpaceXonix.Enemies
         [SerializeField] private EnemySpawnRequest[] reinforcements;
         [Tooltip("Reinforcements appear at least this many cells from the ship.")]
         [SerializeField, Min(0)] private int reinforcementClearanceCells = 10;
+        [Tooltip("Reinforcements appear within this many cells of the blast that made the hybrid, so the player sees where they came from.")]
+        [SerializeField, Min(1)] private int reinforcementSpreadCells = 6;
         [SerializeField] private int randomSeed;
         private System.Random random;
         private readonly List<EnemyController> activeEnemies = new List<EnemyController>();
@@ -130,8 +132,10 @@ namespace SpaceXonix.Enemies
             Debug.DrawLine(position - Vector3.up * radius, position + Vector3.up * radius, Color.yellow, 1f);
             var destroyedTerritory = boardManager.RemoveCapturedWithinRadius(source.LogicalCell, definition.volatileTerritoryRadiusCells * VolatileRadiusMultiplier);
             Despawn(source);
-            // One fresh regular alien per hybrid, so a Volatile never thins the stage out.
-            for (var i = 0; i < destroyedEnemies; i++) SpawnReinforcement();
+            // One fresh regular alien per hybrid, right beside the blast, so a Volatile never thins
+            // the stage out and the player can see the new alien come out of the mix.
+            var blastCell = boardManager.WorldToGrid(position);
+            for (var i = 0; i < destroyedEnemies; i++) SpawnReinforcement(blastCell);
             LastExplosionDefinition = definition;
             LastExplosionScale = VolatileRadiusMultiplier;
             ExplosionOccurred?.Invoke(position, destroyedEnemies, destroyedTerritory);
@@ -171,9 +175,10 @@ namespace SpaceXonix.Enemies
 
         /// <summary>
         /// Brings in one regular alien, chosen at random from <see cref="reinforcements"/>, on a free
-        /// cell away from the ship. Returns false when none is configured or no cell was found.
+        /// cell near <paramref name="near"/> and away from the ship. If nothing near is free it falls
+        /// back to anywhere on the board. Returns false when none is configured or no cell was found.
         /// </summary>
-        public bool SpawnReinforcement()
+        public bool SpawnReinforcement(GridCoordinate? near = null)
         {
             if (reinforcements == null || reinforcements.Length == 0 || boardManager == null || boardManager.Model == null) return false;
             random ??= randomSeed != 0 ? new System.Random(randomSeed) : new System.Random();
@@ -181,9 +186,14 @@ namespace SpaceXonix.Enemies
             if (request == null || request.prefab == null || request.definition == null) return false;
             var player = playerController != null ? boardManager.WorldToGrid(playerController.transform.position) : new GridCoordinate(-1000, -1000);
             // Plenty of attempts: a late stage can have most of the board captured.
-            for (var attempt = 0; attempt < 64; attempt++)
+            for (var attempt = 0; attempt < 96; attempt++)
             {
-                var cell = new GridCoordinate(1 + random.Next(boardManager.Columns - 2), 1 + random.Next(boardManager.Rows - 2));
+                var nearby = near.HasValue && attempt < 48;
+                var cell = nearby
+                    ? new GridCoordinate(near.Value.X + random.Next(-reinforcementSpreadCells, reinforcementSpreadCells + 1),
+                        near.Value.Y + random.Next(-reinforcementSpreadCells, reinforcementSpreadCells + 1))
+                    : new GridCoordinate(1 + random.Next(boardManager.Columns - 2), 1 + random.Next(boardManager.Rows - 2));
+                if (!boardManager.Model.IsInBounds(cell)) continue;
                 var dx = cell.X - player.X; var dy = cell.Y - player.Y;
                 if (dx * dx + dy * dy < reinforcementClearanceCells * reinforcementClearanceCells) continue;
                 var angle = random.NextDouble() * Math.PI * 2d;

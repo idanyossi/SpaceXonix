@@ -4802,8 +4802,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.Presentation.PlayerDeathPresenter
   gameManager: {fileID: 1599803366}
   playerVisual: {fileID: 1987019904147353760}
-  ringPresenter: {fileID: 2088577237}
-  burstRadius: 0.55
+  poolService: {fileID: 296692061}
+  explosionPrefab: {fileID: 713668595451960708, guid: d45aa2249f0fefb48858160093189417, type: 3}
+  explosionSize: 1.6
 --- !u!114 &1599803374
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6521,6 +6522,7 @@ MonoBehaviour:
     row: 0
     direction: {x: 1, y: 0}
   reinforcementClearanceCells: 10
+  reinforcementSpreadCells: 6
   randomSeed: 0
 --- !u!4 &2088577236
 Transform:

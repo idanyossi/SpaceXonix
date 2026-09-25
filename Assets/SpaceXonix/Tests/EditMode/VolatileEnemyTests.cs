@@ -314,6 +314,8 @@ namespace SpaceXonix.Tests.EditMode
                     Assert.That(enemy.Definition, Is.SameAs(reinforcement));
                     var dx = enemy.LogicalCell.X - ship.X; var dy = enemy.LogicalCell.Y - ship.Y;
                     Assert.That(dx * dx + dy * dy, Is.GreaterThanOrEqualTo(100), "not dropped on the ship");
+                    Assert.That(Math.Abs(enemy.LogicalCell.X - 20), Is.LessThanOrEqualTo(6), "right beside the blast, so it visibly comes out of the mix");
+                    Assert.That(Math.Abs(enemy.LogicalCell.Y - 40), Is.LessThanOrEqualTo(6));
                 }
             }
         }

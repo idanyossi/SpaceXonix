@@ -624,6 +624,16 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - **Balance note:** a ×4 hybrid (radius 36) can erase most of the board. It needs two Volatiles absorbed into one hybrid, which is rare, and its hard blink warns the player. Lower `maxHybridCharge` to 2 if it feels unfair.
 - **Tests:** "Volatile does not detonate on a hybrid" became a supercharge test, covering absorption, doubling to ×4, the cap, the ×4 hole reaching exactly 8 cells for a 2-cell radius, and the scale reported to presentation. A new test covers one regular reinforcement per hybrid, kept away from the ship. The line-picker test gained the ship-vicinity window. Full suite: 343 passed, 0 failed.
 
+### Ship explosion and visible reinforcements (2026-09-25)
+
+- **The death looked like a squish.** The ship vanished while an `ExplosionRing` expanded flat on the board floor. A death now plays ansimuz's 5-frame `explosion` sheet (spark, fireball, breaking shockwave). The sheet was already cut into frames but unused, and it is the same CC0 pack and artist as the ship, so no new asset or licence was needed.
+  - `SpriteBurst` plays frames once, facing the camera, at 12 fps. That takes 0.42 s, inside the respawn pause (at most 0.8 s).
+  - `PlayerDeathPresenter` draws it from the pool at the ship's visual, which hovers above the board, so it appears where the ship was seen. It is 1.6 units across, about three times the ship.
+  - The ring is no longer used for deaths; Volatile blasts still use it.
+  - Kenney's fire effects were considered and rejected: they are smooth vector art and would clash with the pixel art.
+- **"A volatile mixing with a regular should also spawn a regular":** this already happened in the previous commit. The new alien landed on a random free cell anywhere on the board, so it was easy to miss. It now appears within 6 cells of the blast, still at least 10 from the ship, and falls back to anywhere only if nothing nearby is free. Live check: a blast at (21,90) produced a Linear reinforcement at (21,89).
+- Tests: the death test now checks that the fireball plays at the ship's visual, steps through frames and returns to the pool once finished; the reinforcement test checks the new alien is within 6 cells of the blast. Full suite: 343 passed, 0 failed.
+
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 
 **What blocked full completion:** this phase is about bringing in licensed third-party art and audio, which cannot be downloaded from here. The MCP's `generate_image` and `generate_model` tools exist but **both providers report `configured: false`**, so AI generation was not available either. The project had **zero** art and audio files before this phase.

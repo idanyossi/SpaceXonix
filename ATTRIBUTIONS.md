@@ -14,7 +14,7 @@ only be used when their licence permits use in the project."*
 
 | Asset | Author | Source | Licence | Used for |
 |---|---|---|---|---|
-| `Assets/SpaceXonix/Art/ThirdParty/Ansimuz/*.png` (7 sprite sheets) and the frames cut from them | Luis Zuno ([@ansimuz](https://ansimuz.com)) | [Space Ship Shooter Pixel Art Assets](https://opengameart.org/content/space-ship-shooter-pixel-art-assets), OpenGameArt | **CC0 1.0** | Player ship, all four alien types, the Alien Core, pickups, boss projectile |
+| `Assets/SpaceXonix/Art/ThirdParty/Ansimuz/*.png` (7 sprite sheets) and the frames cut from them | Luis Zuno ([@ansimuz](https://ansimuz.com)) | [Space Ship Shooter Pixel Art Assets](https://opengameart.org/content/space-ship-shooter-pixel-art-assets), OpenGameArt | **CC0 1.0** | Player ship, all four alien types, the Alien Core, pickups, boss projectile, the ship's death explosion |
 
 | `Assets/SpaceXonix/Art/ThirdParty/Ansimuz/Background/*.png` (5 layers) | Luis Zuno ([@ansimuz](https://ansimuz.com)) | [Space Background](https://opengameart.org/content/space-background-3), OpenGameArt | **CC0 1.0** | The drifting space backdrop behind the arena and menus |
 
