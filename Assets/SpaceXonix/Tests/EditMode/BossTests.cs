@@ -111,10 +111,55 @@ namespace SpaceXonix.Tests.EditMode
                     Assert.That(projectile.Velocity.magnitude, Is.EqualTo(fixture.Definition.projectileSpeed).Within(.001f));
                     angles.Add(Vector2.SignedAngle(Vector2.down, projectile.Velocity));
                 }
+                foreach (var projectile in fixture.Boss.ActiveProjectiles)
+                {
+                    var middle = Mathf.Abs(Vector2.SignedAngle(Vector2.down, projectile.Velocity)) < .01f;
+                    Assert.That(projectile.BreaksTerritory, Is.EqualTo(middle), "only the middle shot breaks territory");
+                }
                 angles.Sort();
                 Assert.That(angles[0], Is.EqualTo(-12f).Within(.01f));
                 Assert.That(angles[1], Is.EqualTo(0f).Within(.01f), "the middle shot goes straight at the ship");
                 Assert.That(angles[2], Is.EqualTo(12f).Within(.01f));
+            }
+        }
+
+        [Test]
+        public void MiddleShot_BreaksASmallPatchOfBuiltTerritoryAndIsSpent()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.StartPlaying();
+                fixture.CaptureColumn(30);
+                var captured = fixture.Board.CapturedPercentage;
+                var broken = new List<int>();
+                fixture.Boss.TerritoryBroken += (_, cells) => broken.Add(cells);
+
+                fixture.FireAtCell(new GridCoordinate(32, 40), 2.5f);
+                for (var i = 0; i < 20 && fixture.Boss.ActiveProjectiles.Count > 0; i++) fixture.Boss.Tick(.02f);
+
+                Assert.That(fixture.Boss.ActiveProjectiles, Is.Empty, "the shot is spent on the territory");
+                Assert.That(broken, Has.Count.EqualTo(1));
+                Assert.That(broken[0], Is.GreaterThan(5));
+                Assert.That(fixture.Board.Model.GetCell(new GridCoordinate(30, 40)), Is.EqualTo(BoardCellState.Uncaptured), "it breaks where it lands");
+                Assert.That(fixture.Board.Model.GetCell(new GridCoordinate(34, 40)), Is.EqualTo(BoardCellState.Captured), "and only a small patch");
+                Assert.That(fixture.Board.CapturedPercentage, Is.LessThan(captured));
+            }
+        }
+
+        [Test]
+        public void SideShots_StillFlyOverTerritory()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.StartPlaying();
+                fixture.CaptureColumn(30);
+                var captured = fixture.Board.CapturedPercentage;
+
+                fixture.FireAtCell(new GridCoordinate(32, 40));
+                for (var i = 0; i < 20; i++) fixture.Boss.Tick(.02f);
+
+                Assert.That(fixture.Board.CapturedPercentage, Is.EqualTo(captured));
+                Assert.That(fixture.Board.Model.GetCell(new GridCoordinate(30, 40)), Is.EqualTo(BoardCellState.Captured));
             }
         }
 
@@ -330,16 +375,23 @@ namespace SpaceXonix.Tests.EditMode
             /// <summary>Puts one projectile just short of the ship, travelling into it.</summary>
             public void FireAtPlayer() => FireAt(Player.transform.position);
 
-            public void FireAtCell(GridCoordinate cell) => FireAt(Board.GetWorldPosition(cell));
+            public void FireAtCell(GridCoordinate cell, float territoryRadiusCells = 0f) => FireAt(Board.GetWorldPosition(cell), territoryRadiusCells);
 
-            private void FireAt(Vector3 target)
+            /// <summary>Cuts a full column and reconnects, a real capture that fills the smaller side.</summary>
+            public void CaptureColumn(int column)
+            {
+                for (var row = 1; row < Board.Rows - 1; row++) Board.Model.MoveTo(new GridCoordinate(column, row));
+                Board.Model.MoveTo(new GridCoordinate(column, Board.Rows - 1));
+            }
+
+            private void FireAt(Vector3 target, float territoryRadiusCells = 0f)
             {
                 var direction = Vector2.right;
                 var origin = target - (Vector3)(direction * 1f);
                 var instance = UnityEngine.Object.Instantiate(projectilePrefab, Boss.transform);
                 instance.SetActive(true);
                 var projectile = instance.GetComponent<BossProjectile>();
-                projectile.Launch(origin, direction * 4f, Definition.projectileRadius);
+                projectile.Launch(origin, direction * 4f, Definition.projectileRadius, territoryRadiusCells);
                 var active = (List<BossProjectile>)typeof(BossController)
                     .GetField("activeProjectiles", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Boss);
                 active.Clear();

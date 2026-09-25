@@ -41,6 +41,8 @@ namespace SpaceXonix.Boss
         public event Action VolleyFired;
         public event Action Interrupted;
         public event Action Defeated;
+        /// <summary>A territory-breaking shot hit the player's territory: where, and how many cells it broke.</summary>
+        public event Action<Vector3, int> TerritoryBroken;
 
         // The core lives in the scene for every stage, so it must start hidden and only show on a boss stage.
         private void Awake() => SetVisible(false);
@@ -140,6 +142,8 @@ namespace SpaceXonix.Boss
             var step = count > 1 ? definition.volleySpreadDegrees / (count - 1) : 0f;
             var start = count > 1 ? -definition.volleySpreadDegrees * .5f : 0f;
             var speed = definition.projectileSpeed * projectileSpeedMultiplier;
+            // Only an odd volley has a middle shot, the one aimed straight at the ship.
+            var middle = count % 2 == 1 ? count / 2 : -1;
             for (var i = 0; i < count; i++)
             {
                 var direction = (Vector2)(Quaternion.Euler(0f, 0f, start + step * i) * aim);
@@ -153,7 +157,8 @@ namespace SpaceXonix.Boss
                 }
                 var origin = transform.position + (Vector3)(direction * definition.bodyRadius);
                 origin.z = transform.position.z - .01f;
-                projectile.Launch(origin, direction * speed, definition.projectileRadius);
+                projectile.Launch(origin, direction * speed, definition.projectileRadius,
+                    i == middle ? definition.middleShotTerritoryRadiusCells : 0f);
                 activeProjectiles.Add(projectile);
             }
             VolleyFired?.Invoke();
@@ -194,8 +199,20 @@ namespace SpaceXonix.Boss
             boardManager.GetTraversedCells(from, to, traversedCells);
             for (var i = 0; i < traversedCells.Count; i++)
             {
-                if (boardManager.Model.GetCell(traversedCells[i]) != BoardCellState.Trail) continue;
-                gameManager.ReportPlayerFailure(PlayerFailureReason.TrailHit);
+                var cell = traversedCells[i];
+                var state = boardManager.Model.GetCell(cell);
+                if (state == BoardCellState.Trail)
+                {
+                    gameManager.ReportPlayerFailure(PlayerFailureReason.TrailHit);
+                    return true;
+                }
+                // The middle shot breaks the first territory the player built that it reaches. The
+                // permanent border is not the player's, so it flies on past that and off the board.
+                if (!projectile.BreaksTerritory || state != BoardCellState.Captured || boardManager.Model.IsStructural(cell)) continue;
+                var broken = boardManager.RemoveCapturedWithinRadius(cell, projectile.TerritoryRadiusCells);
+                var at = boardManager.GetWorldPosition(cell);
+                at.z = projectile.transform.position.z;
+                TerritoryBroken?.Invoke(at, broken);
                 return true;
             }
             return false;

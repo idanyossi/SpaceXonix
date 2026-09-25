@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 343
-- Passed: 343
+- EditMode discovered: 346
+- Passed: 346
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -633,6 +633,23 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
   - Kenney's fire effects were considered and rejected: they are smooth vector art and would clash with the pixel art.
 - **"A volatile mixing with a regular should also spawn a regular":** this already happened in the previous commit. The new alien landed on a random free cell anywhere on the board, so it was easy to miss. It now appears within 6 cells of the blast, still at least 10 from the ship, and falls back to anywhere only if nothing nearby is free. Live check: a blast at (21,90) produced a Linear reinforcement at (21,89).
 - Tests: the death test now checks that the fireball plays at the ship's visual, steps through frames and returns to the pool once finished; the reinforcement test checks the new alien is within 6 cells of the blast. Full suite: 343 passed, 0 failed.
+
+### Shot explosions and the boss's territory-breaking shot (2026-09-25)
+
+- **Aliens killed by the Power Shot explode.** They used to just vanish.
+  - `SpriteBurstPresenter` plays pooled explosions from the same ansimuz sheet as the ship's death, sized at 2.2× the alien's visual width.
+  - Each one appears at the hover height the alien was seen at: the alien is already back in the pool when `PowerMeter.EnemyDestroyedByShot` fires, but its transforms still hold where it was.
+  - The shared prefab was renamed from `ShipExplosion` to `Explosion`. `AssetDatabase.MoveAsset` kept its GUID, so the death presenter's reference survived.
+- **The boss's middle shot breaks territory.**
+  - In an odd volley, the middle shot is the one aimed straight at the ship. It is tinted red-orange (`BossProjectile.breakerTint`) so it reads differently from the side shots.
+  - On reaching territory the player built, it removes captured cells within `BossDefinition.middleShotTerritoryRadiusCells` (2.5), plays an explosion there, and is spent.
+  - The permanent border does not count, and the cell the ship stands on is protected by the existing rule in `RemoveCapturedWithinRadius`.
+  - Side shots behave exactly as before: they fly over territory and only hit the ship or the trail.
+  - Because the middle shot aims at the ship, repeated volleys dig a tunnel through the territory toward it, so hiding deep in territory is no longer permanently safe.
+- **Verified live:**
+  - A real Power Shot killed an alien at (8,1), and the explosion played there.
+  - With the Alien Core active and a captured band between it and the ship, three middle shots broke 13, 15 and 12 cells at (4,12), (3,9) and (2,6), digging toward the ship.
+- Tests: 3 new EditMode tests (the middle shot breaking a small patch and being spent, side shots leaving territory alone, and a shot alien exploding once where it was), plus the volley test now checks only the middle shot breaks territory. Full suite: 346 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 

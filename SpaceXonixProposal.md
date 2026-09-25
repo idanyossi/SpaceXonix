@@ -597,7 +597,7 @@ Boss projectiles:
 - remove one life when hitting the player;
 - remove one life when hitting the unfinished trail.
 
-Boss projectiles **do not destroy captured territory in the guaranteed version**.
+The side shots of each volley pass over captured territory. The middle shot, aimed straight at the ship and tinted differently, breaks a small patch of the territory the player built where it lands (about 2.5 cells) and is spent; the permanent border and the ship's own cell are never broken. (Changed after playtesting, 2026-09-25: the original design had no boss territory damage.)
 
 The boss cannot be defeated through normal shooting.
 
