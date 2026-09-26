@@ -1145,6 +1145,20 @@ Four requests from play-testing.
 - Tooling: GitHub CLI 2.101.0 installed through winget; the user logged in with `gh auth login`.
 - Cleanup: the Test Runner's performance package had left `Assets/Resources/PerformanceTestRun*.json`. They were removed and git-ignored, since anything in a Resources folder ships in builds.
 
+## GitHub README (2026-09-26)
+
+- `README.md` is the repository homepage. It covers:
+  - the pitch and a download link;
+  - a gameplay GIF (a trail drawn out and closed for a 15% capture and a x3 award);
+  - how to play, with controls for both platforms;
+  - an 8-image gallery (menu, hangar, briefing, shield, freeze, upgrade cards, boss, and a boss-destruction GIF);
+  - features, install steps, a developer section (Unity version, building, tests, code map) and credits.
+- Media is in `docs/media/` (3.5 MB), outside `Assets` so Unity never imports it.
+  - Screenshots are real 1080x1920 captures of the running game, scaled to 540 px wide.
+  - The GIFs were recorded with `Time.captureFramerate = 30`, which locks game time per frame so saving frames doesn't slow playback. The ship was steered by a script, and ffmpeg encoded 15 fps with a 128-colour palette.
+- Verified: all images are served from `raw.githubusercontent.com`, and GitHub's Markdown API renders all 9 images, 6 sections and 3 tables.
+- Tooling: ffmpeg 9.0.2 installed through winget, for the GIFs.
+
 ## Next Recommended Action
 
 All 21 planned phases are complete. The game runs on Android (a steady 60 fps on the test phone) and on Windows, with 386 EditMode and 8 Play Mode tests passing.
