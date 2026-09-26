@@ -24,6 +24,20 @@ namespace SpaceXonix.EditorTools
         {
             // Deferred: asset loading is unreliable while the editor is still compiling and reloading.
             EditorApplication.delayCall += Apply;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
+
+        /// <summary>
+        /// The Test Runner enters Play Mode from a temporary scene of its own ("InitTestScene..."), and
+        /// forcing Boot there stops Play Mode tests from ever starting. Step aside for those runs.
+        /// </summary>
+        private static void OnPlayModeStateChanged(PlayModeStateChange change)
+        {
+            if (change == PlayModeStateChange.ExitingEditMode &&
+                UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.StartsWith("InitTestScene"))
+                EditorSceneManager.playModeStartScene = null;
+            else if (change == PlayModeStateChange.EnteredEditMode)
+                Apply();
         }
 
         private static bool Enabled

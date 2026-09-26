@@ -1044,8 +1044,8 @@ The project is not considered complete without:
 - [x] Controls screen
 - [x] Android swipe input
 - [x] PC keyboard input
-- [ ] Android build
-- [ ] Windows build
+- [x] Android build
+- [x] Windows build
 - [x] Object pooling
 - [x] Coroutines
 - [x] GameManager singleton

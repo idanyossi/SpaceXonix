@@ -1,0 +1,10 @@
+{
+  "name": "SpaceXonix.PlayModeTests",
+  "references": [
+    "SpaceXonix.Runtime",
+    "Unity.InputSystem"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

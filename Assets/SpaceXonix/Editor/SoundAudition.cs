@@ -75,7 +75,7 @@ namespace SpaceXonix.EditorTools
             var musicSource = Path.Combine(SourceRoot, "junkala_5_chiptunes");
             if (!Directory.Exists(sfxSource) || !Directory.Exists(musicSource))
             {
-                Debug.LogWarning("Download the Junkala packs into AssetSources first; see ATTRIBUTIONS.md.");
+                Debug.LogWarning("Download the Junkala packs into AssetSources first; see Assets/ThirdParty/ATTRIBUTION.md.");
                 return;
             }
             Directory.CreateDirectory(SfxFolder);

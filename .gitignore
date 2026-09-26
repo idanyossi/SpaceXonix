@@ -83,3 +83,6 @@ UserSettings/*
 
 # Unity build scratch
 /.utmp/
+
+# Test Runner scratch scenes left by interrupted Play Mode runs
+/Assets/InitTestScene*.unity*

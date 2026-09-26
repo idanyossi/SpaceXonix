@@ -32,7 +32,7 @@
 18. **COMPLETE** — Audio system, sound library, and gameplay bindings
 19. **COMPLETE** — CC0 pixel-art sprites for every actor, CC0 sound effects, licence record (music and board textures still to source)
 20. **COMPLETE** — Polish: capture flash, Freeze and Arena Tilt presentation, boss destruction sequence, menu and scene transitions
-21. **IN PROGRESS** — Final QA + Profiling + Submission Cleanup (Android build running on device)
+21. **IN PROGRESS** — Final QA + Profiling + Submission Cleanup (Android and Windows builds done, Play Mode tests added; the user's full playthrough on device remains)
 
 ## Current Architecture
 
@@ -60,6 +60,7 @@
 
 - EditMode discovered: 386
 - Passed: 386
+- PlayMode: 8 passed (Tests/PlayMode, full game flow)
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -871,6 +872,33 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
   - The user: "it feels good".
 - Tests: 386 passed, 0 failed.
 
+### Windows build, Play Mode tests, cleanup (2026-09-26)
+
+- **Windows build** (`Builds/Windows/SpaceXonix.exe`, Mono scripting, Direct3D 12):
+  - It opens as a resizable 540x960 portrait window, which fits a 1080p screen, instead of fullscreen.
+  - The first run logged an error **every frame**: the PC renderer had Screen Space Ambient Occlusion on, whose shaders are stripped from builds. SSAO and PC shadows are now off, since everything is unlit.
+  - The rebuilt player ran with 0 errors or exceptions in `Player.log`.
+- **Play Mode tests**, the first in the project (`Tests/PlayMode`, 8 tests, about 18 s). Each boots the real game through Boot and the Main Menu, then drives it through the same input and campaign calls as the UI:
+  - boot to the first briefing;
+  - swipes steer the ship out and back, the capture rises, and the HUD shows it;
+  - losing a life respawns the ship safely;
+  - pause freezes the game and resume continues it;
+  - a stored shield runs its duration and ends, with the bubble shown and hidden;
+  - the Power Shot kills an alien with its impact effects, and the hit-stop lets go;
+  - lasers warn, fire and cool down in order;
+  - **a full campaign:** five stages, four upgrades, the boss destruction sequence (the core is gone), the run complete, and every upgrade with a HUD badge.
+  - All 8 passed on two consecutive runs.
+- **Harness fixes:**
+  - The editor's "Always Play From Boot Scene" rule also hijacked the Test Runner's start scene, so Play Mode tests never began. It now steps aside when Play Mode is entered from the Test Runner's `InitTestScene`.
+  - The tests boot once per run: loading Boot a second time meets its persistent services as duplicates. The real game only boots once.
+- **Cleanup:**
+  - `ATTRIBUTIONS.md` moved to `Assets/ThirdParty/ATTRIBUTION.md`, where AGENTS.md asks for it; references updated. Every shipped asset is covered (Ansimuz, Master484 and Junkala CC0; Exo 2 OFL).
+  - The `SPACEXONIX_FRAMESTATS` define was removed. `FrameStats` stays in the code, inert, for future checks.
+  - The unused sound candidates were **kept**. They never ship (builds only include referenced assets), and keeping audition options is the user's stated preference.
+  - The active platform is back to Android.
+  - The GDD's Android build and Windows build boxes are ticked.
+- Tests: EditMode 386 passed, PlayMode 8 passed.
+
 ## Phase 20 — Polish (2026-09-26)
 
 Scope as the user asked: a simple, not over-the-top capture effect, Freeze and Arena Tilt presentation, a boss destruction sequence, and menu transitions.
@@ -973,12 +1001,12 @@ Four requests from play-testing.
 
 ### Licence record (done)
 
-- `ATTRIBUTIONS.md` at the repo root records every shipped asset with its source and licence, as the GDD's Asset Licensing section requires, plus the full inventory of what still needs sourcing and which stand-in each replaces.
+- `Assets/ThirdParty/ATTRIBUTION.md` (moved there from the repo root in Phase 21, where AGENTS.md asks for it) records every shipped asset with its source and licence, as the GDD's Asset Licensing section requires, plus the full inventory of what still needs sourcing and which stand-in each replaces.
 - It notes that CC-BY assets need visible in-game credit, not just a file entry, so a credits screen goes on the Phase 20 list the moment the first one is added.
 
 ### Third-party art and audio (done)
 
-- **Sourcing.** Browsed Kenney and itch.io's free pixel-art listings, and followed up on OpenGameArt when itch.io blocked its filtered pages. The deciding constraint turned out to be that **the GitHub repository is public**: committing an asset publishes its raw files, so every pack whose licence forbids redistribution was out, however good it looked. That removed the [8x8] pack, the CraftPix/Free Game Assets packs and dani567's pack. Helianthus Games' kit was dropped because its licence is silent on redistribution and its ships are side-view, which is wrong for a camera looking down on the board. The full reasoning is in `ATTRIBUTIONS.md`.
+- **Sourcing.** Browsed Kenney and itch.io's free pixel-art listings, and followed up on OpenGameArt when itch.io blocked its filtered pages. The deciding constraint turned out to be that **the GitHub repository is public**: committing an asset publishes its raw files, so every pack whose licence forbids redistribution was out, however good it looked. That removed the [8x8] pack, the CraftPix/Free Game Assets packs and dani567's pack. Helianthus Games' kit was dropped because its licence is silent on redistribution and its ships are side-view, which is wrong for a camera looking down on the board. The full reasoning is in `Assets/ThirdParty/ATTRIBUTION.md`.
 - **Art: ansimuz's Space Ship Shooter Pixel Art Assets (CC0).** Genuine top-down pixel art on a 16-pixel grid, with a ship, three enemy designs, an explosion, bolts and power-up orbs. **Kenney's space art was deliberately not used for anything in-world**: it is smooth vector, and mixing it with pixel sprites is what makes asset-pack games look cheap. Kenney has no pixel-art space pack at all.
 - **Audio: Kenney Sci-Fi Sounds plus the Space Shooter Remastered bonus clips (CC0).** Sound has no visual style, so there is no clash. They cover 19 of the 20 sounds, with several variants picked at random for alien deaths and boss shots. The clips were chosen **by name, not by ear**, and `ThirdPartyAudioApplier` is the one place to change a mapping. The direction blip stays generated because it must be quieter than anything in the pack, and all three music loops stay generated because neither Kenney pack has music.
 - **Pipeline.** Raw downloads live in the git-ignored `AssetSources/`, and only the files actually used are copied into `Assets`, each folder with its licence file. `PixelArtImporter` forces point filtering, no compression and no mipmaps on anything under `Art/ThirdParty`, since any of those would smear a 16-pixel sprite. It also cuts each sheet into one PNG per frame, which avoids the deprecated slicing API and needs no 2D Sprite package. `PixelArtSpriteApplier` (**SpaceXonix > Apply Pixel Art Sprites**) records the whole art mapping in one re-runnable place.
