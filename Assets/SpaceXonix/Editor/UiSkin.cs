@@ -8,7 +8,9 @@ namespace SpaceXonix.EditorTools
 {
     /// <summary>
     /// Restyles every menu as part of the ship: hull-plate panels with lit teal frames, raised plating
-    /// buttons with proper pixel-art pressed states, recessed slots, and Kenney's CC0 pixel fonts.
+    /// buttons with proper pixel-art pressed states, recessed slots, and the Exo 2 typeface (SIL OFL).
+    /// The panels stay pixel art; the text does not. Kenney's pixel fonts were tried first and were
+    /// unreadable at the sizes a phone and a landscape window actually draw them.
     ///
     /// The widgets are drawn in code in the board plating's palette, for the same reason the board is:
     /// a generic UI pack would not match the art around it. Roles are recognised from the hierarchy
@@ -18,9 +20,9 @@ namespace SpaceXonix.EditorTools
     public static class UiSkin
     {
         private const string Folder = "Assets/SpaceXonix/Art/Generated/UI";
-        private const string FontFolder = "Assets/SpaceXonix/Art/ThirdParty/Kenney/Fonts";
-        public const string BodyFontName = "Kenney Mini Square";
-        public const string TitleFontName = "Kenney Pixel Square";
+        public const string FontFolder = "Assets/SpaceXonix/Art/ThirdParty/Exo2";
+        public const string BodyFontName = "Exo2-SemiBold";
+        public const string TitleFontName = "Exo2-Bold";
 
         private static readonly Color32 Hull = PixelCanvas.Hex(0x161a2b);
         private static readonly Color32 Void = PixelCanvas.Hex(0x0a0c16);
@@ -79,7 +81,7 @@ namespace SpaceXonix.EditorTools
             // Upgrade cards and hangar tiles have their own card frame, built by their own tools.
             if (node.GetComponent<SpaceXonix.UI.UpgradeCard>() != null) return;
             if (node.GetComponent<Button>() != null && node.GetComponent<Image>() is Image framed &&
-                framed.sprite != null && framed.sprite.name.StartsWith("UI_Card")) return;
+                framed.sprite != null && (framed.sprite.name.StartsWith("UI_Card") || framed.sprite.name.StartsWith("UI_Chevron"))) return;
 
             var image = node.GetComponent<Image>();
             var button = node.GetComponent<Button>();
@@ -88,7 +90,8 @@ namespace SpaceXonix.EditorTools
 
             if (button != null && image != null)
             {
-                SetSliced(image, skin.Button);
+                // The primary action on a screen is lit, so the next step stands out.
+                SetSliced(image, node.name == "LaunchButton" ? skin.ButtonHover : skin.Button);
                 button.transition = Selectable.Transition.SpriteSwap;
                 button.spriteState = new SpriteState
                 {
@@ -118,7 +121,8 @@ namespace SpaceXonix.EditorTools
         private static void StyleText(Text text, Skin skin)
         {
             var isTitle = text.name == "Title";
-            text.font = isTitle ? skin.Title : skin.Body;
+            // Titles and button captions take the bold weight; everything else the semibold.
+            text.font = isTitle || text.GetComponentInParent<Button>(true) != null ? skin.Title : skin.Body;
             if (isTitle) text.color = TitleColour;
             // The title font is much wider than the old one, so a long stage name would wrap into the
             // body below it; titles shrink to fit their rect instead. Body text keeps its size unless
@@ -173,7 +177,7 @@ namespace SpaceXonix.EditorTools
             };
             if (skin.Panel == null || skin.Button == null || skin.Body == null || skin.Title == null)
             {
-                Debug.LogWarning("UI skin assets are missing; check the generated sprites and the Kenney fonts.");
+                Debug.LogWarning("UI skin assets are missing; check the generated sprites and the Exo 2 fonts.");
                 return null;
             }
             return skin;
@@ -294,22 +298,23 @@ namespace SpaceXonix.EditorTools
 
         private static void ImportFonts()
         {
-            var source = Path.Combine("AssetSources", "kenney_fonts");
+            // The fonts ship in the project with their OFL licence; the originals came from Google Fonts
+            // (downloaded into the git-ignored AssetSources/google_fonts).
+            var source = Path.Combine("AssetSources", "google_fonts");
             Directory.CreateDirectory(FontFolder);
-            foreach (var name in new[] { BodyFontName, TitleFontName })
+            foreach (var (name, file) in new[] { (BodyFontName, "exo-2-600.ttf"), (TitleFontName, "exo-2-700.ttf") })
             {
-                var from = Path.Combine(source, "Fonts", name + ".ttf");
+                var from = Path.Combine(source, file);
                 var to = $"{FontFolder}/{name}.ttf";
                 if (!File.Exists(to) && File.Exists(from)) File.Copy(from, to);
             }
-            var licence = Path.Combine(source, "License.txt");
-            if (File.Exists(licence)) File.Copy(licence, $"{FontFolder}/LICENSE.txt", true);
+            var licence = Path.Combine(source, "OFL-exo2.txt");
+            if (File.Exists(licence)) File.Copy(licence, $"{FontFolder}/OFL.txt", true);
             AssetDatabase.Refresh();
             foreach (var name in new[] { BodyFontName, TitleFontName })
             {
-                // Smooth, not hinted raster. Hinted raster snaps each glyph to whole pixels, which only
-                // looks right at exact multiples of the font's grid; the canvas scales with the screen,
-                // so on phones and in a landscape window the letters broke up into unreadable shapes.
+                // Smooth, not hinted raster: the canvas scales with the screen, and hinted glyphs snapped
+                // to whole pixels break up at the fractional scales phones and windows use.
                 if (!(AssetImporter.GetAtPath($"{FontFolder}/{name}.ttf") is TrueTypeFontImporter importer)) continue;
                 if (importer.fontRenderingMode == FontRenderingMode.Smooth) continue;
                 importer.fontRenderingMode = FontRenderingMode.Smooth;

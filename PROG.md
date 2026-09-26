@@ -785,6 +785,28 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - **Harness note:** the editor paused itself twice as the game scene loaded, with no error in the console and no `Debug.Break` in the project. It was unpaused to finish. Worth checking the Console's Error Pause and the Game view's settings.
 - Tests: the grid test was replaced by carousel tests (opens on the equipped ship; Next equips and saves; wraps past the last and back) and a swipe test (long sideways drags count in the right direction; nudges and vertical drags do not). Full suite: 365 passed, 0 failed.
 
+### A softer font everywhere, and a hangar that looks designed (2026-09-26)
+
+- **Font:** the user found the pixel font unreadable everywhere (bottom HUD, upgrade cards, hangar), even with smooth rendering.
+  - Every Kenney font is the same square, all-caps pixel style, so none of them was softer.
+  - Four OFL fonts from Google Fonts were rendered side by side at 17 and 12 points: Exo 2, Oxanium, Rajdhani and Chakra Petch.
+  - **Exo 2** reads best and keeps a sci-fi feel. SemiBold is used for body text; Bold for titles and button captions (`UiSkin` now gives captions the bold weight).
+  - The fonts live in `Art/ThirdParty/Exo2` with `OFL.txt`. The Kenney fonts were removed once no scene, prefab or asset referenced them.
+  - Every builder takes the font from `UiSkin.FontFolder`, so there is one place to change it.
+  - The skin test now requires Exo 2 on every text in both scenes and the settings overlay.
+- **Hangar redesign** (the user: the arrows and the rest looked "budget and rushed"):
+  - The boxed arrow buttons became glowing pixel chevrons (`UI_Chevron`, one drawing mirrored for the left). They nudge outward and brighten on hover.
+  - The previous and next ships peek in dimly behind them, so it reads as a carousel.
+  - The ship floats with a slow bob over a hologram pedestal (`UI_Pedestal`) in a faint breathing aura (`UI_Glow`), with a glowing divider (`UI_Divider`) under the name.
+  - Perk and drawback each sit in a recessed slot with a green ▲ or red ▼ marker (`UI_StatUp` / `UI_StatDown`).
+  - LAUNCH is the primary action: lit (`UI_ButtonHover` as its normal state, which `UiSkin` keeps for any `LaunchButton`), larger, and gently pulsing. BACK stays secondary.
+  - All the new art is drawn by `ShipSkinBuilder`, and `UiSkin` leaves chevron buttons alone.
+- **Verified at 45% phone scale:**
+  - The carousel (Cobalt Delta, Phantom Rail), the bottom HUD with touch buttons (ABILITY, POWER, "Power 0"), the top HUD ("Stage 1/5", score, "0.0%") and the upgrade cards all read cleanly.
+  - A first render showed the aura as a solid disc and BACK touching LAUNCH; the aura was softened, the buttons spaced, and the side ships tucked inside the panel.
+  - The user's saved ship was reset to the default afterwards.
+- Tests: full suite 365 passed, 0 failed.
+
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 
 **What blocked full completion:** this phase is about bringing in licensed third-party art and audio, which cannot be downloaded from here. The MCP's `generate_image` and `generate_model` tools exist but **both providers report `configured: false`**, so AI generation was not available either. The project had **zero** art and audio files before this phase.

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: f4faf7b38128f3d438389671d7e245bd
+guid: 88ee4a1e60b2bf64fb74573595d5ad6f
 TrueTypeFontImporter:
   externalObjects: {}
   serializedVersion: 4
@@ -9,7 +9,7 @@ TrueTypeFontImporter:
   characterPadding: 1
   includeFontData: 1
   fontNames:
-  - Kenney Pixel Square
+  - Exo 2
   fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 0

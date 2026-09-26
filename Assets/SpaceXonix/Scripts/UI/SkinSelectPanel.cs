@@ -35,6 +35,18 @@ namespace SpaceXonix.UI
         [SerializeField] private Sprite dotOn;
         [SerializeField] private Sprite dotOff;
 
+        [Header("Dressing")]
+        [Tooltip("The neighbouring ships, shown dimly either side so the carousel reads as one.")]
+        [SerializeField] private UiSpriteAnimator previousPeek;
+        [SerializeField] private UiSpriteAnimator nextPeek;
+        [Tooltip("The ship on show, which floats gently above its pedestal.")]
+        [SerializeField] private RectTransform floatingShip;
+        [SerializeField] private Image glow;
+        [SerializeField] private RectTransform previousArrow;
+        [SerializeField] private RectTransform nextArrow;
+        [Tooltip("The primary button, which pulses so the next step is obvious.")]
+        [SerializeField] private RectTransform launchPulse;
+
         [Header("Leaving")]
         [SerializeField] private Button launchButton;
         [SerializeField] private Button backButton;
@@ -49,6 +61,9 @@ namespace SpaceXonix.UI
         private bool cardRestCaptured;
         private float slideTime = float.MaxValue;
         private int slideFrom;
+        private Vector2 shipRest, previousArrowRest, nextArrowRest;
+        private bool dressingCaptured;
+        private float idleTime;
 
         public bool IsShown => root != null && root.activeSelf;
         public int Count => library != null && library.skins != null ? library.skins.Length : 0;
@@ -134,6 +149,30 @@ namespace SpaceXonix.UI
                 if (keyboard.escapeKey.wasPressedThisFrame) Hide();
             }
             Animate(Time.unscaledDeltaTime);
+            AnimateIdle(Time.unscaledDeltaTime);
+        }
+
+        /// <summary>The idle motion: the ship floats, its glow breathes, the arrows nudge outward, Launch pulses.</summary>
+        public void AnimateIdle(float deltaTime)
+        {
+            CaptureDressing();
+            idleTime += Mathf.Max(0f, deltaTime);
+            var wave = Mathf.Sin(idleTime * Mathf.PI * 2f * .5f);
+            if (floatingShip != null) floatingShip.anchoredPosition = shipRest + new Vector2(0f, wave * 10f);
+            if (glow != null) { var c = glow.color; c.a = Mathf.Lerp(.08f, .16f, .5f + .5f * wave); glow.color = c; }
+            var nudge = Mathf.Max(0f, Mathf.Sin(idleTime * Mathf.PI * 2f * .8f)) * 8f;
+            if (previousArrow != null) previousArrow.anchoredPosition = previousArrowRest + new Vector2(-nudge, 0f);
+            if (nextArrow != null) nextArrow.anchoredPosition = nextArrowRest + new Vector2(nudge, 0f);
+            if (launchPulse != null) launchPulse.localScale = Vector3.one * (1f + .035f * (.5f + .5f * Mathf.Sin(idleTime * Mathf.PI * 2f * .9f)));
+        }
+
+        private void CaptureDressing()
+        {
+            if (dressingCaptured) return;
+            if (floatingShip != null) shipRest = floatingShip.anchoredPosition;
+            if (previousArrow != null) previousArrowRest = previousArrow.anchoredPosition;
+            if (nextArrow != null) nextArrowRest = nextArrow.anchoredPosition;
+            dressingCaptured = true;
         }
 
         /// <summary>Advances the slide between ships. Public so tests can finish it.</summary>
@@ -159,6 +198,10 @@ namespace SpaceXonix.UI
             if (perkLabel != null) perkLabel.text = stats.perk;
             if (drawbackLabel != null) drawbackLabel.text = stats.drawback;
             if (counterLabel != null) counterLabel.text = $"{CurrentIndex + 1} / {Count}";
+            var before = SkinAt((CurrentIndex - 1 + Count) % Count);
+            var after = SkinAt((CurrentIndex + 1) % Count);
+            if (previousPeek != null && before != null) previousPeek.SetFrames(before.frames, before.framesPerSecond);
+            if (nextPeek != null && after != null) nextPeek.SetFrames(after.frames, after.framesPerSecond);
             for (var i = 0; i < dots.Length; i++)
             {
                 if (dots[i] == null) continue;

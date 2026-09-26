@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 3a31c665afae51541adbd7b4fe033ada
+guid: 0a44178cde9da4d499beefb12277efcc
 TrueTypeFontImporter:
   externalObjects: {}
   serializedVersion: 4
@@ -9,7 +9,7 @@ TrueTypeFontImporter:
   characterPadding: 1
   includeFontData: 1
   fontNames:
-  - Kenney Mini Square
+  - Exo 2
   fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 0

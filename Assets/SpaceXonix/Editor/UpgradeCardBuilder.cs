@@ -23,7 +23,7 @@ namespace SpaceXonix.EditorTools
         private const string CardArtFolder = UiFolder + "/Cards";
         private const string TextureFolder = "Assets/SpaceXonix/Art/Generated";
         private const string UpgradeFolder = "Assets/SpaceXonix/ScriptableObjects/Upgrades";
-        private const string FontFolder = "Assets/SpaceXonix/Art/ThirdParty/Kenney/Fonts";
+        private const string FontFolder = UiSkin.FontFolder;
         private const int ArtSize = 48;
         private const int ArtScale = 5;
 

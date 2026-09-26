@@ -60,7 +60,8 @@ namespace SpaceXonix.Tests.EditMode
             var problems = new List<string>();
             foreach (var button in root.GetComponentsInChildren<Button>(true))
             {
-                // Upgrade cards and hangar tiles are buttons with their own card frame, built by their own tools.
+                // Upgrade cards and the hangar's chevrons are buttons with their own art, built by their own tools.
+                if (button.targetGraphic is Image own && own.sprite != null && own.sprite.name.StartsWith("UI_Chevron")) continue;
                 if (button.GetComponent<SpaceXonix.UI.UpgradeCard>() != null ||
                     button.targetGraphic is Image framed && framed.sprite != null && framed.sprite.name.StartsWith("UI_Card"))
                 {
@@ -75,7 +76,7 @@ namespace SpaceXonix.Tests.EditMode
                     problems.Add($"button {button.name} has no pressed state");
             }
             foreach (var text in root.GetComponentsInChildren<Text>(true))
-                if (text.font == null || !text.font.name.StartsWith("Kenney"))
+                if (text.font == null || !text.font.name.StartsWith("Exo2"))
                     problems.Add($"text {text.transform.parent.name}/{text.name}");
             Assert.That(problems, Is.Empty, $"Unskinned UI in {where}; run SpaceXonix > Apply UI Skin.");
         }

@@ -44,7 +44,9 @@ effects also clashed with the 8-bit pixel art in a way chiptune effects do not.
 
 | Asset | Source | Licence | Notes |
 |---|---|---|---|
-| `Assets/SpaceXonix/Art/ThirdParty/Kenney/Fonts/Kenney Mini Square.ttf` and `Kenney Pixel Square.ttf` | Kenney ([kenney.nl](https://kenney.nl)), [Kenney Fonts](https://kenney.nl/assets/kenney-fonts) | **CC0 1.0** | Body text and titles in every menu and the HUD. Licence text in the same folder |
+| `Assets/SpaceXonix/Art/ThirdParty/Exo2/Exo2-SemiBold.ttf` and `Exo2-Bold.ttf` | The Exo 2 Project Authors (Natanael Gama), [Exo 2 on Google Fonts](https://fonts.google.com/specimen/Exo+2) ([source](https://github.com/googlefonts/Exo-2.0)) | **SIL Open Font License 1.1** | Body text (SemiBold), titles and button captions (Bold) everywhere. The OFL text ships as `Exo2/OFL.txt`, as the licence requires. The fonts may be bundled with the game but not sold on their own |
+
+**Replaced:** Kenney's CC0 pixel fonts (Mini Square, Pixel Square) were removed. They were unreadable at the sizes a phone and a landscape window draw them, even after switching them from hinted to smooth rendering. Rajdhani, Oxanium and Chakra Petch (all OFL) were compared against Exo 2, which read best while keeping a sci-fi feel.
 
 ### Packages
 

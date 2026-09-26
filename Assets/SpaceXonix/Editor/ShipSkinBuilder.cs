@@ -23,7 +23,7 @@ namespace SpaceXonix.EditorTools
         private const string SkinFolder = "Assets/SpaceXonix/ScriptableObjects/Skins";
         private const string LibraryPath = SkinFolder + "/ShipSkinLibrary.asset";
         private const string UiFolder = "Assets/SpaceXonix/Art/Generated/UI";
-        private const string FontFolder = "Assets/SpaceXonix/Art/ThirdParty/Kenney/Fonts";
+        private const string FontFolder = UiSkin.FontFolder;
         private const int Cell = 16;
         private const int FlameRows = 4;
 
@@ -239,72 +239,74 @@ namespace SpaceXonix.EditorTools
             shadow.effectDistance = new Vector2(4f, -4f);
 
             // One ship at a time, big, browsed as an endless carousel. A grid of seven small tiles
-            // was unreadable on a phone and on a PC.
+            // was unreadable on a phone and on a PC; plain boxed arrows and floating text looked cheap.
+            GenerateHangarArt();
             var card = NewImage("Card", panel.transform, Ui("UI_Card"));
             card.type = Image.Type.Sliced;
             card.raycastTarget = true;
-            PlaceTop(card.rectTransform, -150f, new Vector2(640f, 1150f));
+            PlaceTop(card.rectTransform, -150f, new Vector2(700f, 1010f));
             var cardGroup = card.gameObject.AddComponent<CanvasGroup>();
             var swipe = card.gameObject.AddComponent<HorizontalSwipe>();
 
-            var screen = NewImage("Screen", card.transform, Ui("UI_Slot"));
-            screen.type = Image.Type.Sliced;
-            PlaceTop(screen.rectTransform, -40f, new Vector2(520f, 600f));
-            var preview = NewImage("Preview", screen.transform, null);
+            // The neighbours peek in dimly at the sides, so it reads as a carousel, not a single card.
+            var previousPeek = Peek("PreviousPeek", panel.transform, -418f);
+            var nextPeek = Peek("NextPeek", panel.transform, 418f);
+            card.transform.SetAsLastSibling();
+
+            // The hero: a breathing light, a hologram pedestal, and the ship floating above it.
+            var glow = NewImage("Glow", card.transform, Ui("UI_Glow"));
+            glow.color = new Color(.5f, .95f, 1f, .12f);
+            PlaceTop(glow.rectTransform, -10f, new Vector2(620f, 620f));
+            var pedestal = NewImage("Pedestal", card.transform, Ui("UI_Pedestal"));
+            PlaceTop(pedestal.rectTransform, -470f, new Vector2(384f, 96f));
+            var preview = NewImage("Preview", card.transform, null);
             preview.preserveAspect = true;
-            // 16x20 ships at 24x, so every pixel stays a crisp square.
-            Place(preview.rectTransform, Vector2.zero, new Vector2(384f, 480f));
+            // 16x20 ships at 20x, so every pixel stays a crisp square.
+            PlaceTop(preview.rectTransform, -60f, new Vector2(320f, 400f));
             var animator = preview.gameObject.AddComponent<UiSpriteAnimator>();
 
-            var name = NewText("Name", card.transform, title, 60, UiSkin.TitleColour);
-            name.resizeTextForBestFit = true; name.resizeTextMinSize = 36; name.resizeTextMaxSize = 60;
-            PlaceTop(name.rectTransform, -670f, new Vector2(600f, 84f));
-            var nameShadow = name.gameObject.AddComponent<Shadow>();
-            nameShadow.effectColor = new Color(.02f, .05f, .1f, .9f);
-            nameShadow.effectDistance = new Vector2(4f, -4f);
+            var name = NewText("Name", card.transform, title, 62, UiSkin.TitleColour);
+            name.resizeTextForBestFit = true; name.resizeTextMinSize = 40; name.resizeTextMaxSize = 62;
+            PlaceTop(name.rectTransform, -590f, new Vector2(640f, 84f));
+            var divider = NewImage("Divider", card.transform, Ui("UI_Divider"));
+            PlaceTop(divider.rectTransform, -684f, new Vector2(520f, 6f));
 
-            // The ship's strength in green and its weakness in red, big enough to read at a glance.
-            var perk = NewText("Perk", card.transform, body, 40, new Color(.45f, 1f, .6f));
-            perk.resizeTextForBestFit = true; perk.resizeTextMinSize = 30; perk.resizeTextMaxSize = 40;
-            PlaceTop(perk.rectTransform, -775f, new Vector2(580f, 120f));
-            var drawback = NewText("Drawback", card.transform, body, 40, new Color(1f, .55f, .5f));
-            drawback.resizeTextForBestFit = true; drawback.resizeTextMinSize = 30; drawback.resizeTextMaxSize = 40;
-            PlaceTop(drawback.rectTransform, -905f, new Vector2(580f, 120f));
+            // Strength and weakness each in their own recessed slot, with an up or down marker.
+            var perk = StatRow("Perk", card.transform, -712f, "UI_StatUp", new Color(.45f, 1f, .6f), body);
+            var drawback = StatRow("Drawback", card.transform, -836f, "UI_StatDown", new Color(1f, .55f, .5f), body);
 
-            var counter = NewText("Counter", card.transform, body, 30, new Color(.6f, .8f, .9f));
+            var counter = NewText("Counter", card.transform, body, 28, new Color(.6f, .8f, .9f));
             var counterRect = counter.rectTransform;
             counterRect.anchorMin = counterRect.anchorMax = counterRect.pivot = new Vector2(.5f, 0f);
-            counterRect.anchoredPosition = new Vector2(0f, 34f);
-            counterRect.sizeDelta = new Vector2(300f, 44f);
+            counterRect.anchoredPosition = new Vector2(0f, 26f);
+            counterRect.sizeDelta = new Vector2(300f, 40f);
 
-            // Big arrows either side of the card, the easiest target on a phone.
-            var previous = NewButton("PreviousButton", panel.transform, "<", title);
-            PlaceTop((RectTransform)previous.transform, -625f, new Vector2(150f, 200f));
-            ((RectTransform)previous.transform).anchoredPosition = new Vector2(-410f, -625f);
-            var next = NewButton("NextButton", panel.transform, ">", title);
-            PlaceTop((RectTransform)next.transform, -625f, new Vector2(150f, 200f));
-            ((RectTransform)next.transform).anchoredPosition = new Vector2(410f, -625f);
-            foreach (var arrow in new[] { previous, next }) arrow.GetComponentInChildren<Text>().fontSize = 80;
+            // Glowing chevrons over the peeking neighbours, instead of boxed buttons.
+            var previous = Chevron("PreviousButton", panel.transform, -418f, true);
+            var next = Chevron("NextButton", panel.transform, 418f, false);
 
             var dotRow = new GameObject("Dots", typeof(RectTransform));
             dotRow.transform.SetParent(panel.transform, false);
-            PlaceTop((RectTransform)dotRow.transform, -1330f, new Vector2(700f, 30f));
+            PlaceTop((RectTransform)dotRow.transform, -1190f, new Vector2(700f, 34f));
             var dotLayout = dotRow.AddComponent<HorizontalLayoutGroup>();
             dotLayout.childAlignment = TextAnchor.MiddleCenter;
-            dotLayout.spacing = 18f;
+            dotLayout.spacing = 22f;
             dotLayout.childControlWidth = false; dotLayout.childControlHeight = false;
             dotLayout.childForceExpandWidth = false; dotLayout.childForceExpandHeight = false;
             var dots = new Image[library.skins.Length];
             for (var i = 0; i < dots.Length; i++)
             {
                 dots[i] = NewImage($"Dot{i}", dotRow.transform, Ui("UI_PipEmpty"));
-                dots[i].rectTransform.sizeDelta = new Vector2(28f, 28f);
+                dots[i].rectTransform.sizeDelta = new Vector2(30f, 30f);
             }
 
-            var back = NewButton("BackButton", panel.transform, "BACK", body);
-            PlaceBottom((RectTransform)back.transform, new Vector2(-200f, 40f), new Vector2(340f, 96f));
-            var launch = NewButton("LaunchButton", panel.transform, "LAUNCH", body);
-            PlaceBottom((RectTransform)launch.transform, new Vector2(200f, 40f), new Vector2(340f, 96f));
+            // Launch is the primary action: bigger, lit, and pulsing. Back is secondary.
+            var back = NewButton("BackButton", panel.transform, "BACK", title);
+            PlaceBottom((RectTransform)back.transform, new Vector2(-270f, 52f), new Vector2(280f, 100f));
+            var launch = NewButton("LaunchButton", panel.transform, "LAUNCH", title);
+            PlaceBottom((RectTransform)launch.transform, new Vector2(150f, 40f), new Vector2(440f, 124f));
+            ((Image)launch.targetGraphic).sprite = Ui("UI_ButtonHover");
+            launch.GetComponentInChildren<Text>().fontSize = 50;
 
             var hangar = overlay.AddComponent<SkinSelectPanel>();
             var serialized = new SerializedObject(hangar);
@@ -322,6 +324,13 @@ namespace SpaceXonix.EditorTools
             serialized.FindProperty("swipe").objectReferenceValue = swipe;
             serialized.FindProperty("dotOn").objectReferenceValue = Ui("UI_Pip");
             serialized.FindProperty("dotOff").objectReferenceValue = Ui("UI_PipEmpty");
+            serialized.FindProperty("previousPeek").objectReferenceValue = previousPeek;
+            serialized.FindProperty("nextPeek").objectReferenceValue = nextPeek;
+            serialized.FindProperty("floatingShip").objectReferenceValue = preview.rectTransform;
+            serialized.FindProperty("glow").objectReferenceValue = glow;
+            serialized.FindProperty("previousArrow").objectReferenceValue = previous.transform;
+            serialized.FindProperty("nextArrow").objectReferenceValue = next.transform;
+            serialized.FindProperty("launchPulse").objectReferenceValue = launch.transform;
             serialized.FindProperty("launchButton").objectReferenceValue = launch;
             serialized.FindProperty("backButton").objectReferenceValue = back;
             var dotArray = serialized.FindProperty("dots");
@@ -343,6 +352,126 @@ namespace SpaceXonix.EditorTools
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
+        }
+
+        // ---------------------------------------------------------------- hangar dressing
+
+        /// <summary>A dim neighbouring ship at the side of the carousel.</summary>
+        private static UiSpriteAnimator Peek(string name, Transform parent, float x)
+        {
+            var image = NewImage(name, parent, null);
+            image.preserveAspect = true;
+            image.color = new Color(.55f, .65f, .8f, .35f);
+            PlaceTop(image.rectTransform, -480f, new Vector2(128f, 160f));
+            image.rectTransform.anchoredPosition = new Vector2(x, -480f);
+            return image.gameObject.AddComponent<UiSpriteAnimator>();
+        }
+
+        /// <summary>A glowing pixel chevron that is itself the button.</summary>
+        private static Button Chevron(string name, Transform parent, float x, bool left)
+        {
+            var image = NewImage(name, parent, Ui("UI_Chevron"));
+            image.raycastTarget = true;
+            image.preserveAspect = true;
+            PlaceTop(image.rectTransform, -500f, new Vector2(96f, 132f));
+            image.rectTransform.anchoredPosition = new Vector2(x, -500f);
+            // One drawing serves both sides: the left arrow is the right one mirrored.
+            if (left) image.rectTransform.localScale = new Vector3(-1f, 1f, 1f);
+            var button = image.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            button.transition = Selectable.Transition.SpriteSwap;
+            button.spriteState = new SpriteState { highlightedSprite = Ui("UI_ChevronHover"), pressedSprite = Ui("UI_ChevronHover"), selectedSprite = Ui("UI_Chevron") };
+            return button;
+        }
+
+        /// <summary>One stat line: a recessed slot, an up or down marker, and the text beside it.</summary>
+        private static Text StatRow(string name, Transform card, float top, string marker, Color colour, Font font)
+        {
+            var slot = NewImage(name + "Slot", card, Ui("UI_Slot"));
+            slot.type = Image.Type.Sliced;
+            PlaceTop(slot.rectTransform, top, new Vector2(620f, 108f));
+            var icon = NewImage("Marker", slot.transform, Ui(marker));
+            icon.color = colour;
+            icon.preserveAspect = true;
+            var iconRect = icon.rectTransform;
+            iconRect.anchorMin = iconRect.anchorMax = iconRect.pivot = new Vector2(0f, .5f);
+            iconRect.anchoredPosition = new Vector2(26f, 0f);
+            iconRect.sizeDelta = new Vector2(40f, 32f);
+            var text = NewText(name, slot.transform, font, 36, colour);
+            text.alignment = TextAnchor.MiddleLeft;
+            text.resizeTextForBestFit = true; text.resizeTextMinSize = 26; text.resizeTextMaxSize = 36;
+            var textRect = text.rectTransform;
+            textRect.anchorMin = new Vector2(0f, 0f); textRect.anchorMax = new Vector2(1f, 1f);
+            textRect.offsetMin = new Vector2(84f, 8f); textRect.offsetMax = new Vector2(-20f, -8f);
+            return text;
+        }
+
+        /// <summary>Draws the hangar's pixel-art dressing into the UI folder.</summary>
+        private static void GenerateHangarArt()
+        {
+            var edge = PixelCanvas.Hex(0x0c3040);
+            var glow = PixelCanvas.Hex(0x7ff3ff);
+            var light = PixelCanvas.Hex(0x48b4cc);
+            var clear = new Color32(0, 0, 0, 0);
+            Directory.CreateDirectory(UiFolder);
+
+            // A thick chevron pointing right: dark rim, lit body, white-hot leading edge.
+            foreach (var (file, body, core) in new[] { ("UI_Chevron", light, glow), ("UI_ChevronHover", glow, new Color32(255, 255, 255, 255)) })
+            {
+                var c = new PixelCanvas(16, 22, clear);
+                for (var y = 0; y < 22; y++)
+                {
+                    var left = Mathf.RoundToInt(Mathf.Abs(y - 10.5f) * .9f);
+                    for (var x = left - 1; x <= left + 5; x++)
+                        c.Set(15 - x, y, x < left || x > left + 4 ? edge : x == left + 4 ? core : body);
+                }
+                File.WriteAllBytes($"{UiFolder}/{file}.png", c.Encode());
+            }
+
+            // Up and down markers, drawn white and tinted green or red in the UI.
+            foreach (var (file, up) in new[] { ("UI_StatUp", true), ("UI_StatDown", false) })
+            {
+                var c = new PixelCanvas(9, 7, clear);
+                for (var row = 0; row < 5; row++)
+                    for (var x = 4 - row; x <= 4 + row; x++)
+                        c.Set(x, up ? row + 1 : 5 - row, new Color32(255, 255, 255, 255));
+                File.WriteAllBytes($"{UiFolder}/{file}.png", c.Encode());
+            }
+
+            // A hologram pedestal: a lit elliptical rim over a dark disc.
+            var pedestal = new PixelCanvas(48, 12, clear);
+            for (var y = 0; y < 12; y++)
+            for (var x = 0; x < 48; x++)
+            {
+                var d = Mathf.Pow((x - 23.5f) / 23.5f, 2f) + Mathf.Pow((y - 5.5f) / 5.5f, 2f);
+                if (d > 1f) continue;
+                pedestal.Set(x, y, d > .72f ? (y < 6 ? glow : light) : d > .5f ? edge : new Color32(22, 26, 43, 230));
+            }
+            File.WriteAllBytes($"{UiFolder}/UI_Pedestal.png", pedestal.Encode());
+
+            // A soft light in four stepped rings, so it stays pixel art rather than a smooth blur.
+            var halo = new PixelCanvas(32, 32, clear);
+            for (var y = 0; y < 32; y++)
+            for (var x = 0; x < 32; x++)
+            {
+                var d = Vector2.Distance(new Vector2(x, y), new Vector2(15.5f, 15.5f)) / 15.5f;
+                if (d >= 1f) continue;
+                var step = Mathf.Floor((1f - d) * 4f) / 4f;
+                halo.Set(x, y, new Color32(255, 255, 255, (byte)(step * 200f)));
+            }
+            File.WriteAllBytes($"{UiFolder}/UI_Glow.png", halo.Encode());
+
+            // A glowing line that fades out at both ends.
+            var line = new PixelCanvas(32, 3, clear);
+            for (var x = 0; x < 32; x++)
+            {
+                var a = (byte)(255 * Mathf.Clamp01(1f - Mathf.Abs(x - 15.5f) / 16f));
+                line.Set(x, 0, new Color32(glow.r, glow.g, glow.b, (byte)(a / 3)));
+                line.Set(x, 1, new Color32(255, 255, 255, a));
+                line.Set(x, 2, new Color32(glow.r, glow.g, glow.b, (byte)(a / 3)));
+            }
+            File.WriteAllBytes($"{UiFolder}/UI_Divider.png", line.Encode());
+            AssetDatabase.Refresh();
         }
 
         // ---------------------------------------------------------------- game
