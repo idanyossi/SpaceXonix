@@ -86,3 +86,6 @@ UserSettings/*
 
 # Test Runner scratch scenes left by interrupted Play Mode runs
 /Assets/InitTestScene*.unity*
+
+# Performance-testing package run files written during test runs
+/Assets/Resources/PerformanceTestRun*
