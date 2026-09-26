@@ -32,7 +32,7 @@
 18. **COMPLETE** — Audio system, sound library, and gameplay bindings
 19. **COMPLETE** — CC0 pixel-art sprites for every actor, CC0 sound effects, licence record (music and board textures still to source)
 20. **COMPLETE** — Polish: capture flash, Freeze and Arena Tilt presentation, boss destruction sequence, menu and scene transitions
-21. **IN PROGRESS** — Final QA + Profiling + Submission Cleanup (Android and Windows builds done, Play Mode tests added; the user's full playthrough on device remains)
+21. **COMPLETE** — Final QA + Profiling + Submission Cleanup (Android and Windows builds, steady 60 fps on device, Play Mode tests, the user's playthrough on the phone: "perfect on mobile")
 
 ## Current Architecture
 
@@ -1133,6 +1133,11 @@ Four requests from play-testing.
 
 ## Next Recommended Action
 
-**Phase 21 — Final QA + Profiling + Submission Cleanup** (Windows and Android builds, profiling, a full campaign playthrough)
+All 21 planned phases are complete. The game runs on Android (a steady 60 fps on the test phone) and on Windows, with 386 EditMode and 8 Play Mode tests passing.
 
-Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.
+Optional, only if wanted:
+
+- Stretch goals from the GDD (section 14.3): Endless Mode, a Speed Boost power-up, extra upgrade and modifier types, controller support.
+- A Volatile Alien warning animation (polish list, still open) and more stage modifiers.
+- A 90/120 fps option for high-refresh phones.
+- Release packaging: a signing keystore and an Android App Bundle (.aab) for a store.
