@@ -253,7 +253,7 @@ namespace SpaceXonix.EditorTools
             var visual = shot.transform.Find("Visual").gameObject;
             Object.DestroyImmediate(visual.GetComponent<MeshRenderer>());
             Object.DestroyImmediate(visual.GetComponent<MeshFilter>());
-            visual.transform.localScale = Vector3.one * 1.1f;
+            visual.transform.localScale = Vector3.one * .9f;
             var sprite = GetOrAdd<SpriteRenderer>(visual);
             var bolts = Sprites("PowerBolt", 2);
             sprite.sprite = bolts[0];

@@ -903,6 +903,13 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
   - The GDD's Android build and Windows build boxes are ticked.
 - Tests: EditMode 386 passed, PlayMode 8 passed.
 
+### Power Shot bolt turned sideways (2026-09-26)
+
+- **Bug:** a bolt fired upward flew sideways. Bolts are pooled, and the hover visual only applies a heading when it is non-zero. Up is heading 0, so a reused bolt kept its last rotation (270 degrees from an earlier shot to the right). Measured in the game: 89 degrees off its travel.
+- **Fix:** `PowerShotProjectile.Launch` now sets the sprite bolt's rotation outright on every launch. Verified in the game: fire right, let the bolt return to the pool, fire up with the same bolt, and it lands 0 degrees off.
+- The bolt is a little smaller: scale 0.9, down from 1.1 (prefab and `FeedbackBuilder`).
+- Test: the heading test now starts each launch from a bolt still turned from its last flight. EditMode 386 passed.
+
 ## Phase 20 — Polish (2026-09-26)
 
 Scope as the user asked: a simple, not over-the-top capture effect, Freeze and Arena Tilt presentation, a boss destruction sequence, and menu transitions.

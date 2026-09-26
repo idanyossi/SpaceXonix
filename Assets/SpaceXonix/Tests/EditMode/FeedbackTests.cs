@@ -136,8 +136,12 @@ namespace SpaceXonix.Tests.EditMode
                 var projectile = shot.AddComponent<PowerShotProjectile>();
                 Set(projectile, "streak", streak);
 
+                // A pooled bolt arrives still turned from its last flight.
+                visual.transform.rotation = Quaternion.Euler(0f, 0f, 270f);
                 projectile.Launch(new Vector3(1f, 2f, 0f), direction, 14f);
                 Assert.That(actor.HeadingDegrees, Is.EqualTo(heading));
+                Assert.That(Quaternion.Angle(visual.transform.rotation, Quaternion.Euler(0f, 0f, heading)), Is.LessThan(.01f),
+                    "each launch turns the bolt to its own direction");
                 Assert.That(visual.transform.localScale, Is.EqualTo(Vector3.one), "a sprite bolt keeps its drawn shape");
                 Assert.That(streak.positionCount, Is.Zero, "the streak starts fresh at the ship");
                 Assert.That(visual.transform.position, Is.EqualTo(new Vector3(1f, 2f, -actor.HoverHeight)));

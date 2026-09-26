@@ -34,8 +34,11 @@ namespace SpaceXonix.Power
             var shaped = transform.childCount > 0 ? transform.GetChild(0) : transform;
             if (shaped.GetComponent<SpriteRenderer>() != null)
             {
-                // A sprite bolt is drawn pointing up the board; the hover visual turns it to the direction of travel.
-                if (visual != null) visual.HeadingDegrees = HeadingFor(direction);
+                // A sprite bolt is drawn pointing up the board. Set its turn outright on every launch:
+                // a pooled bolt keeps its last rotation, and the hover visual leaves a heading of 0 alone.
+                var heading = HeadingFor(direction);
+                shaped.rotation = Quaternion.Euler(0f, 0f, heading);
+                if (visual != null) visual.HeadingDegrees = heading;
             }
             else
             {
