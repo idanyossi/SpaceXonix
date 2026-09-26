@@ -23,6 +23,11 @@ namespace SpaceXonix.Board
         [SerializeField, Min(.001f)] private float trailLift = .02f;
         [SerializeField, Min(.01f)] private float riseSeconds = .3f;
         [SerializeField, Min(1)] private int chunkSize = 9;
+        [Header("Capture flash")]
+        [Tooltip("Additive material for the brief glow over newly captured cells. None turns the flash off.")]
+        [SerializeField] private Material flashMaterial;
+        [SerializeField] private Color flashColor = new Color(.55f, 1f, 1f, .6f);
+        [SerializeField, Min(.01f)] private float flashSeconds = .45f;
 
         private readonly BoardMeshBuilder.Buffers buffers = new BoardMeshBuilder.Buffers();
         private readonly List<int> trailCells = new List<int>();
@@ -37,6 +42,16 @@ namespace SpaceXonix.Board
         private Mesh[] chunkMeshes;
         private MeshRenderer[] chunkRenderers;
         private Mesh trailMesh;
+        private readonly List<int> flashCells = new List<int>();
+        private Mesh flashMesh;
+        private MeshRenderer flashRenderer;
+        private MaterialPropertyBlock flashBlock;
+        private float flashRemaining;
+        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+
+        /// <summary>How far through the capture flash is: 1 as it starts, 0 once it has faded.</summary>
+        public float FlashStrength => flashSeconds > 0f ? Mathf.Clamp01(flashRemaining / flashSeconds) : 0f;
+        public int FlashCellCount => flashCells.Count;
 
         public float TerritoryHeight => territoryHeight;
         public int ChunkCount => chunkMeshes?.Length ?? 0;
@@ -80,15 +95,23 @@ namespace SpaceXonix.Board
         public void Refresh(BoardModel model)
         {
             if (heights == null) return;
+            var captured = false;
             for (var y = 0; y < height; y++) for (var x = 0; x < width; x++)
             {
                 var i = x + y * width;
                 var target = model.GetCell(new GridCoordinate(x, y)) == BoardCellState.Captured ? territoryHeight : 0f;
                 if (Mathf.Approximately(target, targetHeights[i])) continue;
+                // A cell rising is freshly captured: it joins the flash. Sinking cells (a blast) do not.
+                if (target > targetHeights[i])
+                {
+                    if (!captured) { flashCells.Clear(); captured = true; }
+                    flashCells.Add(i);
+                }
                 targetHeights[i] = target;
                 chunkAnimating[ChunkOf(x, y)] = true;
                 IsAnimating = true;
             }
+            if (captured) StartFlash();
             RefreshTrail(model, force: false);
         }
 
@@ -96,6 +119,7 @@ namespace SpaceXonix.Board
 
         public void Tick(float deltaTime)
         {
+            TickFlash(deltaTime);
             if (!IsAnimating || heights == null) return;
             var step = territoryHeight / riseSeconds * Mathf.Max(0f, deltaTime);
             var anyAnimating = false;
@@ -178,6 +202,52 @@ namespace SpaceXonix.Board
             buffers.UvScale = 1f / cellSize;
             BoardMeshBuilder.BuildFlatCells(trailCells, width, cellSize, trailLift, buffers);
             BoardMeshBuilder.Apply(trailMesh, buffers);
+        }
+
+        /// <summary>
+        /// A single soft glow over the newly captured cells, sitting at the height they rise to and
+        /// fading out as they arrive. Deliberately simple: one flash, no particles.
+        /// </summary>
+        private void StartFlash()
+        {
+            if (flashMaterial == null || flashCells.Count == 0) return;
+            if (flashMesh == null)
+            {
+                var flashObject = new GameObject("CaptureFlash") { hideFlags = HideFlags.DontSave };
+                flashObject.transform.SetParent(transform, false);
+                flashMesh = new Mesh { name = "CaptureFlash", hideFlags = HideFlags.DontSave };
+                flashObject.AddComponent<MeshFilter>().sharedMesh = flashMesh;
+                flashRenderer = flashObject.AddComponent<MeshRenderer>();
+                flashRenderer.sharedMaterial = flashMaterial;
+                flashRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                flashBlock = new MaterialPropertyBlock();
+            }
+            buffers.UvScale = 1f / cellSize;
+            BoardMeshBuilder.BuildFlatCells(flashCells, width, cellSize, territoryHeight + .02f, buffers);
+            BoardMeshBuilder.Apply(flashMesh, buffers);
+            flashRemaining = flashSeconds;
+            flashRenderer.enabled = true;
+            ApplyFlashColour();
+        }
+
+        private void TickFlash(float deltaTime)
+        {
+            if (flashRemaining <= 0f) return;
+            flashRemaining = Mathf.Max(0f, flashRemaining - Mathf.Max(0f, deltaTime));
+            if (flashRenderer == null) return;
+            ApplyFlashColour();
+            if (flashRemaining <= 0f) flashRenderer.enabled = false;
+        }
+
+        private void ApplyFlashColour()
+        {
+            if (flashRenderer == null) return;
+            var strength = FlashStrength;
+            var colour = flashColor;
+            colour.a *= strength * strength;
+            flashRenderer.GetPropertyBlock(flashBlock);
+            flashBlock.SetColor(BaseColorId, colour);
+            flashRenderer.SetPropertyBlock(flashBlock);
         }
 
         private int ChunkOf(int x, int y) => x / chunkSize + (y / chunkSize) * chunksX;

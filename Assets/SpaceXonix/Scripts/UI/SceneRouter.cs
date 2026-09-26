@@ -12,8 +12,9 @@ namespace SpaceXonix.UI
     }
 
     /// <summary>
-    /// Moves between the Boot, Main Menu and Game scenes. Always restores the time scale first,
-    /// because leaving a paused game would otherwise carry the freeze into the next scene.
+    /// Moves between the Boot, Main Menu and Game scenes, fading through black (<see cref="ScreenFader"/>).
+    /// The time scale is restored before the next scene loads, because leaving a paused game would
+    /// otherwise carry the freeze into it.
     /// </summary>
     public static class SceneRouter
     {
@@ -32,8 +33,8 @@ namespace SpaceXonix.UI
 
         private static void Load(string sceneName)
         {
-            Time.timeScale = 1f;
-            SceneManager.LoadScene(sceneName);
+            if (!Application.isPlaying) Time.timeScale = 1f;
+            ScreenFader.LoadScene(sceneName);
         }
     }
 }

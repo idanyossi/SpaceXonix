@@ -1007,66 +1007,66 @@ Target:
 
 The project is not considered complete without:
 
-- [ ] Four-direction movement
-- [ ] Territory capture
-- [ ] Vulnerable trail
-- [ ] Enemy/trail collision
-- [ ] 75% stage-completion target
-- [ ] Three-life system
-- [ ] Campaign reset after Game Over
-- [ ] Score system
-- [ ] Large-capture multiplier
-- [ ] Power Meter
-- [ ] Power Shot
-- [ ] Basic Bouncer
-- [ ] Linear Alien
-- [ ] Unstable Alien
-- [ ] Volatile Alien
-- [ ] Volatile Alien explosions
-- [ ] Volatile explosion territory destruction
-- [ ] Laser hazard
-- [ ] Shield
-- [ ] Freeze
-- [ ] Arena Tilt
-- [ ] Stage modifiers
-- [ ] Roguelite upgrade selection
-- [ ] Five-stage Campaign
-- [ ] Stage 5 boss
-- [ ] Main Menu
-- [ ] Gameplay HUD
-- [ ] Pause menu
-- [ ] Upgrade screen
-- [ ] Stage Complete screen
-- [ ] Game Over screen
-- [ ] Settings screen
-- [ ] Controls screen
-- [ ] Android swipe input
-- [ ] PC keyboard input
+- [x] Four-direction movement
+- [x] Territory capture
+- [x] Vulnerable trail
+- [x] Enemy/trail collision
+- [x] 75% stage-completion target
+- [x] Three-life system
+- [x] Campaign reset after Game Over
+- [x] Score system
+- [x] Large-capture multiplier
+- [x] Power Meter
+- [x] Power Shot
+- [x] Basic Bouncer
+- [x] Linear Alien
+- [x] Unstable Alien
+- [x] Volatile Alien
+- [x] Volatile Alien explosions
+- [x] Volatile explosion territory destruction
+- [x] Laser hazard
+- [x] Shield
+- [x] Freeze
+- [x] Arena Tilt
+- [x] Stage modifiers
+- [x] Roguelite upgrade selection
+- [x] Five-stage Campaign
+- [x] Stage 5 boss
+- [x] Main Menu
+- [x] Gameplay HUD
+- [x] Pause menu
+- [x] Upgrade screen
+- [x] Stage Complete screen
+- [x] Game Over screen
+- [x] Settings screen
+- [x] Controls screen
+- [x] Android swipe input
+- [x] PC keyboard input
 - [ ] Android build
 - [ ] Windows build
-- [ ] Object pooling
-- [ ] Coroutines
-- [ ] GameManager singleton
-- [ ] ScriptableObjects
-- [ ] PlayerPrefs
-- [ ] Audio
-- [ ] Animated territory capture
+- [x] Object pooling
+- [x] Coroutines
+- [x] GameManager singleton
+- [x] ScriptableObjects
+- [x] PlayerPrefs
+- [x] Audio
+- [x] Animated territory capture
 
 ## 14.2 Polish
 
 After the MVP is stable:
 
-- [ ] stronger capture VFX;
-- [ ] larger-capture presentation;
-- [ ] camera shake tuning;
-- [ ] improved Freeze presentation;
-- [ ] improved Arena Tilt presentation;
+- [x] stronger capture VFX;
+- [x] larger-capture presentation;
+- [x] camera shake tuning;
+- [x] improved Freeze presentation;
+- [x] improved Arena Tilt presentation;
 - [ ] Volatile Alien warning animation;
-- [ ] territory destruction animation;
-- [ ] polished enemy death effects;
-- [ ] boss destruction sequence;
-- [ ] menu transitions;
-- [ ] additional music;
+- [x] territory destruction animation;
+- [x] polished enemy death effects;
+- [x] boss destruction sequence;
+- [x] menu transitions;
+- [x] additional music;
 - [ ] additional stage modifiers.
 
 ## 14.3 Stretch Goals
@@ -1078,7 +1078,7 @@ These features are **not required for the submitted MVP**.
 - [ ] Speed Boost power-up
 - [ ] Additional upgrade types
 - [ ] Additional modifier types
-- [ ] Boss projectiles destroying captured territory
+- [x] Boss projectiles destroying captured territory
 - [ ] Controller support
 
 ## 14.4 Explicitly Out of Scope

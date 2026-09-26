@@ -51,7 +51,7 @@ namespace SpaceXonix.Audio
             if (gameManager != null) gameManager.PlayerFailed += OnPlayerFailed;
             if (bossController != null)
             {
-                bossController.Defeated += OnBossDefeated;
+                // The boss's death sound plays at the climax of BossDeathSequence, not the moment it is beaten.
                 bossController.TerritoryBroken += OnTerritoryBroken;
             }
             if (campaignManager != null)
@@ -86,7 +86,6 @@ namespace SpaceXonix.Audio
             if (gameManager != null) gameManager.PlayerFailed -= OnPlayerFailed;
             if (bossController != null)
             {
-                bossController.Defeated -= OnBossDefeated;
                 bossController.TerritoryBroken -= OnTerritoryBroken;
             }
             if (campaignManager != null)
@@ -145,8 +144,6 @@ namespace SpaceXonix.Audio
 
         private void OnExplosion(Vector3 position, int enemies, int territory) => Play(GameSfx.VolatileExplosion);
         private void OnPlayerFailed(PlayerFailureReason reason) => Play(GameSfx.PlayerHit);
-        private void OnBossDefeated() => Play(GameSfx.BossDestroyed);
-
         /// <summary>The boss stage gets its own track, as the GDD asks.</summary>
         private void OnStageLoaded(StageDefinition stage)
         {

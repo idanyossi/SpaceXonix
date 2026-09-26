@@ -21,6 +21,8 @@ namespace SpaceXonix.UI
         [SerializeField] private UpgradeManager upgradeManager;
         [Tooltip("Holographic cards for the upgrade choice. Without them the choice falls back to the plain panel.")]
         [SerializeField] private UpgradeCardPanel upgradeCards;
+        [Tooltip("The Alien Core's destruction; the stage-complete screen waits until it has played.")]
+        [SerializeField] private SpaceXonix.Presentation.BossDeathSequence bossSequence;
         [SerializeField] private CampaignPanel panel;
 
         private readonly List<EnemyType> enemyTypes = new List<EnemyType>();
@@ -45,6 +47,8 @@ namespace SpaceXonix.UI
                 return;
             }
             if (phase != CampaignPhase.UpgradeChoice && upgradeCards != null && upgradeCards.IsShown) upgradeCards.Hide();
+            // Let the core blow up on screen before the stage-complete panel covers it.
+            if (bossSequence != null && bossSequence.IsPlaying) return;
             // The upgrade offer changes its captions without changing phase, so it always rebuilds.
             if (shownPhase == phase && phase != CampaignPhase.UpgradeChoice) return;
             shownPhase = phase;

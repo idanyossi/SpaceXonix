@@ -2084,6 +2084,8 @@ GameObject:
   - component: {fileID: 600455048}
   - component: {fileID: 600455047}
   - component: {fileID: 600455046}
+  - component: {fileID: 600455050}
+  - component: {fileID: 600455049}
   m_Layer: 0
   m_Name: DifficultyOverlay
   m_TagString: Untagged
@@ -2167,6 +2169,33 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 600455044}
   m_CullTransparentMesh: 1
+--- !u!114 &600455049
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 600455044}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75c7a301f6cc56846a665a4c19433a08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.UI.PanelTransition
+  seconds: 0.18
+  startScale: 0.94
+  scaleTarget: {fileID: 1065881169}
+--- !u!225 &600455050
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 600455044}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &603822620
 GameObject:
   m_ObjectHideFlags: 0
@@ -2362,6 +2391,8 @@ GameObject:
   m_Component:
   - component: {fileID: 636111984}
   - component: {fileID: 636111985}
+  - component: {fileID: 636111987}
+  - component: {fileID: 636111986}
   m_Layer: 0
   m_Name: SkinOverlay
   m_TagString: Untagged
@@ -2435,6 +2466,33 @@ MonoBehaviour:
   backButton: {fileID: 1559675824}
   slideSeconds: 0.18
   slideDistance: 260
+--- !u!114 &636111986
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 636111983}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75c7a301f6cc56846a665a4c19433a08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.UI.PanelTransition
+  seconds: 0.18
+  startScale: 0.94
+  scaleTarget: {fileID: 0}
+--- !u!225 &636111987
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 636111983}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &636339452
 GameObject:
   m_ObjectHideFlags: 0
@@ -5019,6 +5077,8 @@ GameObject:
   - component: {fileID: 1509958766}
   - component: {fileID: 1509958768}
   - component: {fileID: 1509958767}
+  - component: {fileID: 1509958770}
+  - component: {fileID: 1509958769}
   m_Layer: 0
   m_Name: ControlsOverlay
   m_TagString: Untagged
@@ -5084,6 +5144,33 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1509958765}
   m_CullTransparentMesh: 1
+--- !u!114 &1509958769
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1509958765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75c7a301f6cc56846a665a4c19433a08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.UI.PanelTransition
+  seconds: 0.18
+  startScale: 0.94
+  scaleTarget: {fileID: 44530053}
+--- !u!225 &1509958770
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1509958765}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &1559675822
 GameObject:
   m_ObjectHideFlags: 0

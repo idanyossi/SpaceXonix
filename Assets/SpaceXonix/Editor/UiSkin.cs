@@ -83,6 +83,9 @@ namespace SpaceXonix.EditorTools
             if (node.GetComponent<Button>() != null && node.GetComponent<Image>() is Image framed &&
                 framed.sprite != null && (framed.sprite.name.StartsWith("UI_Card") || framed.sprite.name.StartsWith("UI_Chevron"))) return;
 
+            // Every overlay screen eases in rather than popping on.
+            if (node.name.EndsWith("Overlay")) EnsureTransition(node);
+
             var image = node.GetComponent<Image>();
             var button = node.GetComponent<Button>();
             var slider = node.GetComponentInParent<Slider>(true);
@@ -114,6 +117,23 @@ namespace SpaceXonix.EditorTools
             if (text != null) StyleText(text, skin);
 
             foreach (Transform child in node) Style(child, skin);
+        }
+
+        /// <summary>
+        /// Gives an overlay a fade-in, with its "Panel" child settling in from slightly small. A panel
+        /// sized by UniformFit already owns its scale, so that one only fades.
+        /// </summary>
+        private static void EnsureTransition(Transform overlay)
+        {
+            if (overlay.GetComponent<CanvasGroup>() == null) overlay.gameObject.AddComponent<CanvasGroup>();
+            var transition = overlay.GetComponent<SpaceXonix.UI.PanelTransition>() ?? overlay.gameObject.AddComponent<SpaceXonix.UI.PanelTransition>();
+            RectTransform panel = null;
+            foreach (Transform child in overlay)
+                if (child.name.EndsWith("Panel")) { panel = child as RectTransform; break; }
+            if (panel != null && panel.GetComponent<SpaceXonix.UI.UniformFit>() != null) panel = null;
+            var serialized = new SerializedObject(transition);
+            serialized.FindProperty("scaleTarget").objectReferenceValue = panel;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static bool IsPanel(string name) => name == "Panel" || name == "SettingsPanel" || name == "ControlsPanel";
@@ -198,6 +218,7 @@ namespace SpaceXonix.EditorTools
                 case "UI_Card": case "UI_CardHover": case "UI_CardPressed": return 12;
                 case "UI_CardBand": return 4;
                 case "UI_GaugeGlow": return 6;
+                case "UI_Frost": return 12;
                 default: return 0;
             }
         }

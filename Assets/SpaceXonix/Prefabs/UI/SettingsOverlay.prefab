@@ -2063,6 +2063,8 @@ GameObject:
   - component: {fileID: 3038031798334071992}
   - component: {fileID: 6166099787623936884}
   - component: {fileID: 155445809336523578}
+  - component: {fileID: 5543453048346969035}
+  - component: {fileID: 2549163693988814954}
   m_Layer: 0
   m_Name: SettingsOverlay
   m_TagString: Untagged
@@ -2147,6 +2149,33 @@ MonoBehaviour:
   cameraShakeToggle: {fileID: 4698482324951707238}
   closeButton: {fileID: 3789873431606685237}
   resetButton: {fileID: 2075637094556353013}
+--- !u!225 &5543453048346969035
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6117488348461409498}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &2549163693988814954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6117488348461409498}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75c7a301f6cc56846a665a4c19433a08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SpaceXonix.Runtime::SpaceXonix.UI.PanelTransition
+  seconds: 0.18
+  startScale: 0.94
+  scaleTarget: {fileID: 5626619797393640534}
 --- !u!1 &6235260878024991159
 GameObject:
   m_ObjectHideFlags: 0

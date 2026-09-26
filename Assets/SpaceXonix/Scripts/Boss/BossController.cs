@@ -237,9 +237,19 @@ namespace SpaceXonix.Boss
         private void OnStageCompleted()
         {
             if (!IsActive) return;
-            Deactivate();
+            // The core stops fighting at once, but its body stays up: the destruction sequence plays
+            // over it and hides it at the end with HideBody.
+            IsActive = false;
+            attack = null;
+            ReleaseAllProjectiles();
             Defeated?.Invoke();
         }
+
+        /// <summary>The core's body, for presentation such as the destruction sequence.</summary>
+        public Transform Body => bodyVisual;
+
+        /// <summary>Hides the defeated core once its destruction sequence has finished.</summary>
+        public void HideBody() => SetVisible(false);
 
         /// <summary>The core shrinks as the arena is taken, so its health reads without a bar.</summary>
         private void ApplyDamageVisual()

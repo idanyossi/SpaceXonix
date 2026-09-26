@@ -31,7 +31,7 @@
 17. **COMPLETE** — Android swipe controls and touch buttons
 18. **COMPLETE** — Audio system, sound library, and gameplay bindings
 19. **COMPLETE** — CC0 pixel-art sprites for every actor, CC0 sound effects, licence record (music and board textures still to source)
-20. **NOT STARTED** — Visual Polish + VFX + Cinemachine
+20. **COMPLETE** — Polish: capture flash, Freeze and Arena Tilt presentation, boss destruction sequence, menu and scene transitions
 21. **NOT STARTED** — Final QA + Profiling + Submission Cleanup
 
 ## Current Architecture
@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 370
-- Passed: 370
+- EditMode discovered: 376
+- Passed: 376
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -839,6 +839,45 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - Verified with renders of the main menu and a stage (board, captured territory, HUD): one palette throughout, with warm colours left only for gameplay accents.
 - Tests: 5 new EditMode tests check that no opaque pixel in any backdrop layer is warm (red above blue). Full suite: 370 passed, 0 failed.
 
+## Phase 20 — Polish (2026-09-26)
+
+Scope as the user asked: a simple, not over-the-top capture effect, Freeze and Arena Tilt presentation, a boss destruction sequence, and menu transitions.
+
+- **Capture flash:** `BoardRenderer` lays a flat, additive, pale cyan mesh over the cells that just rose (`CaptureFlash.mat`, URP Unlit, additive). It fades out over 0.45 s. It is one mesh per capture, rebuilt only when territory rises. Presentation only; the capture logic is untouched.
+- **Freeze:** `FreezePresenter` fades in an icy nine-sliced border around the screen (`UI_Frost`, generated). While frozen, it tints every active alien toward ice blue with a faint shimmer and stops their frame animation. Everything is restored when the freeze ends.
+- **Arena Tilt:** `TiltPresenter` streams a band of amber chevrons (`UI_TiltStreaks`, a repeating tile) along the screen edge the aliens are sliding toward. The chevrons point outward and fade in and out with the effect. The camera roll already shows the tilt; the chevrons show which way everything is going.
+- **Boss destruction:** `BossDeathSequence` plays when the Alien Core is defeated:
+  - a 1.6 s chain of pooled explosions across the core while it shudders;
+  - then a large final blast, a hard camera shake, the core-destroyed sound, and a white flash that fades.
+  - `BossController` now keeps the body visible on defeat and exposes `Body`/`HideBody` so the sequence can remove it at the climax.
+  - `CampaignScreens` holds the stage-complete panel back until the sequence has finished.
+  - The core-destroyed sound moved from `GameplayAudioBinder` to the climax of the sequence.
+- **Menu transitions:**
+  - `ScreenFader` fades to near-black between scenes (0.22 s out, 0.3 s in) on its own persistent canvas. It swallows taps while dark and ignores a second load request mid-fade. `SceneRouter` loads through it.
+  - `PanelTransition` fades every "...Overlay" screen in over 0.18 s, and its inner panel settles from 94% scale. **Apply UI Skin** adds it to each overlay.
+- `PolishBuilder` (**SpaceXonix > Build Polish Effects**) generates the frost and chevron art and the flash material, and wires the frost border, chevrons, boss flash and three presenters into `Game.unity`. Re-running it rebuilds everything in place.
+- Found during verification:
+  - The chevron was drawn tip-left and stacked into a zigzag. It was redrawn tip-right with clear rows between chevrons.
+  - The panel hold originally only covered the victory phase, but on the boss stage the stage-complete panel comes first. The hold now applies whatever panel is next.
+- Play Mode checks, all through the real menu flow:
+  - The difficulty overlay faded in from alpha 0, and the menu-to-game fade completed.
+  - Freeze showed the frost border at 0.75 with 2 aliens tinted.
+  - Tilt showed chevrons on the downhill edge, pointing outward.
+  - On the boss stage, a real stage completion played the explosion chain over the core. The panel only appeared, fading in, after the final blast removed the core.
+  - A capture flashed its new strip and faded.
+  - Unity Console: 0 errors.
+- GDD (`SpaceXonixProposal.md`):
+  - 14.1 MVP: everything is ticked except the Android and Windows builds (Phase 21).
+  - 14.2 Polish: everything is ticked except the Volatile Alien warning animation and additional stage modifiers. The three extra modifier assets are the boss-compatible ones the GDD already describes.
+  - 14.3 Stretch: "Boss projectiles destroying captured territory" is ticked (the charged shot).
+- Tests: 6 new EditMode tests (`PolishTests`) cover:
+  - the capture flash lighting and fading;
+  - the frost border following Freeze only;
+  - the chevrons' side and direction for both tilts;
+  - the boss chain, the core hidden at the end and the flash cleared;
+  - a panel fading and settling in.
+  - Full suite: 376 passed, 0 failed.
+
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 
 **What blocked full completion:** this phase is about bringing in licensed third-party art and audio, which cannot be downloaded from here. The MCP's `generate_image` and `generate_model` tools exist but **both providers report `configured: false`**, so AI generation was not available either. The project had **zero** art and audio files before this phase.
@@ -974,6 +1013,6 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 
 ## Next Recommended Action
 
-**Phase 20 — Visual Polish + VFX + Cinemachine**
+**Phase 21 — Final QA + Profiling + Submission Cleanup** (Windows and Android builds, profiling, a full campaign playthrough)
 
 Before modifying anything, read `AGENTS.md`, `PROG.md`, `SpaceXonixProposal.md`, and `IMPLEMENTATION_PLAN.md`, then inspect `git status` and the existing implementation.
