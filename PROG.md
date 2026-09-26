@@ -891,6 +891,10 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - **Harness fixes:**
   - The editor's "Always Play From Boot Scene" rule also hijacked the Test Runner's start scene, so Play Mode tests never began. It now steps aside when Play Mode is entered from the Test Runner's `InitTestScene`.
   - The tests boot once per run: loading Boot a second time meets its persistent services as duplicates. The real game only boots once.
+  - **Regression, fixed the same day:** that step-aside first keyed on the scene name. The interrupted test runs had left the Test Runner's `InitTestScene` open in the editor, so pressing Play started from it and **ran the Play Mode tests instead of the game** (the user saw the whole campaign play itself instantly).
+    - Now the tests announce a run through `IPrebuildSetup` (a `SessionState` flag), and the rule steps aside only then.
+    - The leftover scene was closed, and seven stale runner objects were removed from editor memory.
+    - Verified: Play from the editor goes Boot, Main Menu, then the Stage 1 briefing at a 75% target; the Play Mode tests still pass 8 of 8.
 - **Cleanup:**
   - `ATTRIBUTIONS.md` moved to `Assets/ThirdParty/ATTRIBUTION.md`, where AGENTS.md asks for it; references updated. Every shipped asset is covered (Ansimuz, Master484 and Junkala CC0; Exo 2 OFL).
   - The `SPACEXONIX_FRAMESTATS` define was removed. `FrameStats` stays in the code, inert, for future checks.

@@ -24,8 +24,19 @@ namespace SpaceXonix.Tests.PlayMode
     /// The real game, running: each test boots through Boot and the Main Menu into Game.unity the way
     /// a player does, then drives it through the same input and campaign calls the UI uses.
     /// </summary>
-    public sealed class GameFlowTests
+    public sealed class GameFlowTests : IPrebuildSetup
     {
+        /// <summary>
+        /// Runs in the editor just before the Test Runner enters Play Mode. Tells the editor's
+        /// "Always Play From Boot Scene" rule that this Play is a test run, so it steps aside.
+        /// </summary>
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            UnityEditor.SessionState.SetBool("SpaceXonix.PlayModeTestRun", true);
+#endif
+        }
+
         private GameManager game;
         private CampaignManager campaign;
         private BoardManager board;

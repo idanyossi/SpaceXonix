@@ -27,17 +27,24 @@ namespace SpaceXonix.EditorTools
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
+        /// <summary>Set by the Play Mode tests' pre-run setup, just before the Test Runner enters Play Mode.</summary>
+        public const string TestRunFlag = "SpaceXonix.PlayModeTestRun";
+
         /// <summary>
-        /// The Test Runner enters Play Mode from a temporary scene of its own ("InitTestScene..."), and
-        /// forcing Boot there stops Play Mode tests from ever starting. Step aside for those runs.
+        /// The Test Runner enters Play Mode from a temporary scene of its own, and forcing Boot there
+        /// stops Play Mode tests from ever starting. Step aside only when a test run has announced
+        /// itself: going by the scene's name alone once ran the tests when a leftover test scene was
+        /// open and the user just pressed Play.
         /// </summary>
         private static void OnPlayModeStateChanged(PlayModeStateChange change)
         {
-            if (change == PlayModeStateChange.ExitingEditMode &&
-                UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.StartsWith("InitTestScene"))
+            if (change == PlayModeStateChange.ExitingEditMode && SessionState.GetBool(TestRunFlag, false))
                 EditorSceneManager.playModeStartScene = null;
             else if (change == PlayModeStateChange.EnteredEditMode)
+            {
+                SessionState.EraseBool(TestRunFlag);
                 Apply();
+            }
         }
 
         private static bool Enabled
