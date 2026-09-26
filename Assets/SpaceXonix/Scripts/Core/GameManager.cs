@@ -41,6 +41,8 @@ namespace SpaceXonix.Core
         public int StartingLives => startingLives;
         public bool IsPaused { get; private set; }
         public bool IsShieldActive { get; private set; }
+        /// <summary>How far round the ship the shield bubble reaches over the trail, in world units.</summary>
+        public float ShieldTrailRadius { get; private set; }
         internal float InvulnerabilityRemaining => invulnerabilityRemaining;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         internal bool HasActiveRespawnOperation => respawnCoroutine != null;
@@ -54,6 +56,8 @@ namespace SpaceXonix.Core
         public event Action<bool> PausedChanged;
         public event Action StageBriefingStarted;
         public event Action StagePlayStarted;
+        /// <summary>Raised when the shield absorbs something that would have cost a life.</summary>
+        public event Action<PlayerFailureReason> FailureShielded;
 
         private void Awake()
         {
@@ -223,11 +227,26 @@ namespace SpaceXonix.Core
             PausedChanged?.Invoke(paused);
         }
 
-        public void SetShieldActive(bool active)
+        /// <param name="trailRadius">How far round the ship the bubble also covers the trail. Below the ship's own radius it only covers the ship.</param>
+        public void SetShieldActive(bool active, float trailRadius = 0f)
         {
+            ShieldTrailRadius = active ? Mathf.Max(0f, trailRadius) : 0f;
             if (IsShieldActive == active) return;
             IsShieldActive = active;
             TracePlayerLifecycle(active ? "ShieldActivated" : "ShieldExpired", force: true);
+        }
+
+        /// <summary>
+        /// Trail under the shield bubble is covered by it: the cell the ship is on and every cell within
+        /// the bubble's reach. The rest of the trail stays vulnerable while shielded.
+        /// </summary>
+        public bool IsTrailCellShielded(GridCoordinate cell)
+        {
+            var player = PlayerController;
+            if (!IsShieldActive || boardManager == null || player == null) return false;
+            if (cell == boardManager.PlayerCell) return true;
+            var radius = Mathf.Max(player.CollisionRadius, ShieldTrailRadius);
+            return boardManager.CellOverlapsCircle(cell, player.transform.position, radius);
         }
 
         public static bool IsShieldableFailure(PlayerFailureReason reason) =>
@@ -245,6 +264,7 @@ namespace SpaceXonix.Core
             if (IsShieldActive && IsShieldableFailure(reason))
             {
                 TracePlayerLifecycle("FailureShielded", reason);
+                FailureShielded?.Invoke(reason);
                 return false;
             }
             if (IsPaused || !playerDamageable || failureInProgress || IsInvulnerable || lifeState == null ||

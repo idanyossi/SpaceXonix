@@ -208,7 +208,8 @@ namespace SpaceXonix.Boss
                 var state = boardManager.Model.GetCell(cell);
                 if (state == BoardCellState.Trail)
                 {
-                    gameManager.ReportPlayerFailure(PlayerFailureReason.TrailHit);
+                    // Trail inside the shield bubble absorbs the shot instead of being cut.
+                    if (!gameManager.IsTrailCellShielded(cell)) gameManager.ReportPlayerFailure(PlayerFailureReason.TrailHit);
                     return true;
                 }
                 // The middle shot breaks the first territory the player built that it reaches. The

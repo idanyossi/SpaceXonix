@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 376
-- Passed: 376
+- EditMode discovered: 386
+- Passed: 386
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -877,6 +877,55 @@ Scope as the user asked: a simple, not over-the-top capture effect, Freeze and A
   - the boss chain, the core hidden at the end and the flash cleared;
   - a panel fading and settling in.
   - Full suite: 376 passed, 0 failed.
+
+### Shield bubble, arena rim, Power Shot impact and upgrades on screen (2026-09-26)
+
+Four requests from play-testing.
+
+- **Shield:** the flat green ring looked underwhelming next to Freeze and Arena Tilt. It is now:
+  - a shimmering energy bubble round the ship (`ShieldBubble`, generated 24-pixel frames);
+  - the bubble pops in, breathes, flashes white and swells when it absorbs a hit (new `GameManager.FailureShielded` event), and blinks through its last second;
+  - the old ring now lies flat on the floor as the bubble's footprint.
+  - **Rule change:** the trail inside the bubble (0.75 world units round the ship, about 4 cells; `PowerUpManager.shieldTrailRadius`) is covered too.
+    - An alien crossing it, or a boss shot landing on it, no longer cuts it.
+    - The rest of the trail stays vulnerable.
+    - One shared rule, `GameManager.IsTrailCellShielded`, is used by both enemies and the boss.
+    - The GDD's Shield section is updated to match.
+- **Upgrades visible mid-run:**
+  - `UpgradeStrip` puts a badge per upgrade (its card picture, "x2" when stacked) under the score, top right.
+  - `UpgradeList` adds an "UPGRADES THIS RUN" panel under the pause menu with each upgrade's picture, name, effect and count. The panel says so when the run has none.
+  - `RunUpgradeModel.Taken` keeps the order upgrades were taken in, and `UpgradeManager.Changed` refreshes both views.
+- **Arena rim:** `ArenaRim` builds a raised metal frame round the board:
+  - 0.3 wide and 0.55 tall, a little taller than territory;
+  - the outer wall drops below the floor so the frame reads as a solid slab;
+  - its top has steel plate with seams, rivets and cyan running lights;
+  - a glowing inner lip slowly breathes.
+  - It sits outside the playable grid and fits inside the portrait framing without reframing the camera.
+- **Power Shot oomph:**
+  - The cube became a flickering plasma bolt that turns to its direction of travel, with a fading cyan streak.
+  - Firing throws a muzzle flash off the nose and kicks the camera.
+  - A hit adds a cyan floor shockwave, a heavier shake and a 0.07 s hit-stop. The hit-stop never fights the pause, and is restored only if it still owns the time scale.
+  - A shot kill's explosion is bigger (3x the alien's width, from 2.2x).
+  - `PowerMeter.ShotImpact` reports where a shot struck an alien or the boss; the boss gets its own explosion.
+- `FeedbackBuilder` (**SpaceXonix > Build Shield, Rim, Shot and Upgrade HUD**) generates the art, materials and prefabs and wires everything into `Game.unity`.
+  - Generated effect sprites go in `Art/Generated/Fx`, a new pixel-sprite import rule.
+  - Generated tiles are no longer rescaled to powers of two; the rim texture is 5 pixels deep.
+- **Play Mode checks** (portrait 1080x1920 through the real menu flow):
+  - the rim framing the board;
+  - the bubble and its footprint over an exposed trail;
+  - a blocked hit flashing the bubble with no life lost;
+  - a real Power Shot via the input router hitting a frozen alien: muzzle flash, streak, explosion, shockwave, and hit-stop at 0.05 returning to 1;
+  - three upgrades showing as badges and in the pause list.
+  - Unity Console: 0 errors.
+- **Tests:** 10 new or changed EditMode tests.
+  - Trail inside the bubble survives an alien crossing it; trail beyond it is still cut (this replaced "does not protect trail behind ship").
+  - Rim geometry stays outside the grid and every triangle faces its normal.
+  - Bubble pop, hit flash and footprint.
+  - Bolt heading for all four directions, and the streak reset.
+  - Muzzle flash, shockwave, and the boss-vs-alien explosion.
+  - `ShotImpact`.
+  - Upgrade order, badges, stack counts, and the pause list resizing and resetting.
+  - Full suite: 386 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 

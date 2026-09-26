@@ -285,19 +285,60 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
-        public void Shield_DoesNotProtectTrailBehindShip()
+        public void Shield_DoesNotProtectTrailBeyondTheBubble()
         {
             using (var fixture = new Fixture())
             {
                 fixture.PrepareExposedShipFacingEnemy(shielded: true);
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                for (var i = 0; i < 400 && fixture.Board.PlayerCell.X < 16; i++) fixture.Player.AdvanceMovement(.02f);
+                fixture.Input.ReleaseDirection();
                 var trailCell = fixture.Board.Model.ToCoordinate(fixture.Board.Model.ActiveTrail[0]);
-                Assert.That(trailCell, Is.Not.EqualTo(fixture.Board.PlayerCell));
+                Assert.That(Vector2.Distance(fixture.Board.GetWorldPosition(trailCell), fixture.Player.transform.position),
+                    Is.GreaterThan(fixture.Manager.ShieldTrailRadius + fixture.Board.CellWorldSize));
+                Assert.That(fixture.Game.IsTrailCellShielded(trailCell), Is.False);
                 var onTrail = fixture.SpawnEnemyAt(fixture.Board.GetWorldPosition(trailCell) + Vector3.up * fixture.Board.CellWorldSize, Vector2.down);
                 PlayerFailureReason? reason = null;
                 fixture.Game.PlayerFailed += r => reason = r;
                 for (var i = 0; i < 60 && reason == null; i++) onTrail.AdvanceMovement(.02f);
                 Assert.That(reason, Is.EqualTo(PlayerFailureReason.TrailHit));
                 Assert.That(fixture.Game.Lives, Is.EqualTo(2));
+            }
+        }
+
+        [Test]
+        public void Shield_ProtectsTheTrailInsideTheBubble()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.PrepareExposedShipFacingEnemy(shielded: true);
+                fixture.Input.TrySelectDirection(CardinalDirection.Right);
+                for (var i = 0; i < 400 && fixture.Board.PlayerCell.X < 16; i++) fixture.Player.AdvanceMovement(.02f);
+                fixture.Input.ReleaseDirection();
+                var trail = fixture.Board.Model.ActiveTrail;
+                // Two cells behind the ship: inside the bubble, outside the ship's own body.
+                var trailCell = fixture.Board.Model.ToCoordinate(trail[trail.Count - 3]);
+                Assert.That(Vector2.Distance(fixture.Board.GetWorldPosition(trailCell), fixture.Player.transform.position),
+                    Is.LessThan(fixture.Manager.ShieldTrailRadius));
+                Assert.That(fixture.Game.IsTrailCellShielded(trailCell), Is.True);
+
+                var onTrail = fixture.SpawnEnemyAt(fixture.Board.GetWorldPosition(trailCell) + Vector3.up * fixture.Board.CellWorldSize * 3f, Vector2.down);
+                PlayerFailureReason? reason = null;
+                fixture.Game.PlayerFailed += r => reason = r;
+                var crossed = false;
+                for (var i = 0; i < 60; i++)
+                {
+                    onTrail.AdvanceMovement(.02f);
+                    foreach (var cell in onTrail.LastTraversedCells) if (cell == trailCell) crossed = true;
+                }
+                Assert.That(crossed, Is.True, "the alien flew across the covered trail");
+                Assert.That(reason, Is.Null);
+                Assert.That(fixture.Game.Lives, Is.EqualTo(3));
+
+                // Once the shield drops, the same trail is vulnerable again.
+                fixture.Manager.ExpireEffect(PowerUpType.Shield);
+                Assert.That(fixture.Game.IsTrailCellShielded(trailCell), Is.False);
+                Assert.That(fixture.Game.ShieldTrailRadius, Is.Zero);
             }
         }
 

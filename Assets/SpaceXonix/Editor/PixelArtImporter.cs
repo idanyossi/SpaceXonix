@@ -18,6 +18,8 @@ namespace SpaceXonix.EditorTools
         public const string FramesFolder = ArtRoot + "/Ansimuz/Frames";
         /// <summary>Backdrop layers tile across the view, so they import like the board textures, not as sprites.</summary>
         public const string BackgroundFolder = ArtRoot + "/Ansimuz/Background";
+        /// <summary>Generated effect sprites (shield bubble, power bolt, muzzle flash): single pixel-art sprites, not tiles.</summary>
+        public const string FxFolder = "Assets/SpaceXonix/Art/Generated/Fx";
         private const int PixelsPerUnit = 16;
 
         /// <summary>Each sheet's frame size, read left to right and top to bottom.</summary>
@@ -50,6 +52,19 @@ namespace SpaceXonix.EditorTools
                 ui.spriteBorder = new Vector4(border, border, border, border);
                 return;
             }
+            if (assetPath.StartsWith(FxFolder + "/"))
+            {
+                var fx = (TextureImporter)assetImporter;
+                fx.textureType = TextureImporterType.Sprite;
+                fx.spriteImportMode = SpriteImportMode.Single;
+                fx.spritePixelsPerUnit = PixelsPerUnit;
+                fx.filterMode = FilterMode.Point;
+                fx.textureCompression = TextureImporterCompression.Uncompressed;
+                fx.mipmapEnabled = false;
+                fx.alphaIsTransparency = true;
+                fx.wrapMode = TextureWrapMode.Clamp;
+                return;
+            }
             if (assetPath.StartsWith(BoardArtGenerator.Folder) || assetPath.StartsWith(BackgroundFolder))
             {
                 // Board, laser and backdrop textures tile across meshes, so they repeat and are not sprites,
@@ -60,6 +75,8 @@ namespace SpaceXonix.EditorTools
                 tiling.textureCompression = TextureImporterCompression.Uncompressed;
                 tiling.mipmapEnabled = false;
                 tiling.alphaIsTransparency = true;
+                // Never rescale an odd-sized tile (the arena rim is 5 pixels deep): that would blur or drop rows.
+                tiling.npotScale = TextureImporterNPOTScale.None;
                 // The feature planets are single objects: repeating them would bleed a row of pixels
                 // from the opposite edge onto their borders.
                 var name = System.IO.Path.GetFileNameWithoutExtension(assetPath);

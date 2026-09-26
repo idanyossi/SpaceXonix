@@ -33,6 +33,8 @@ namespace SpaceXonix.Power
         public event Action PowerFull;
         public event Action<PowerShotProjectile> ShotFired;
         public event Action<EnemyController> EnemyDestroyedByShot;
+        /// <summary>Where a shot struck something: an alien it destroyed, or the boss it stunned.</summary>
+        public event Action<Vector3> ShotImpact;
 
         private void Awake() => Initialize();
 
@@ -117,14 +119,18 @@ namespace SpaceXonix.Power
                 // The boss cannot be shot down, but a hit stops its attack cycle and spends the shot.
                 if (bossController != null && bossController.TryInterceptShot(from, shot.transform.position, definition.shotHitRadius))
                 {
+                    var struck = shot.transform.position;
                     ReleaseShotAt(i);
+                    ShotImpact?.Invoke(struck);
                     continue;
                 }
                 if (step == PowerShotStep.Moving) continue;
                 ReleaseShotAt(i);
                 if (step != PowerShotStep.HitEnemy || hitEnemy == null) continue;
+                var at = hitEnemy.transform.position;
                 enemyManager.Despawn(hitEnemy);
                 EnemyDestroyedByShot?.Invoke(hitEnemy);
+                ShotImpact?.Invoke(at);
             }
         }
 

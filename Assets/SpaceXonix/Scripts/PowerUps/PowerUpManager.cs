@@ -26,6 +26,9 @@ namespace SpaceXonix.PowerUps
         [SerializeField] private PowerUpDefinition[] powerUps;
         [SerializeField] private GameObject pickupPrefab;
 
+        [Tooltip("How far round the ship, in world units, the shield bubble also covers the trail. The ship's own radius is 0.375.")]
+        [SerializeField, Min(0f)] private float shieldTrailRadius = .75f;
+
         [Header("Presentation")]
         [SerializeField] private GameObject shieldVisual;
         [SerializeField] private Material frozenEnemyMaterial;
@@ -52,6 +55,7 @@ namespace SpaceXonix.PowerUps
         public PowerUpType? StoredPowerUp => slot.Stored;
         public PowerUpPickup ActivePickup => activePickup;
         public Vector2 TiltDrift { get; private set; }
+        public float ShieldTrailRadius => shieldTrailRadius;
         public event Action<PowerUpPickup> PickupSpawned;
         public event Action<PowerUpType?> StoredChanged;
         public event Action<PowerUpType> EffectStarted;
@@ -247,7 +251,7 @@ namespace SpaceXonix.PowerUps
             switch (type)
             {
                 case PowerUpType.Shield:
-                    gameManager?.SetShieldActive(true);
+                    gameManager?.SetShieldActive(true, shieldTrailRadius);
                     if (shieldVisual != null) shieldVisual.SetActive(true);
                     break;
                 case PowerUpType.Freeze:

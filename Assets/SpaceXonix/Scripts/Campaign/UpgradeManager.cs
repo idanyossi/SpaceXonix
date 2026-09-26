@@ -34,6 +34,8 @@ namespace SpaceXonix.Campaign
         public IReadOnlyList<UpgradeDefinition> CurrentOffer => offer;
         public bool HasOffer => offer.Count > 0;
         public event Action<UpgradeDefinition> UpgradeTaken;
+        /// <summary>Raised whenever the run's upgrades change: one taken, or the run reset.</summary>
+        public event Action Changed;
 
         private void Awake() => random ??= randomSeed != 0 ? new System.Random(randomSeed) : new System.Random();
 
@@ -58,6 +60,7 @@ namespace SpaceXonix.Campaign
                 gameManager.AddLives(Mathf.RoundToInt(definition.perStack));
             ApplyToSystems();
             UpgradeTaken?.Invoke(definition);
+            Changed?.Invoke();
             return true;
         }
 
@@ -68,6 +71,7 @@ namespace SpaceXonix.Campaign
             run.Reset();
             offer.Clear();
             ApplyToSystems();
+            Changed?.Invoke();
         }
 
         /// <summary>Pushes the run's effective stats into the gameplay systems. Safe to call at every stage load.</summary>

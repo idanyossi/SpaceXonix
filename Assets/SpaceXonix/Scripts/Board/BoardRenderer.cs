@@ -28,6 +28,8 @@ namespace SpaceXonix.Board
         [SerializeField] private Material flashMaterial;
         [SerializeField] private Color flashColor = new Color(.55f, 1f, 1f, .6f);
         [SerializeField, Min(.01f)] private float flashSeconds = .45f;
+        [Tooltip("The raised frame round the arena. None leaves the board unframed.")]
+        [SerializeField] private ArenaRim arenaRim;
 
         private readonly BoardMeshBuilder.Buffers buffers = new BoardMeshBuilder.Buffers();
         private readonly List<int> trailCells = new List<int>();
@@ -72,6 +74,7 @@ namespace SpaceXonix.Board
             chunkAnimating = new bool[chunksX * chunksY];
             BuildFloor();
             BuildChunkObjects();
+            if (arenaRim != null) arenaRim.Build(width * cellSize, height * cellSize);
             Rebuild(board.Model);
         }
 

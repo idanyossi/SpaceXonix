@@ -11,8 +11,11 @@ namespace SpaceXonix.Campaign
     {
         private readonly Dictionary<UpgradeType, int> stacks = new Dictionary<UpgradeType, int>();
         private readonly Dictionary<UpgradeType, float> perStack = new Dictionary<UpgradeType, float>();
+        private readonly List<UpgradeDefinition> taken = new List<UpgradeDefinition>();
 
         public IReadOnlyDictionary<UpgradeType, int> Stacks => stacks;
+        /// <summary>Each upgrade taken this run, once, in the order it was first taken.</summary>
+        public IReadOnlyList<UpgradeDefinition> Taken => taken;
 
         public int GetStacks(UpgradeType type) => stacks.TryGetValue(type, out var count) ? count : 0;
 
@@ -22,6 +25,7 @@ namespace SpaceXonix.Campaign
         public bool Take(UpgradeDefinition definition)
         {
             if (!CanTake(definition)) return false;
+            if (GetStacks(definition.type) == 0) taken.Add(definition);
             stacks[definition.type] = GetStacks(definition.type) + 1;
             perStack[definition.type] = definition.perStack;
             return true;
@@ -31,6 +35,7 @@ namespace SpaceXonix.Campaign
         {
             stacks.Clear();
             perStack.Clear();
+            taken.Clear();
         }
 
         private float Total(UpgradeType type) => GetStacks(type) * (perStack.TryGetValue(type, out var value) ? value : 0f);

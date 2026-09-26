@@ -128,6 +128,9 @@ namespace SpaceXonix.Tests.EditMode
                 var offAxis = fixture.SpawnEnemy(new GridCoordinate(5, 30));
                 EnemyController destroyed = null;
                 fixture.Meter.EnemyDestroyedByShot += enemy => destroyed = enemy;
+                Vector3? impact = null;
+                var nearPosition = near.transform.position;
+                fixture.Meter.ShotImpact += at => impact = at;
                 Fixture.Charge(fixture.Meter, 100f);
 
                 Assert.That(fixture.Input.RequestPowerShot(), Is.True);
@@ -136,6 +139,8 @@ namespace SpaceXonix.Tests.EditMode
                 for (var i = 0; i < 200 && fixture.Meter.ActiveShots.Count > 0; i++) fixture.Meter.AdvanceShots(.02f);
 
                 Assert.That(destroyed, Is.SameAs(near));
+                Assert.That(impact.HasValue, Is.True, "the hit is announced for its impact effects");
+                Assert.That(Vector2.Distance(impact.Value, nearPosition), Is.LessThan(.5f));
                 Assert.That(near.IsActiveEnemy, Is.False);
                 Assert.That(far.IsActiveEnemy, Is.True);
                 Assert.That(offAxis.IsActiveEnemy, Is.True);

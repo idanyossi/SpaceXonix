@@ -180,8 +180,8 @@ namespace SpaceXonix.Enemies
             {
                 if (board.Model.GetCell(traversedCells[i]) != BoardCellState.Trail) continue;
                 if (HasShieldPassThroughGrace) break;
-                // Trail under a shielded ship's body is ship contact, which the shield blocks; the rest of the trail stays vulnerable.
-                if (game != null && game.IsShieldActive && player != null && IsUnderShip(traversedCells[i], player)) continue;
+                // Trail inside the shield bubble is covered by it; the rest of the trail stays vulnerable.
+                if (game != null && game.IsTrailCellShielded(traversedCells[i])) continue;
                 if (game != null) LastTrailHitAccepted = game.ReportPlayerFailure(PlayerFailureReason.TrailHit);
                 if (LastTrailHitAccepted || game != null && !game.CanProcessPlayerContact(lifecycleGeneration)) return;
                 break;
@@ -219,8 +219,6 @@ namespace SpaceXonix.Enemies
             for (var i = 0; i < FootprintBuffer.Count; i++) if (!cells.Contains(FootprintBuffer[i])) cells.Add(FootprintBuffer[i]);
         }
 
-        private bool IsUnderShip(GridCoordinate cell, SpaceXonix.Player.PlayerController player) =>
-            cell == board.PlayerCell || board.CellOverlapsCircle(cell, player.transform.position, player.CollisionRadius);
 
         /// <summary>The whole alien body must stay inside uncaptured space.</summary>
         private bool IsFootprintPassable(Vector2 world)

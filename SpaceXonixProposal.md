@@ -334,12 +334,14 @@ During Shield:
 
 - enemy contact does not remove a life;
 - laser contact does not remove a life;
-- the player still needs to complete trails normally;
+- the trail inside the shield bubble (a small radius round the ship) is covered too: an alien crossing it, or a boss shot landing on it, does not cut it;
+- the rest of the trail stays vulnerable, so the player still needs to complete trails normally;
 - the shield is visually obvious.
 
 Feedback:
 
-- energy shield surrounding the ship;
+- an energy bubble surrounding the ship, with a ring on the floor marking the trail it covers;
+- the bubble flashes when it absorbs a hit and flickers in its last second;
 - activation sound;
 - remaining duration shown on the ability icon.
 
@@ -1061,13 +1063,13 @@ After the MVP is stable:
 - [x] camera shake tuning;
 - [x] improved Freeze presentation;
 - [x] improved Arena Tilt presentation;
-- [ ] Volatile Alien warning animation;
+- [x] Volatile Alien warning animation;
 - [x] territory destruction animation;
 - [x] polished enemy death effects;
 - [x] boss destruction sequence;
 - [x] menu transitions;
 - [x] additional music;
-- [ ] additional stage modifiers.
+- [x] additional stage modifiers.
 
 ## 14.3 Stretch Goals
 
@@ -1076,8 +1078,8 @@ These features are **not required for the submitted MVP**.
 - [ ] Endless Mode
 - [ ] Endless high score / stage record
 - [ ] Speed Boost power-up
-- [ ] Additional upgrade types
-- [ ] Additional modifier types
+- [x] Additional upgrade types
+- [x] Additional modifier types
 - [x] Boss projectiles destroying captured territory
 - [ ] Controller support
 
