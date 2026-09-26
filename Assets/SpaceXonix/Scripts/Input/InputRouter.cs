@@ -160,6 +160,7 @@ namespace SpaceXonix.Input
             DirectionReleased?.Invoke();
         }
 
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
         private static void TraceRawInput(string key)
         {
             if (GameManager.Instance != null)

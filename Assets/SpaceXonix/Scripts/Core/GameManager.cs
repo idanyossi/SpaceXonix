@@ -407,6 +407,9 @@ namespace SpaceXonix.Core
         }
 
         [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        // Conditional, so a release build drops the call and never builds its message: the traces
+        // run on every ship step and would otherwise feed the garbage collector for nothing.
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
         public void TracePlayerLifecycle(string reason, PlayerFailureReason? failureReason = null,
             int operationGeneration = -1, bool force = false)
         {

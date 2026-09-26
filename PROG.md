@@ -855,6 +855,22 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - **Upgrade cards ran off the screen** on the phone. It is taller and narrower than 1080x1920, and the canvases scaled half by width and half by height, which left only about 975 UI units across for about 1020 of cards. Both canvases now use **Expand**: the full 1080x1920 layout always fits, and taller phones just get extra height.
 - Tests: full EditMode suite 386 passed, 0 failed. The rebuild installed and ran on the phone with a clean log. Waiting on the user's feel test.
 
+### Smooth frame rate on the phone (2026-09-26)
+
+- The user reported occasional frame drops and slightly delayed swipes. Causes found:
+  - **Garbage on every ship step:** trace calls built strings such as `$"LogicalStepStarted:{a}->{b}"` even in release builds; only the trace body was compiled out. `GameManager.TracePlayerLifecycle` and `InputRouter.TraceRawInput` are now `[Conditional]`, so release builds drop the call and its message.
+  - **Garbage every frame from the HUD:** `GameHud` rebuilt about eight label strings every frame and called `Enum.GetValues` each time. Each label is now rebuilt only when its value changes (the effect timers at most ten times a second, through a reused `StringBuilder`).
+  - **Uneven frame delivery:** Android **Optimized Frame Pacing** is now on. Incremental GC was already on.
+- **Swipe delay:** the game path adds none. A swipe fires after about 2 mm, the turn applies the next frame, and the heading snaps. The felt delay is display latency, which the 30-to-60 fps change and frame pacing cut. If more is wanted, the next step is 90 or 120 fps.
+- **`FrameStats`** is a device probe, compiled only with the `SPACEXONIX_FRAMESTATS` define, which is currently set for Android. Every 5 s it logs fps, the worst frame, frames over 20 and 50 ms, GC runs and heap size to logcat. **Remove the define before submission.**
+- **Measured on the phone** (about 70 s of play):
+  - 13 of 14 in-game windows averaged 60 fps, with the worst frame 17 ms (a flat 60).
+  - Three single 33-36 ms frames in total.
+  - GC ran about every 10 s with no visible cost; the heap stayed near 6 MB.
+  - The one 1-second freeze coincided with the app regaining focus, not with gameplay.
+  - The user: "it feels good".
+- Tests: 386 passed, 0 failed.
+
 ## Phase 20 — Polish (2026-09-26)
 
 Scope as the user asked: a simple, not over-the-top capture effect, Freeze and Arena Tilt presentation, a boss destruction sequence, and menu transitions.
