@@ -1138,6 +1138,5 @@ All 21 planned phases are complete. The game runs on Android (a steady 60 fps on
 Optional, only if wanted:
 
 - Stretch goals from the GDD (section 14.3): Endless Mode, a Speed Boost power-up, extra upgrade and modifier types, controller support.
-- A Volatile Alien warning animation (polish list, still open) and more stage modifiers.
 - A 90/120 fps option for high-refresh phones.
 - Release packaging: a signing keystore and an Android App Bundle (.aab) for a store.
