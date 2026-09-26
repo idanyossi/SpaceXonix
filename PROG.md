@@ -32,7 +32,7 @@
 18. **COMPLETE** — Audio system, sound library, and gameplay bindings
 19. **COMPLETE** — CC0 pixel-art sprites for every actor, CC0 sound effects, licence record (music and board textures still to source)
 20. **COMPLETE** — Polish: capture flash, Freeze and Arena Tilt presentation, boss destruction sequence, menu and scene transitions
-21. **NOT STARTED** — Final QA + Profiling + Submission Cleanup
+21. **IN PROGRESS** — Final QA + Profiling + Submission Cleanup (Android build running on device)
 
 ## Current Architecture
 
@@ -838,6 +838,22 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
 - The camera clear colour in both scenes moved from the old purple to the ramp's darkest navy.
 - Verified with renders of the main menu and a stage (board, captured territory, HUD): one palette throughout, with warm colours left only for gameplay accents.
 - Tests: 5 new EditMode tests check that no opaque pixel in any backdrop layer is warm (red above blue). Full suite: 370 passed, 0 failed.
+
+## Phase 21 — Android build (started 2026-09-26)
+
+- **Settings restored:** `ProjectSettings/QualitySettings.asset` had lost its **Mobile** quality level, uncommitted, before this phase. It was restored from git with the editor closed. Android defaults to Mobile again, and Standalone to PC.
+- **Android player settings:**
+  - package `com.idanyossi.spacexonix`, company `idanyossi`;
+  - portrait only;
+  - IL2CPP, ARM64, minimum API 25.
+  - A generated app icon (the default ship on the game's navy, `Art/Icon/AppIcon.png`).
+  - The project's active platform is now Android. Switching added Android sections to every texture's `.meta`; none are overridden.
+- **First build on the device** (a OnePlus CPH2747, 1272x2772 at up to 165 Hz): the APK is 44 MB. The "934 MB" in the build report counts debug-symbol folders that don't ship. The game felt laggy, and there were three causes:
+  - **No frame-rate target.** Android runs Unity at 30 fps by default. `BootLoader` now asks for 60 on phones (`mobileFrameRate`).
+  - **Swipe logging was on** in `Game.unity`: every swipe logged with a full stack trace. It is off now, and release builds also drop stack traces from ordinary logs and warnings.
+  - **Rendering work nothing used:** the directional light cast soft shadows, and the cameras and the Mobile URP asset had HDR on, yet every material is unlit. Shadows and HDR are off (and additional lights too, on the Mobile asset); the render scale stays 0.8.
+- **Upgrade cards ran off the screen** on the phone. It is taller and narrower than 1080x1920, and the canvases scaled half by width and half by height, which left only about 975 UI units across for about 1020 of cards. Both canvases now use **Expand**: the full 1080x1920 layout always fits, and taller phones just get extra height.
+- Tests: full EditMode suite 386 passed, 0 failed. The rebuild installed and ran on the phone with a clean log. Waiting on the user's feel test.
 
 ## Phase 20 — Polish (2026-09-26)
 

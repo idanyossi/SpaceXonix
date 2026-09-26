@@ -80,3 +80,6 @@ UserSettings/*
 
 # Raw third-party downloads; only the files actually used are copied into Assets
 /AssetSources/
+
+# Unity build scratch
+/.utmp/

@@ -12,9 +12,21 @@ namespace SpaceXonix.UI
     {
         [Tooltip("Seconds to hold on the boot screen before routing. 0 routes on the first frame.")]
         [SerializeField, Min(0f)] private float holdSeconds;
+        [Tooltip("Frame rate asked for on phones. Android runs at 30 unless told otherwise.")]
+        [SerializeField, Min(30)] private int mobileFrameRate = 60;
 
         private float elapsed;
         private bool routed;
+
+        private void Awake()
+        {
+            if (Application.isMobilePlatform) Application.targetFrameRate = mobileFrameRate;
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
+            // A stack trace on every log line is expensive on a phone and nobody reads it in a release build.
+            Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
+            Application.SetStackTraceLogType(LogType.Warning, StackTraceLogType.None);
+#endif
+        }
 
         private void Update()
         {
