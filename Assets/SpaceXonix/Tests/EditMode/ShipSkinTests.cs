@@ -151,7 +151,10 @@ namespace SpaceXonix.Tests.EditMode
                 Assert.That(stats.drawback, Is.Not.Empty, name);
                 var multipliers = Multipliers(stats);
                 Assert.That(multipliers.Exists(value => value > 1f) || stats.extraLives > 0, Is.True, $"{name} has no strength");
-                Assert.That(multipliers.Exists(value => value < 1f), Is.True, $"{name} has no weakness");
+                Assert.That(multipliers.Exists(value => value < 1f) || stats.extraLives < 0, Is.True, $"{name} has no weakness");
+                // Differences have to be felt: every change is at least 20%, or a whole life.
+                foreach (var value in multipliers)
+                    if (value != 1f) Assert.That(Mathf.Abs(value - 1f), Is.GreaterThanOrEqualTo(.2f - .0001f), $"{name} has a change too small to feel");
             }
         }
 

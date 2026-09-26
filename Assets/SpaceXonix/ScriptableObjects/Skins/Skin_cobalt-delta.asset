@@ -19,11 +19,11 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 3e7ea75ee13b40f4c9bfbd4f9622dee0, type: 3}
   framesPerSecond: 12
   stats:
-    perk: +25% speed off your territory
-    drawback: -20% speed on your territory
+    perk: +35% speed off your territory
+    drawback: -25% speed on your territory
     speed: 1
-    safeSpeed: 0.8
-    exposedSpeed: 1.25
+    safeSpeed: 0.75
+    exposedSpeed: 1.35
     powerCharge: 1
     shotSpeed: 1
     pickupChance: 1

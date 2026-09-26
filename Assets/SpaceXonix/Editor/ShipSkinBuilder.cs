@@ -39,18 +39,20 @@ namespace SpaceXonix.EditorTools
         /// <summary>Every ship but the default trades one strength for one weakness.</summary>
         private static readonly SheetShip[] Ships =
         {
+            // Big swings on purpose: at 10-25% the ships all felt the same in play. Speed swings are the
+            // mildest, because at 30-50% the ship itself became hard to steer.
             new SheetShip("cobalt-delta", "Cobalt Delta", 0, 7, new ShipStats
-                { perk = "+25% speed off your territory", drawback = "-20% speed on your territory", exposedSpeed = 1.25f, safeSpeed = .8f }),
+                { perk = "+35% speed off your territory", drawback = "-25% speed on your territory", exposedSpeed = 1.35f, safeSpeed = .75f }),
             new SheetShip("viper", "Viper", 1, 66, new ShipStats
-                { perk = "+15% ship speed", drawback = "-20% power charge", speed = 1.15f, powerCharge = .8f }),
+                { perk = "+20% ship speed", drawback = "Power charges 50% slower", speed = 1.2f, powerCharge = .5f }),
             new SheetShip("ember-talon", "Ember Talon", 2, 17, new ShipStats
-                { perk = "+40% power charge", drawback = "Power Shot flies 35% slower", powerCharge = 1.4f, shotSpeed = .65f }),
+                { perk = "Power charges 2x faster", drawback = "Start with 1 fewer life", powerCharge = 2f, extraLives = -1 }),
             new SheetShip("solar-hornet", "Solar Hornet", 3, 78, new ShipStats
-                { perk = "+50% power-up spawns", drawback = "Abilities last 25% shorter", pickupChance = 1.5f, abilityDuration = .75f }),
+                { perk = "2x power-up spawns", drawback = "Abilities last half as long", pickupChance = 2f, abilityDuration = .5f }),
             new SheetShip("nebula-dart", "Nebula Dart", 4, 81, new ShipStats
-                { perk = "+30% power-up spawns", drawback = "-15% power charge", pickupChance = 1.3f, powerCharge = .85f }),
+                { perk = "Abilities last 2x longer", drawback = "-20% ship speed", abilityDuration = 2f, speed = .8f }),
             new SheetShip("phantom-rail", "Phantom Rail", 2, 69, new ShipStats
-                { perk = "+1 extra life", drawback = "-12% ship speed", extraLives = 1, speed = .88f }),
+                { perk = "+2 extra lives", drawback = "-20% ship speed", extraLives = 2, speed = .8f }),
         };
 
         [MenuItem("SpaceXonix/Build Ship Skins")]
@@ -226,7 +228,8 @@ namespace SpaceXonix.EditorTools
 
             var panel = NewImage("Panel", overlay.transform, Ui("UI_Panel"));
             panel.type = Image.Type.Sliced;
-            Place(panel.rectTransform, new Vector2(0f, 0f), new Vector2(1000f, 1700f));
+            // Just tall enough for the card, the dots and the buttons, so there is no dead gap above the buttons.
+            Place(panel.rectTransform, new Vector2(0f, 0f), new Vector2(1000f, 1420f));
             // Designed for a portrait phone; shrinks evenly to fit anything squatter.
             panel.gameObject.AddComponent<UniformFit>();
 

@@ -22,7 +22,8 @@ namespace SpaceXonix.Presentation
         [Min(.1f)] public float shotSpeed = 1f;
         [Min(0f)] public float pickupChance = 1f;
         [Min(.1f)] public float abilityDuration = 1f;
-        [Min(0)] public int extraLives;
+        [Tooltip("Lives added to (or, negative, taken from) the run's start. The run always starts with at least one.")]
+        [Range(-2, 3)] public int extraLives;
 
         public static readonly ShipStats Neutral = new ShipStats();
     }

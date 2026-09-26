@@ -498,7 +498,7 @@ namespace SpaceXonix.EditorTools
 
             var cards = new UpgradeCard[3];
             for (var i = 0; i < cards.Length; i++)
-                cards[i] = BuildCard(overlay.transform, i, new Vector2((i - 1) * 330f, -10f), body, title);
+                cards[i] = BuildCard(overlay.transform, i, new Vector2((i - 1) * 345f, -30f), body, title);
 
             var panel = overlay.AddComponent<UpgradeCardPanel>();
             var serialized = new SerializedObject(panel);
@@ -522,7 +522,8 @@ namespace SpaceXonix.EditorTools
         {
             var frame = NewImage($"Card{index}", parent, LoadUiSprite("UI_Card"), Image.Type.Sliced);
             frame.raycastTarget = true;
-            Place(frame.rectTransform, position, new Vector2(300f, 480f));
+            // As wide as three cards can be on a portrait phone, and tall enough for readable text.
+            Place(frame.rectTransform, position, new Vector2(330f, 560f));
             var group = frame.gameObject.AddComponent<CanvasGroup>();
             var button = frame.gameObject.AddComponent<Button>();
             button.targetGraphic = frame;
@@ -537,13 +538,13 @@ namespace SpaceXonix.EditorTools
             var band = NewImage("Band", frame.transform, LoadUiSprite("UI_CardBand"), Image.Type.Sliced);
             var bandRect = band.rectTransform;
             bandRect.anchorMin = new Vector2(0f, 1f); bandRect.anchorMax = new Vector2(1f, 1f); bandRect.pivot = new Vector2(.5f, 1f);
-            bandRect.offsetMin = new Vector2(12f, -82f); bandRect.offsetMax = new Vector2(-12f, -12f);
+            bandRect.offsetMin = new Vector2(12f, -88f); bandRect.offsetMax = new Vector2(-12f, -12f);
             var name = NewText("Name", band.transform, title, 26, TextAnchor.MiddleCenter, new Color(.03f, .04f, .08f));
-            name.resizeTextForBestFit = true; name.resizeTextMinSize = 20; name.resizeTextMaxSize = 28;
+            name.resizeTextForBestFit = true; name.resizeTextMinSize = 24; name.resizeTextMaxSize = 32;
             Stretch(name.rectTransform, -8f);
 
             var screen = NewImage("Screen", frame.transform, LoadUiSprite("UI_Slot"), Image.Type.Sliced);
-            PlaceTop(screen.rectTransform, -94f, new Vector2(256f, 256f));
+            PlaceTop(screen.rectTransform, -100f, new Vector2(256f, 256f));
             var art = NewImage("Art", screen.transform, null, Image.Type.Simple);
             art.preserveAspect = true;
             Place(art.rectTransform, Vector2.zero, new Vector2(ArtSize * ArtScale, ArtSize * ArtScale));
@@ -555,7 +556,7 @@ namespace SpaceXonix.EditorTools
 
             var pipRow = new GameObject("Pips", typeof(RectTransform));
             pipRow.transform.SetParent(frame.transform, false);
-            PlaceTop((RectTransform)pipRow.transform, -362f, new Vector2(220f, 22f));
+            PlaceTop((RectTransform)pipRow.transform, -366f, new Vector2(220f, 24f));
             var layout = pipRow.AddComponent<HorizontalLayoutGroup>();
             layout.childAlignment = TextAnchor.MiddleCenter;
             layout.spacing = 12f;
@@ -568,17 +569,17 @@ namespace SpaceXonix.EditorTools
                 pips[i].rectTransform.sizeDelta = new Vector2(20f, 20f);
             }
 
-            var effect = NewText("Effect", frame.transform, body, 28, TextAnchor.MiddleCenter, Color.white);
-            effect.resizeTextForBestFit = true; effect.resizeTextMinSize = 22; effect.resizeTextMaxSize = 28;
+            var effect = NewText("Effect", frame.transform, body, 34, TextAnchor.MiddleCenter, Color.white);
+            effect.resizeTextForBestFit = true; effect.resizeTextMinSize = 26; effect.resizeTextMaxSize = 34;
             var effectRect = effect.rectTransform;
             effectRect.anchorMin = new Vector2(0f, 0f); effectRect.anchorMax = new Vector2(1f, 0f); effectRect.pivot = new Vector2(.5f, 0f);
-            effectRect.offsetMin = new Vector2(16f, 36f); effectRect.offsetMax = new Vector2(-16f, 100f);
+            effectRect.offsetMin = new Vector2(14f, 46f); effectRect.offsetMax = new Vector2(-14f, 162f);
 
-            var footer = NewText("Footer", frame.transform, body, 20, TextAnchor.MiddleCenter, new Color(.5f, .85f, .95f, .9f));
+            var footer = NewText("Footer", frame.transform, body, 22, TextAnchor.MiddleCenter, new Color(.5f, .85f, .95f, .9f));
             footer.text = "TAP TO INSTALL";
             var footerRect = footer.rectTransform;
             footerRect.anchorMin = new Vector2(0f, 0f); footerRect.anchorMax = new Vector2(1f, 0f); footerRect.pivot = new Vector2(.5f, 0f);
-            footerRect.offsetMin = new Vector2(16f, 10f); footerRect.offsetMax = new Vector2(-16f, 38f);
+            footerRect.offsetMin = new Vector2(14f, 10f); footerRect.offsetMax = new Vector2(-14f, 42f);
 
             var card = frame.gameObject.AddComponent<UpgradeCard>();
             var serialized = new SerializedObject(card);

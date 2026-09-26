@@ -518,12 +518,14 @@ After choosing a difficulty, the player picks a ship in the hangar and launches 
 | Ship | Strength | Weakness |
 |---|---|---|
 | Crimson Vanguard (default) | Balanced | None |
-| Cobalt Delta | +25% speed off your territory | -20% speed on your territory |
-| Viper | +15% ship speed | -20% power charge |
-| Ember Talon | +40% power charge | Power Shot flies 35% slower |
-| Solar Hornet | +50% power-up spawns | Abilities last 25% shorter |
-| Nebula Dart | +30% power-up spawns | -15% power charge |
-| Phantom Rail | +1 extra life | -12% ship speed |
+| Cobalt Delta | +35% speed off your territory | -25% speed on your territory |
+| Viper | +20% ship speed | Power charges 50% slower |
+| Ember Talon | Power charges 2x faster | Start with 1 fewer life |
+| Solar Hornet | 2x power-up spawns | Abilities last half as long |
+| Nebula Dart | Abilities last 2x longer | -20% ship speed |
+| Phantom Rail | +2 extra lives | -20% ship speed |
+
+Every change is at least 20% or a whole life, so each ship plays noticeably differently; a run always starts with at least one life. (Retuned 2026-09-26: the first values, 10-25%, made the ships feel the same, and 30-50% speed swings made the ship hard to steer.)
 
 The chosen ship is remembered between sessions, and the HUD's life icons show it.
 

@@ -807,6 +807,25 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
   - The user's saved ship was reset to the default afterwards.
 - Tests: full suite 365 passed, 0 failed.
 
+### Stronger ship trade-offs, a tighter hangar, bigger upgrade cards (2026-09-26)
+
+- **Ships felt the same.** The first stats were 10–25% nudges, so every change is now at least 20% or a whole life. A test enforces this.
+  - Cobalt Delta: +35% speed off your territory / −25% on it.
+  - Viper: +20% speed / power charges 50% slower.
+  - Ember Talon: power charges 2× faster / starts with 1 fewer life.
+  - Solar Hornet: 2× power-up spawns / abilities last half as long.
+  - Nebula Dart: abilities last 2× longer / −20% speed.
+  - Phantom Rail: +2 lives / −20% speed.
+  - The Power Shot speed drawback was dropped, because it was hardly felt.
+  - A first pass used 30–50% speed swings. The user found the speed too much, so speed was tuned down to 20–35% and the "felt" threshold set at 20%.
+- **Negative lives:** `ShipStats.extraLives` can now be negative (range −2 to 3), and `CampaignManager` floors the run's starting lives at 1.
+- **Hangar gap:** the panel was 1700 tall with the buttons pinned to its bottom, leaving a dead band. At 1420 tall the buttons sit right under the dots.
+- **Upgrade cards were still hard to read in the phone preview.** That is partly the simulator: it draws the 1080-wide canvas at about 44%, so 24-point text lands near 10 real pixels, while a phone draws it about 2.5× larger. But the cards were also small. Now:
+  - Cards are 330×560, up from 300×480.
+  - Effect text is 34 (shrinking no lower than 26), the name up to 32 (no lower than 24), and the footer 22.
+- Verified at 45% phone scale: the hangar with no gap, and the cards (Shield Capacitor, Reinforced Hull, Gravity Stabilizer) read clearly. The user's saved ship was reset to the default afterwards.
+- Tests: the ship stat test now also counts a lost life as a weakness and requires every change to be at least 20%. Full suite: 365 passed, 0 failed.
+
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 
 **What blocked full completion:** this phase is about bringing in licensed third-party art and audio, which cannot be downloaded from here. The MCP's `generate_image` and `generate_model` tools exist but **both providers report `configured: false`**, so AI generation was not available either. The project had **zero** art and audio files before this phase.
