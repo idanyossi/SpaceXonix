@@ -1131,6 +1131,20 @@ Four requests from play-testing.
 - `Assets/SpaceXonix/Tests/EditMode` — deterministic regression suite
 - `Assets/SpaceXonix/Scenes/Game.unity` — representative gameplay scene
 
+## Release 1.0.0 (2026-09-26)
+
+- Published on GitHub: https://github.com/idanyossi/SpaceXonix/releases/tag/v1.0.0 (tag `v1.0.0` on `main`).
+- **Assets:**
+  - `SpaceXonix-1.0.0-Android.apk` (42 MB; `com.idanyossi.spacexonix`, versionName 1.0.0, versionCode 1, Android 7.1+ / API 25, arm64-v8a).
+  - `SpaceXonix-1.0.0-Windows.zip` (42 MB; the player without the `DoNotShip` debug folder, plus a `Licenses` folder with `ATTRIBUTION.md`, the Exo 2 OFL and the art and audio licence texts).
+- Both builds were rebuilt clean from the 1.0.0 commit. The Windows build ran with 0 errors or exceptions.
+- The release notes cover install steps for both platforms (Play Protect and SmartScreen prompts included), the controls, and credits. The notes file stays local in `Builds/Release/`, which is git-ignored.
+- **Known limitations:**
+  - The APK is signed with Unity's debug key, fine for sideloading. A store release, or updates across machines, needs a real keystore.
+  - The Windows exe isn't code-signed, so SmartScreen asks before the first run.
+- Tooling: GitHub CLI 2.101.0 installed through winget; the user logged in with `gh auth login`.
+- Cleanup: the Test Runner's performance package had left `Assets/Resources/PerformanceTestRun*.json`. They were removed and git-ignored, since anything in a Resources folder ships in builds.
+
 ## Next Recommended Action
 
 All 21 planned phases are complete. The game runs on Android (a steady 60 fps on the test phone) and on Windows, with 386 EditMode and 8 Play Mode tests passing.
