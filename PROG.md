@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 364
-- Passed: 364
+- EditMode discovered: 365
+- Passed: 365
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -762,6 +762,28 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
   - The user's saved ship was reset to the default afterwards.
 - **Harness note:** the editor had been left paused (`EditorApplication.isPaused`), which is why a first read showed stale defaults. It was unpaused to finish the check.
 - Tests: 4 new EditMode tests. They cover upgrades and ship multiplying (speed 5 × 1.1 × 0.88; shield 4 × 1.25 × 0.75; shot speed, gain and pickup), measured movement on territory and in the open at 0.8× and 1.25×, every non-default ship having a real strength and weakness with the default neutral, and LAUNCH starting the run while BACK returns. Full suite: 364 passed, 0 failed.
+
+### Ship carousel and readable text (2026-09-26)
+
+- **The hangar grid was unreadable** on a phone and on a PC: seven 280-unit tiles with 17-point text, shrunk further to fit the screen.
+- **`SkinSelectPanel` is now a one-ship carousel:**
+  - The card holds the ship at 24× (384×480) on a slot screen, its name in 60-point title text, the perk (green) and the drawback (red) at 40 points, and a "4 / 7" counter.
+  - Big arrow buttons sit either side, with dots below.
+  - It browses endlessly: past the last ship it wraps to the first, and back.
+  - Browsing works by the arrows, by a horizontal swipe (`HorizontalSwipe`: a drag of at least 8% of the screen width that is mostly sideways; dragging left brings the next ship in) or by the keyboard (Left/Right or A/D; Enter or Space launches; Esc goes back).
+  - The ship on show is equipped and saved, and slides in from the side it came from. LAUNCH starts the run in it.
+- **The font was unreadable at real screen scales.** The Kenney fonts were imported as **HintedRaster**, which snaps glyphs to whole pixels and only renders cleanly at multiples of the font's grid. The canvas scales with the screen (about 0.6× in a landscape editor window, less in a phone preview), so letters broke up into misshapen shapes. Changes:
+  - The fonts import as **Smooth**.
+  - Every body text gets a thin dark `Outline`, and titles keep their shadow.
+  - `UiSkin` now keeps shrink-to-fit on body texts built to shrink, with truncation so shrinking actually works. It used to switch shrink-to-fit off.
+  - Upgrade card text is bigger: effect 28 (shrinks to 22), footer 20, name at least 20.
+  - The old grid was the only other text under 28 points; every other screen was already 28 or more at the 1080×1920 design size.
+- **Verified live:**
+  - Start Campaign → Easy opened the carousel; the NEXT arrow moved Ember Talon to Solar Hornet and saved it.
+  - Renders at 45% phone scale and in the 1100×688 landscape Game view both read cleanly, as did the in-game HUD at 45%.
+  - The user's saved ship was reset to the default afterwards.
+- **Harness note:** the editor paused itself twice as the game scene loaded, with no error in the console and no `Debug.Break` in the project. It was unpaused to finish. Worth checking the Console's Error Pause and the Game view's settings.
+- Tests: the grid test was replaced by carousel tests (opens on the equipped ship; Next equips and saves; wraps past the last and back) and a swipe test (long sideways drags count in the right direction; nudges and vertical drags do not). Full suite: 365 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 

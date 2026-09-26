@@ -2,79 +2,84 @@ using System;
 using SpaceXonix.Presentation;
 using SpaceXonix.Settings;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace SpaceXonix.UI
 {
     /// <summary>
-    /// The hangar, shown after the difficulty is picked: a grid of every ship, each tile showing the
-    /// ship itself, animated, with its name, its perk and its drawback. Tapping a tile equips it and
-    /// saves the choice; the equipped tile is lit and marked. Launch starts the run in that ship.
-    /// The tiles are laid out by the editor builder, one per ship in the library.
+    /// The hangar, shown after the difficulty is picked: one ship at a time, big, with its name,
+    /// perk and drawback, browsed left and right as an endless carousel by the arrows, a swipe or
+    /// the keyboard. The ship on show is the one equipped and saved; Launch starts the run in it.
+    /// A grid of seven small tiles was tried first and was unreadable on both a phone and a PC.
     /// </summary>
     public sealed class SkinSelectPanel : MonoBehaviour
     {
-        [Serializable]
-        public sealed class Tile
-        {
-            public Button button;
-            public Image frame;
-            public UiSpriteAnimator preview;
-            public Text nameLabel;
-            public Text perkLabel;
-            public Text drawbackLabel;
-            public GameObject equippedBadge;
-        }
-
         [SerializeField] private GameObject root;
         [SerializeField] private ShipSkinLibrary library;
-        [SerializeField] private Tile[] tiles = new Tile[0];
-        [SerializeField] private Sprite tileFrame;
-        [SerializeField] private Sprite equippedFrame;
+
+        [Header("Card")]
+        [SerializeField] private RectTransform card;
+        [SerializeField] private CanvasGroup cardGroup;
+        [SerializeField] private UiSpriteAnimator preview;
+        [SerializeField] private Text nameLabel;
+        [SerializeField] private Text perkLabel;
+        [SerializeField] private Text drawbackLabel;
+        [SerializeField] private Text counterLabel;
+
+        [Header("Browsing")]
+        [SerializeField] private Button previousButton;
+        [SerializeField] private Button nextButton;
+        [SerializeField] private HorizontalSwipe swipe;
+        [SerializeField] private Image[] dots = new Image[0];
+        [SerializeField] private Sprite dotOn;
+        [SerializeField] private Sprite dotOff;
+
+        [Header("Leaving")]
         [SerializeField] private Button launchButton;
         [SerializeField] private Button backButton;
 
+        [Header("Motion")]
+        [SerializeField, Min(.01f)] private float slideSeconds = .18f;
+        [SerializeField] private float slideDistance = 260f;
+
         private GameSettingsModel settings;
         private Action launch;
+        private Vector2 cardRest;
+        private bool cardRestCaptured;
+        private float slideTime = float.MaxValue;
+        private int slideFrom;
 
         public bool IsShown => root != null && root.activeSelf;
-        public int TileCount => tiles.Length;
+        public int Count => library != null && library.skins != null ? library.skins.Length : 0;
+        public int CurrentIndex { get; private set; }
+        public ShipSkinDefinition Current => SkinAt(CurrentIndex);
         public string EquippedId => library != null ? library.Find(settings?.ShipSkin)?.id : null;
 
         private void Awake()
         {
             if (launchButton != null) launchButton.onClick.AddListener(Launch);
             if (backButton != null) backButton.onClick.AddListener(Hide);
-            for (var i = 0; i < tiles.Length; i++)
-            {
-                if (tiles[i]?.button == null) continue;
-                var index = i; // captured per tile, so each one equips its own skin
-                tiles[i].button.onClick.AddListener(() => Equip(index));
-            }
+            if (previousButton != null) previousButton.onClick.AddListener(Previous);
+            if (nextButton != null) nextButton.onClick.AddListener(Next);
+            if (swipe != null) swipe.Swiped += OnSwiped;
         }
 
         private void OnDestroy()
         {
-            foreach (var tile in tiles) if (tile?.button != null) tile.button.onClick.RemoveAllListeners();
             if (launchButton != null) launchButton.onClick.RemoveListener(Launch);
             if (backButton != null) backButton.onClick.RemoveListener(Hide);
+            if (previousButton != null) previousButton.onClick.RemoveListener(Previous);
+            if (nextButton != null) nextButton.onClick.RemoveListener(Next);
+            if (swipe != null) swipe.Swiped -= OnSwiped;
         }
 
-        /// <summary>Opens the hangar. The settings model is passed in so tests need no live service.</summary>
+        /// <summary>Opens the hangar on the equipped ship. The settings model is passed in so tests need no live service.</summary>
         public void Show(GameSettingsModel model = null)
         {
             settings = model ?? GameSettings.Current;
-            for (var i = 0; i < tiles.Length; i++)
-            {
-                var skin = SkinAt(i);
-                if (tiles[i] == null || skin == null) continue;
-                if (tiles[i].preview != null) tiles[i].preview.SetFrames(skin.frames, skin.framesPerSecond);
-                if (tiles[i].nameLabel != null) tiles[i].nameLabel.text = skin.displayName.ToUpperInvariant();
-                var stats = skin.stats ?? ShipStats.Neutral;
-                if (tiles[i].perkLabel != null) tiles[i].perkLabel.text = stats.perk;
-                if (tiles[i].drawbackLabel != null) tiles[i].drawbackLabel.text = stats.drawback;
-            }
-            RefreshEquipped();
+            CurrentIndex = Mathf.Max(0, IndexOf(library != null ? library.Find(settings?.ShipSkin) : null));
+            Display(0);
             if (root != null) root.SetActive(true);
         }
 
@@ -85,7 +90,7 @@ namespace SpaceXonix.UI
             Show(model);
         }
 
-        /// <summary>Starts the run in the equipped ship. Public so tests can launch without a click.</summary>
+        /// <summary>Starts the run in the ship on show. Public so tests can launch without a click.</summary>
         public void Launch() => launch?.Invoke();
 
         public void Hide()
@@ -93,26 +98,86 @@ namespace SpaceXonix.UI
             if (root != null) root.SetActive(false);
         }
 
-        /// <summary>Equips the skin on a tile and saves it. Public so tests can tap without an EventSystem.</summary>
+        /// <summary>The next ship, wrapping from the last back to the first.</summary>
+        public void Next() => Step(1);
+
+        /// <summary>The previous ship, wrapping from the first round to the last.</summary>
+        public void Previous() => Step(-1);
+
+        /// <summary>Shows and equips the ship at a slot. Public so tests can pick one directly.</summary>
         public void Equip(int index)
         {
-            var skin = SkinAt(index);
-            if (skin == null) return;
-            settings ??= GameSettings.Current;
-            if (settings != null) settings.ShipSkin = skin.id;
-            RefreshEquipped();
+            if (Count == 0) return;
+            CurrentIndex = ((index % Count) + Count) % Count;
+            Display(0);
         }
 
-        private void RefreshEquipped()
+        private void Step(int direction)
         {
-            var equipped = EquippedId;
-            for (var i = 0; i < tiles.Length; i++)
+            if (Count == 0) return;
+            CurrentIndex = (CurrentIndex + direction + Count) % Count;
+            Display(direction);
+        }
+
+        // Dragging the card left brings the next ship in from the right, like turning a page.
+        private void OnSwiped(int direction) => Step(-direction);
+
+        private void Update()
+        {
+            if (!IsShown) return;
+            var keyboard = Keyboard.current;
+            if (keyboard != null)
             {
-                if (tiles[i] == null) continue;
-                var on = SkinAt(i) != null && SkinAt(i).id == equipped;
-                if (tiles[i].frame != null) tiles[i].frame.sprite = on ? equippedFrame : tileFrame;
-                if (tiles[i].equippedBadge != null) tiles[i].equippedBadge.SetActive(on);
+                if (keyboard.leftArrowKey.wasPressedThisFrame || keyboard.aKey.wasPressedThisFrame) Previous();
+                if (keyboard.rightArrowKey.wasPressedThisFrame || keyboard.dKey.wasPressedThisFrame) Next();
+                if (keyboard.enterKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame) Launch();
+                if (keyboard.escapeKey.wasPressedThisFrame) Hide();
             }
+            Animate(Time.unscaledDeltaTime);
+        }
+
+        /// <summary>Advances the slide between ships. Public so tests can finish it.</summary>
+        public void Animate(float deltaTime)
+        {
+            if (card == null || slideTime >= slideSeconds) return;
+            slideTime = Mathf.Min(slideSeconds, slideTime + Mathf.Max(0f, deltaTime));
+            var t = slideTime / slideSeconds;
+            var eased = 1f - (1f - t) * (1f - t);
+            card.anchoredPosition = cardRest + new Vector2(slideFrom * slideDistance * (1f - eased), 0f);
+            if (cardGroup != null) cardGroup.alpha = Mathf.Lerp(.2f, 1f, eased);
+        }
+
+        /// <summary>Fills the card with the current ship, equips it, and slides it in from <paramref name="direction"/>.</summary>
+        private void Display(int direction)
+        {
+            var skin = Current;
+            if (skin == null) return;
+            if (settings != null) settings.ShipSkin = skin.id;
+            if (preview != null) preview.SetFrames(skin.frames, skin.framesPerSecond);
+            if (nameLabel != null) nameLabel.text = skin.displayName.ToUpperInvariant();
+            var stats = skin.stats ?? ShipStats.Neutral;
+            if (perkLabel != null) perkLabel.text = stats.perk;
+            if (drawbackLabel != null) drawbackLabel.text = stats.drawback;
+            if (counterLabel != null) counterLabel.text = $"{CurrentIndex + 1} / {Count}";
+            for (var i = 0; i < dots.Length; i++)
+            {
+                if (dots[i] == null) continue;
+                dots[i].gameObject.SetActive(i < Count);
+                dots[i].sprite = i == CurrentIndex ? dotOn : dotOff;
+            }
+            if (card == null) return;
+            if (!cardRestCaptured) { cardRest = card.anchoredPosition; cardRestCaptured = true; }
+            slideFrom = direction;
+            slideTime = direction == 0 ? slideSeconds : 0f;
+            card.anchoredPosition = cardRest + new Vector2(direction * slideDistance, 0f);
+            if (cardGroup != null) cardGroup.alpha = direction == 0 ? 1f : .2f;
+            if (direction == 0) card.anchoredPosition = cardRest;
+        }
+
+        private int IndexOf(ShipSkinDefinition skin)
+        {
+            if (skin == null || library?.skins == null) return 0;
+            return Array.IndexOf(library.skins, skin);
         }
 
         private ShipSkinDefinition SkinAt(int index) =>

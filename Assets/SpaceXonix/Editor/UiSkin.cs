@@ -121,22 +121,25 @@ namespace SpaceXonix.EditorTools
             text.font = isTitle ? skin.Title : skin.Body;
             if (isTitle) text.color = TitleColour;
             // The title font is much wider than the old one, so a long stage name would wrap into the
-            // body below it; titles shrink to fit their rect instead. Body text keeps its size, and
-            // overflows vertically because the pixel fonts' taller line height would otherwise make a
-            // truncating rect drop a line entirely, which blanked single-line captions.
-            text.resizeTextForBestFit = isTitle;
+            // body below it; titles shrink to fit their rect instead. Body text keeps its size unless
+            // its screen was built to shrink it, and otherwise overflows vertically, because the pixel
+            // fonts' taller line height would make a truncating rect drop a line entirely, which
+            // blanked single-line captions. Shrinking text needs a truncating rect to shrink within.
             if (isTitle)
             {
+                text.resizeTextForBestFit = true;
                 text.resizeTextMaxSize = text.fontSize;
                 text.resizeTextMinSize = Mathf.Max(10, text.resizeTextMaxSize / 2);
             }
-            text.verticalOverflow = isTitle ? VerticalWrapMode.Truncate : VerticalWrapMode.Overflow;
+            text.verticalOverflow = text.resizeTextForBestFit ? VerticalWrapMode.Truncate : VerticalWrapMode.Overflow;
             var shadow = text.GetComponent<Shadow>();
             if (isTitle && shadow == null) shadow = text.gameObject.AddComponent<Shadow>();
+            // A thin dark outline keeps small body text readable over the busy space backdrop.
+            if (!isTitle && shadow == null) shadow = text.gameObject.AddComponent<Outline>();
             if (shadow != null)
             {
                 shadow.effectColor = new Color(.02f, .05f, .1f, .9f);
-                shadow.effectDistance = new Vector2(4f, -4f);
+                shadow.effectDistance = shadow is Outline ? new Vector2(2f, -2f) : new Vector2(4f, -4f);
             }
             EditorUtility.SetDirty(text);
         }
@@ -304,9 +307,12 @@ namespace SpaceXonix.EditorTools
             AssetDatabase.Refresh();
             foreach (var name in new[] { BodyFontName, TitleFontName })
             {
-                // Hinted raster keeps a pixel font's edges hard instead of smoothing them.
+                // Smooth, not hinted raster. Hinted raster snaps each glyph to whole pixels, which only
+                // looks right at exact multiples of the font's grid; the canvas scales with the screen,
+                // so on phones and in a landscape window the letters broke up into unreadable shapes.
                 if (!(AssetImporter.GetAtPath($"{FontFolder}/{name}.ttf") is TrueTypeFontImporter importer)) continue;
-                importer.fontRenderingMode = FontRenderingMode.HintedRaster;
+                if (importer.fontRenderingMode == FontRenderingMode.Smooth) continue;
+                importer.fontRenderingMode = FontRenderingMode.Smooth;
                 importer.SaveAndReimport();
             }
         }

@@ -238,18 +238,68 @@ namespace SpaceXonix.EditorTools
             shadow.effectColor = new Color(.02f, .05f, .1f, .9f);
             shadow.effectDistance = new Vector2(4f, -4f);
 
-            var grid = new GameObject("Grid", typeof(RectTransform));
-            grid.transform.SetParent(panel.transform, false);
-            PlaceTop((RectTransform)grid.transform, -150f, new Vector2(912f, 1350f));
-            var layout = grid.AddComponent<GridLayoutGroup>();
-            layout.cellSize = new Vector2(280f, 420f);
-            layout.spacing = new Vector2(36f, 30f);
-            layout.childAlignment = TextAnchor.UpperCenter;
-            layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            layout.constraintCount = 3;
+            // One ship at a time, big, browsed as an endless carousel. A grid of seven small tiles
+            // was unreadable on a phone and on a PC.
+            var card = NewImage("Card", panel.transform, Ui("UI_Card"));
+            card.type = Image.Type.Sliced;
+            card.raycastTarget = true;
+            PlaceTop(card.rectTransform, -150f, new Vector2(640f, 1150f));
+            var cardGroup = card.gameObject.AddComponent<CanvasGroup>();
+            var swipe = card.gameObject.AddComponent<HorizontalSwipe>();
 
-            var tiles = new SkinSelectPanel.Tile[library.skins.Length];
-            for (var i = 0; i < tiles.Length; i++) tiles[i] = BuildTile(grid.transform, i, body, title);
+            var screen = NewImage("Screen", card.transform, Ui("UI_Slot"));
+            screen.type = Image.Type.Sliced;
+            PlaceTop(screen.rectTransform, -40f, new Vector2(520f, 600f));
+            var preview = NewImage("Preview", screen.transform, null);
+            preview.preserveAspect = true;
+            // 16x20 ships at 24x, so every pixel stays a crisp square.
+            Place(preview.rectTransform, Vector2.zero, new Vector2(384f, 480f));
+            var animator = preview.gameObject.AddComponent<UiSpriteAnimator>();
+
+            var name = NewText("Name", card.transform, title, 60, UiSkin.TitleColour);
+            name.resizeTextForBestFit = true; name.resizeTextMinSize = 36; name.resizeTextMaxSize = 60;
+            PlaceTop(name.rectTransform, -670f, new Vector2(600f, 84f));
+            var nameShadow = name.gameObject.AddComponent<Shadow>();
+            nameShadow.effectColor = new Color(.02f, .05f, .1f, .9f);
+            nameShadow.effectDistance = new Vector2(4f, -4f);
+
+            // The ship's strength in green and its weakness in red, big enough to read at a glance.
+            var perk = NewText("Perk", card.transform, body, 40, new Color(.45f, 1f, .6f));
+            perk.resizeTextForBestFit = true; perk.resizeTextMinSize = 30; perk.resizeTextMaxSize = 40;
+            PlaceTop(perk.rectTransform, -775f, new Vector2(580f, 120f));
+            var drawback = NewText("Drawback", card.transform, body, 40, new Color(1f, .55f, .5f));
+            drawback.resizeTextForBestFit = true; drawback.resizeTextMinSize = 30; drawback.resizeTextMaxSize = 40;
+            PlaceTop(drawback.rectTransform, -905f, new Vector2(580f, 120f));
+
+            var counter = NewText("Counter", card.transform, body, 30, new Color(.6f, .8f, .9f));
+            var counterRect = counter.rectTransform;
+            counterRect.anchorMin = counterRect.anchorMax = counterRect.pivot = new Vector2(.5f, 0f);
+            counterRect.anchoredPosition = new Vector2(0f, 34f);
+            counterRect.sizeDelta = new Vector2(300f, 44f);
+
+            // Big arrows either side of the card, the easiest target on a phone.
+            var previous = NewButton("PreviousButton", panel.transform, "<", title);
+            PlaceTop((RectTransform)previous.transform, -625f, new Vector2(150f, 200f));
+            ((RectTransform)previous.transform).anchoredPosition = new Vector2(-410f, -625f);
+            var next = NewButton("NextButton", panel.transform, ">", title);
+            PlaceTop((RectTransform)next.transform, -625f, new Vector2(150f, 200f));
+            ((RectTransform)next.transform).anchoredPosition = new Vector2(410f, -625f);
+            foreach (var arrow in new[] { previous, next }) arrow.GetComponentInChildren<Text>().fontSize = 80;
+
+            var dotRow = new GameObject("Dots", typeof(RectTransform));
+            dotRow.transform.SetParent(panel.transform, false);
+            PlaceTop((RectTransform)dotRow.transform, -1330f, new Vector2(700f, 30f));
+            var dotLayout = dotRow.AddComponent<HorizontalLayoutGroup>();
+            dotLayout.childAlignment = TextAnchor.MiddleCenter;
+            dotLayout.spacing = 18f;
+            dotLayout.childControlWidth = false; dotLayout.childControlHeight = false;
+            dotLayout.childForceExpandWidth = false; dotLayout.childForceExpandHeight = false;
+            var dots = new Image[library.skins.Length];
+            for (var i = 0; i < dots.Length; i++)
+            {
+                dots[i] = NewImage($"Dot{i}", dotRow.transform, Ui("UI_PipEmpty"));
+                dots[i].rectTransform.sizeDelta = new Vector2(28f, 28f);
+            }
 
             var back = NewButton("BackButton", panel.transform, "BACK", body);
             PlaceBottom((RectTransform)back.transform, new Vector2(-200f, 40f), new Vector2(340f, 96f));
@@ -260,23 +310,23 @@ namespace SpaceXonix.EditorTools
             var serialized = new SerializedObject(hangar);
             serialized.FindProperty("root").objectReferenceValue = overlay;
             serialized.FindProperty("library").objectReferenceValue = library;
-            serialized.FindProperty("tileFrame").objectReferenceValue = Ui("UI_Card");
-            serialized.FindProperty("equippedFrame").objectReferenceValue = Ui("UI_CardHover");
+            serialized.FindProperty("card").objectReferenceValue = card.rectTransform;
+            serialized.FindProperty("cardGroup").objectReferenceValue = cardGroup;
+            serialized.FindProperty("preview").objectReferenceValue = animator;
+            serialized.FindProperty("nameLabel").objectReferenceValue = name;
+            serialized.FindProperty("perkLabel").objectReferenceValue = perk;
+            serialized.FindProperty("drawbackLabel").objectReferenceValue = drawback;
+            serialized.FindProperty("counterLabel").objectReferenceValue = counter;
+            serialized.FindProperty("previousButton").objectReferenceValue = previous;
+            serialized.FindProperty("nextButton").objectReferenceValue = next;
+            serialized.FindProperty("swipe").objectReferenceValue = swipe;
+            serialized.FindProperty("dotOn").objectReferenceValue = Ui("UI_Pip");
+            serialized.FindProperty("dotOff").objectReferenceValue = Ui("UI_PipEmpty");
             serialized.FindProperty("launchButton").objectReferenceValue = launch;
             serialized.FindProperty("backButton").objectReferenceValue = back;
-            var array = serialized.FindProperty("tiles");
-            array.arraySize = tiles.Length;
-            for (var i = 0; i < tiles.Length; i++)
-            {
-                var element = array.GetArrayElementAtIndex(i);
-                element.FindPropertyRelative("button").objectReferenceValue = tiles[i].button;
-                element.FindPropertyRelative("frame").objectReferenceValue = tiles[i].frame;
-                element.FindPropertyRelative("preview").objectReferenceValue = tiles[i].preview;
-                element.FindPropertyRelative("nameLabel").objectReferenceValue = tiles[i].nameLabel;
-                element.FindPropertyRelative("perkLabel").objectReferenceValue = tiles[i].perkLabel;
-                element.FindPropertyRelative("drawbackLabel").objectReferenceValue = tiles[i].drawbackLabel;
-                element.FindPropertyRelative("equippedBadge").objectReferenceValue = tiles[i].equippedBadge;
-            }
+            var dotArray = serialized.FindProperty("dots");
+            dotArray.arraySize = dots.Length;
+            for (var i = 0; i < dots.Length; i++) dotArray.GetArrayElementAtIndex(i).objectReferenceValue = dots[i];
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             // The hangar follows the difficulty choice, so it sits above that screen.
@@ -293,52 +343,6 @@ namespace SpaceXonix.EditorTools
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-        }
-
-        private static SkinSelectPanel.Tile BuildTile(Transform grid, int index, Font body, Font title)
-        {
-            var frame = NewImage($"Tile{index}", grid, Ui("UI_Card"));
-            frame.type = Image.Type.Sliced;
-            frame.raycastTarget = true;
-            var button = frame.gameObject.AddComponent<Button>();
-            button.targetGraphic = frame;
-            button.transition = Selectable.Transition.SpriteSwap;
-            button.spriteState = new SpriteState { highlightedSprite = Ui("UI_CardHover"), pressedSprite = Ui("UI_CardPressed"), selectedSprite = Ui("UI_CardHover") };
-
-            var screen = NewImage("Screen", frame.transform, Ui("UI_Slot"));
-            screen.type = Image.Type.Sliced;
-            PlaceTop(screen.rectTransform, -22f, new Vector2(200f, 210f));
-            var preview = NewImage("Preview", screen.transform, null);
-            preview.preserveAspect = true;
-            // 16x20 ships at 8x, so every pixel stays a crisp square.
-            Place(preview.rectTransform, Vector2.zero, new Vector2(128f, 160f));
-            var animator = preview.gameObject.AddComponent<UiSpriteAnimator>();
-
-            var name = NewText("Name", frame.transform, body, 26, Color.white);
-            name.resizeTextForBestFit = true; name.resizeTextMinSize = 14; name.resizeTextMaxSize = 26;
-            PlaceTop(name.rectTransform, -238f, new Vector2(252f, 36f));
-
-            // The ship's strength in green and its weakness in red, so the trade is readable at a glance.
-            var perk = NewText("Perk", frame.transform, body, 17, new Color(.45f, 1f, .6f));
-            perk.resizeTextForBestFit = true; perk.resizeTextMinSize = 11; perk.resizeTextMaxSize = 17;
-            PlaceTop(perk.rectTransform, -278f, new Vector2(256f, 44f));
-            var drawback = NewText("Drawback", frame.transform, body, 17, new Color(1f, .5f, .45f));
-            drawback.resizeTextForBestFit = true; drawback.resizeTextMinSize = 11; drawback.resizeTextMaxSize = 17;
-            PlaceTop(drawback.rectTransform, -322f, new Vector2(256f, 44f));
-
-            var badge = NewImage("Equipped", frame.transform, Ui("UI_CardBand"));
-            badge.type = Image.Type.Sliced;
-            badge.color = new Color(.5f, .95f, 1f);
-            var badgeRect = badge.rectTransform;
-            badgeRect.anchorMin = badgeRect.anchorMax = badgeRect.pivot = new Vector2(.5f, 0f);
-            badgeRect.anchoredPosition = new Vector2(0f, 10f);
-            badgeRect.sizeDelta = new Vector2(190f, 34f);
-            var badgeText = NewText("Label", badge.transform, body, 18, new Color(.03f, .04f, .08f));
-            badgeText.text = "EQUIPPED";
-            Stretch(badgeText.rectTransform, 0f);
-            badge.gameObject.SetActive(false);
-
-            return new SkinSelectPanel.Tile { button = button, frame = frame, preview = animator, nameLabel = name, perkLabel = perk, drawbackLabel = drawback, equippedBadge = badge.gameObject };
         }
 
         // ---------------------------------------------------------------- game

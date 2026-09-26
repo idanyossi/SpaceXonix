@@ -80,41 +80,59 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
-        public void Hangar_EquipsTheTappedShipAndMarksIt()
+        public void Hangar_BrowsesAnEndlessCarouselAndEquipsWhatIsOnShow()
         {
             var library = AssetDatabase.LoadAssetAtPath<ShipSkinLibrary>(LibraryPath);
             var root = new GameObject("Hangar");
             try
             {
                 root.SetActive(false);
-                var tiles = new SkinSelectPanel.Tile[library.skins.Length];
-                for (var i = 0; i < tiles.Length; i++)
-                {
-                    var tile = new GameObject($"Tile{i}", typeof(RectTransform));
-                    tile.transform.SetParent(root.transform, false);
-                    var badge = new GameObject("Badge");
-                    badge.transform.SetParent(tile.transform, false);
-                    tiles[i] = new SkinSelectPanel.Tile { button = tile.AddComponent<Button>(), frame = tile.GetComponent<Image>() ?? tile.AddComponent<Image>(), equippedBadge = badge };
-                }
                 var panel = root.AddComponent<SkinSelectPanel>();
                 Set(panel, "root", root);
                 Set(panel, "library", library);
-                Set(panel, "tiles", tiles);
-                typeof(SkinSelectPanel).GetMethod("Awake", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(panel, null);
+                var nameLabel = new GameObject("Name", typeof(RectTransform)).AddComponent<Text>();
+                nameLabel.transform.SetParent(root.transform, false);
+                Set(panel, "nameLabel", nameLabel);
 
-                var settings = new GameSettingsModel();
+                var settings = new GameSettingsModel { ShipSkin = library.skins[2].id };
                 panel.Show(settings);
-                Assert.That(panel.IsShown, Is.True);
-                Assert.That(tiles[0].equippedBadge.activeSelf, Is.True, "with nothing chosen, the default ship is equipped");
+                Assert.That(panel.CurrentIndex, Is.EqualTo(2), "it opens on the equipped ship");
+                Assert.That(nameLabel.text, Is.EqualTo(library.skins[2].displayName.ToUpperInvariant()));
 
-                tiles[3].button.onClick.Invoke();
-                Assert.That(settings.ShipSkin, Is.EqualTo(library.skins[3].id), "the choice is saved to the settings");
-                Assert.That(tiles[3].equippedBadge.activeSelf, Is.True);
-                Assert.That(tiles[0].equippedBadge.activeSelf, Is.False, "only one ship is equipped at a time");
+                panel.Next();
+                Assert.That(settings.ShipSkin, Is.EqualTo(library.skins[3].id), "the ship on show is equipped and saved");
+
+                panel.Equip(library.skins.Length - 1);
+                panel.Next();
+                Assert.That(panel.CurrentIndex, Is.Zero, "past the last ship it wraps to the first");
+                panel.Previous();
+                Assert.That(panel.CurrentIndex, Is.EqualTo(library.skins.Length - 1), "and back again");
+                Assert.That(settings.ShipSkin, Is.EqualTo(library.skins[library.skins.Length - 1].id));
             }
             finally
             {
                 Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Swipe_NeedsASidewaysDragOfSomeLength()
+        {
+            var go = new GameObject("Swipe");
+            try
+            {
+                var swipe = go.AddComponent<HorizontalSwipe>();
+                var seen = new List<int>();
+                swipe.Swiped += seen.Add;
+                Assert.That(swipe.Resolve(new Vector2(-300f, 20f), 1080f), Is.True);
+                Assert.That(swipe.Resolve(new Vector2(250f, -30f), 1080f), Is.True);
+                Assert.That(swipe.Resolve(new Vector2(40f, 0f), 1080f), Is.False, "a tap or a nudge is not a swipe");
+                Assert.That(swipe.Resolve(new Vector2(200f, 400f), 1080f), Is.False, "a mostly vertical drag is not a swipe");
+                Assert.That(seen, Is.EqualTo(new[] { -1, 1 }));
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
             }
         }
 
@@ -138,7 +156,7 @@ namespace SpaceXonix.Tests.EditMode
         }
 
         [Test]
-        public void Hangar_LaunchesTheRunInTheEquippedShip()
+        public void Hangar_LaunchesTheRunInTheShipOnShow()
         {
             var library = AssetDatabase.LoadAssetAtPath<ShipSkinLibrary>(LibraryPath);
             var root = new GameObject("Hangar");

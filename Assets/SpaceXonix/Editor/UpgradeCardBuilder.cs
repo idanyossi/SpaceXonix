@@ -539,7 +539,7 @@ namespace SpaceXonix.EditorTools
             bandRect.anchorMin = new Vector2(0f, 1f); bandRect.anchorMax = new Vector2(1f, 1f); bandRect.pivot = new Vector2(.5f, 1f);
             bandRect.offsetMin = new Vector2(12f, -82f); bandRect.offsetMax = new Vector2(-12f, -12f);
             var name = NewText("Name", band.transform, title, 26, TextAnchor.MiddleCenter, new Color(.03f, .04f, .08f));
-            name.resizeTextForBestFit = true; name.resizeTextMinSize = 14; name.resizeTextMaxSize = 26;
+            name.resizeTextForBestFit = true; name.resizeTextMinSize = 20; name.resizeTextMaxSize = 28;
             Stretch(name.rectTransform, -8f);
 
             var screen = NewImage("Screen", frame.transform, LoadUiSprite("UI_Slot"), Image.Type.Sliced);
@@ -568,16 +568,17 @@ namespace SpaceXonix.EditorTools
                 pips[i].rectTransform.sizeDelta = new Vector2(20f, 20f);
             }
 
-            var effect = NewText("Effect", frame.transform, body, 24, TextAnchor.MiddleCenter, Color.white);
+            var effect = NewText("Effect", frame.transform, body, 28, TextAnchor.MiddleCenter, Color.white);
+            effect.resizeTextForBestFit = true; effect.resizeTextMinSize = 22; effect.resizeTextMaxSize = 28;
             var effectRect = effect.rectTransform;
             effectRect.anchorMin = new Vector2(0f, 0f); effectRect.anchorMax = new Vector2(1f, 0f); effectRect.pivot = new Vector2(.5f, 0f);
             effectRect.offsetMin = new Vector2(16f, 36f); effectRect.offsetMax = new Vector2(-16f, 100f);
 
-            var footer = NewText("Footer", frame.transform, body, 16, TextAnchor.MiddleCenter, new Color(.5f, .85f, .95f, .8f));
+            var footer = NewText("Footer", frame.transform, body, 20, TextAnchor.MiddleCenter, new Color(.5f, .85f, .95f, .9f));
             footer.text = "TAP TO INSTALL";
             var footerRect = footer.rectTransform;
             footerRect.anchorMin = new Vector2(0f, 0f); footerRect.anchorMax = new Vector2(1f, 0f); footerRect.pivot = new Vector2(.5f, 0f);
-            footerRect.offsetMin = new Vector2(16f, 12f); footerRect.offsetMax = new Vector2(-16f, 34f);
+            footerRect.offsetMin = new Vector2(16f, 10f); footerRect.offsetMax = new Vector2(-16f, 38f);
 
             var card = frame.gameObject.AddComponent<UpgradeCard>();
             var serialized = new SerializedObject(card);
