@@ -16,7 +16,7 @@ only be used when their licence permits use in the project."*
 |---|---|---|---|---|
 | `Assets/SpaceXonix/Art/ThirdParty/Ansimuz/*.png` (7 sprite sheets) and the frames cut from them | Luis Zuno ([@ansimuz](https://ansimuz.com)) | [Space Ship Shooter Pixel Art Assets](https://opengameart.org/content/space-ship-shooter-pixel-art-assets), OpenGameArt | **CC0 1.0** | Player ship, all four alien types, the Alien Core, pickups, boss projectile, the ship's death explosion |
 
-| `Assets/SpaceXonix/Art/ThirdParty/Ansimuz/Background/*.png` (5 layers) | Luis Zuno ([@ansimuz](https://ansimuz.com)) | [Space Background](https://opengameart.org/content/space-background-3), OpenGameArt | **CC0 1.0** | The drifting space backdrop behind the arena and menus |
+| `Assets/SpaceXonix/Art/ThirdParty/Ansimuz/Background/*.png` (5 layers) | Luis Zuno ([@ansimuz](https://ansimuz.com)) | [Space Background](https://opengameart.org/content/space-background-3), OpenGameArt | **CC0 1.0** | The drifting space backdrop behind the arena and menus. Used **recoloured**: the original magenta was mapped onto the game's navy-to-cyan palette by **SpaceXonix > Recolor Backdrop**, which reads the untouched originals from `AssetSources/` |
 
 | `Assets/SpaceXonix/Art/ThirdParty/Master484/Skins/*.png` (6 ships, 2 frames each) | Master484 (M484 Games) | [16x16 Ship Collection](https://opengameart.org/content/1616-ship-collection), OpenGameArt | **CC0 1.0** ("These graphics are in the Public Domain. Attribution is not needed.") | Ship skins: Cobalt Delta, Viper, Ember Talon, Solar Hornet, Nebula Dart, Phantom Rail. Cut from the sheet, turned nose-up and given thruster frames by **SpaceXonix > Build Ship Skins**; the sheet itself stays in the git-ignored `AssetSources/` |
 

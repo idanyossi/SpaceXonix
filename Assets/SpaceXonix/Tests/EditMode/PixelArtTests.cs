@@ -9,6 +9,34 @@ namespace SpaceXonix.Tests.EditMode
 {
     public sealed class PixelArtTests
     {
+        [TestCase("Backdrop")]
+        [TestCase("Stars")]
+        [TestCase("FarPlanets")]
+        [TestCase("BigPlanet")]
+        [TestCase("RingPlanet")]
+        public void BackdropLayers_SitInTheBluePalette(string layer)
+        {
+            // The original background was magenta and clashed with the teal deck and UI; it was
+            // recoloured onto a navy-to-cyan ramp, so no layer may drift warm again.
+            var texture = new Texture2D(2, 2);
+            try
+            {
+                Assert.That(texture.LoadImage(System.IO.File.ReadAllBytes($"Assets/SpaceXonix/Art/ThirdParty/Ansimuz/Background/{layer}.png")), Is.True);
+                var opaque = 0;
+                foreach (var pixel in texture.GetPixels32())
+                {
+                    if (pixel.a < 128) continue;
+                    opaque++;
+                    Assert.That(pixel.b, Is.GreaterThanOrEqualTo(pixel.r), $"{layer} has a warm pixel {pixel}");
+                }
+                Assert.That(opaque, Is.GreaterThan(0));
+            }
+            finally
+            {
+                Object.DestroyImmediate(texture);
+            }
+        }
+
         [Test]
         public void Animator_LoopsItsFramesAndCatchesUpOnALongFrame()
         {

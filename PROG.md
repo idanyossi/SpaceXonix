@@ -58,8 +58,8 @@
 
 ## Current Test State
 
-- EditMode discovered: 365
-- Passed: 365
+- EditMode discovered: 370
+- Passed: 370
 - Failed: 0
 - Coverage includes the explicit player control-state lifecycle, held safe movement, persistent exposed movement, capture exit, input reversal rules, board/trail/capture/destruction, the complete atomic death/respawn lifecycle, safe-cell restoration, captured-territory preservation, duplicate failure rejection for every failure reason, repeated deaths, Game Over, all enemy behavior, manager occupancy, pooling/reset, Volatile protection/detonation, laser timing/geometry/presentation reuse, hazard isolation, and authoritative player damage.
 
@@ -825,6 +825,19 @@ Playtest verdict on the first pass: the sounds were *"absolutely horrific"*, the
   - Effect text is 34 (shrinking no lower than 26), the name up to 32 (no lower than 24), and the footer 22.
 - Verified at 45% phone scale: the hangar with no gap, and the cards (Shield Capacitor, Reinforced Hull, Gravity Stabilizer) read clearly. The user's saved ship was reset to the default afterwards.
 - Tests: the ship stat test now also counts a lost life as a weakness and requires every change to be at least 20%. Full suite: 365 passed, 0 failed.
+
+### Backdrop recoloured into the blue palette (2026-09-26)
+
+- **Source:** the background is ansimuz's **Space Background** (OpenGameArt, CC0), five layers by the same artist as the ships. The user liked it, but its magenta (mean hue about 315°) clashed with the teal deck and UI.
+- **Approach:** the same art recoloured, the closest possible match. CC0 allows modification.
+- **What was tried:**
+  - Hue rotations to 200°, 215° and 230° turned the nebula blue, but the big planet's orange-to-red gradient landed on violet, which still clashed.
+  - Two gradient maps (a teal ramp and a deep-blue ramp) redraw each pixel by brightness onto one palette ramp, keeping every shape.
+  - The **deep-blue ramp** won: `#06060f → #0d1430 → #1b2b5a → #2a5a8a → #43a3c4 → #aef0ff`. It gives a navy nebula and a cyan-lit planet, with enough contrast that the teal board still stands out.
+- `BackdropRecolor` (**SpaceXonix > Recolor Backdrop**) reads the untouched originals from `AssetSources/ansimuz_space_background` and writes the five layers in place, so the materials, importer rules and `SpaceBackdrop` setup are unchanged and the ramp can be retuned at any time.
+- The camera clear colour in both scenes moved from the old purple to the ramp's darkest navy.
+- Verified with renders of the main menu and a stage (board, captured territory, HUD): one palette throughout, with warm colours left only for gameplay accents.
+- Tests: 5 new EditMode tests check that no opaque pixel in any backdrop layer is warm (red above blue). Full suite: 370 passed, 0 failed.
 
 ## Phase 19 — Asset Acquisition/Integration (partly complete)
 
